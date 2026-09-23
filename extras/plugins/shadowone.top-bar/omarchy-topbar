@@ -1,0 +1,307 @@
+#!/bin/bash
+
+# Manage the Top Bar plugin (shadowone.top-bar): move bar widgets between the
+# Omarchy bar and the top bar. Edits ~/.config/omarchy/shell.json through
+# Omarchy's own omarchy-shell-config helpers (atomic write + shell reload).
+#
+# The top bar's settings live in its bridge entry on the Omarchy bar:
+#   { "id": "shadowone.top-bar", "position": "auto",
+#     "layout": { "left": [...], "center": [...], "right": [...] },
+#     "managed": [ids this tool enabled], "origins": {id: {where, index, seq}} }
+
+set -euo pipefail
+
+: "${OMARCHY_PATH:=/usr/share/omarchy}"
+export OMARCHY_PATH
+source omarchy-shell-config
+
+TOPBAR_ID="shadowone.top-bar"
+USER_PLUGINS="$HOME/.config/omarchy/plugins"
+
+usage() {
+  cat <<USAGE
+Usage: omarchy-topbar <command> [args...]
+
+  list                                     Show the top bar and which bar widgets can move to it
+  add <id> [section] [place]               Move a widget from the Omarchy bar (or Bar Folder)
+                                           to the top bar (default section: right)
+  remove <id> [section] [place]            Move a widget back to the Omarchy bar
+                                           (default: where it came from)
+  move <id> <section> [place]              Move a widget within the top bar
+  position <auto|top|bottom>               Top bar edge; auto = opposite the Omarchy bar
+  check <id>                               Explain whether a widget can live on the top bar
+  reset                                    Move every widget back and turn the top bar off
+
+  section: left | center | right
+  place:   <index> | before:<id> | after:<id>   (default: end of the section)
+
+You can also drag widgets: within the top bar, and between the two bars.
+Open a top-bar widget's panel from a keybinding:
+  omarchy-shell topbar toggle <id>
+USAGE
+}
+
+validate_section() {
+  [[ $1 =~ ^(left|center|right)$ ]] || fail "section must be left, center, or right"
+}
+
+validate_place() {
+  [[ -z $1 || $1 =~ ^[0-9]+$ || $1 =~ ^(before|after):.+$ ]] \
+    || fail "place must be an index, before:<id>, or after:<id>"
+}
+
+# Prints why a widget cannot be hosted on the top bar; returns 1 if so.
+incompatibility() {
+  local id=$1 dir="$USER_PLUGINS/$1" hits
+
+  if [[ $id == omarchy.* ]]; then
+    echo "built-in Omarchy widgets need the Omarchy bar itself as their host"
+    return 1
+  fi
+  if [[ $id == "$TOPBAR_ID" || $id == io.github.arikisonfire.bar-folder ]]; then
+    echo "container widgets stay on the Omarchy bar"
+    return 1
+  fi
+  if [[ ! -f $dir/manifest.json ]]; then
+    echo "no installed third-party plugin with id '$id'"
+    return 1
+  fi
+  if ! jq -e '(.kinds | type == "array" and index("bar-widget") != null) and (.entryPoints.barWidget | type == "string")' \
+      "$dir/manifest.json" >/dev/null 2>&1; then
+    echo "'$id' has no bar widget"
+    return 1
+  fi
+  # Omarchy only hands live plugin services (and the app library) to widgets
+  # sitting on its own bar. A widget that reaches for them would lose them.
+  hits=$(grep -rlE '\b(serviceFor|firstPartyServiceFor|appLibrary|pluginShellForBarEntry|mutateShellConfig)\b' \
+    "$dir" --include='*.qml' --include='*.js' 2>/dev/null | sed "s|^$dir/||" | head -3 | paste -sd, -)
+  if [[ -n $hits ]]; then
+    echo "uses shell services only the Omarchy bar provides ($hits)"
+    return 1
+  fi
+  return 0
+}
+
+current_config() {
+  jq "$NORMALIZE" "$(source_file)"
+}
+
+# jq helpers shared by every command.
+JQ_DEFS='
+  def eid: if type == "string" then . elif type == "object" then ((.id // "") | tostring) else "" end;
+  def arr: if type == "array" then . else [] end;
+  def obj: if type == "object" then . else {} end;
+  def shape:
+    (if type == "object" then . else {id: $topbar} end)
+    | .id = $topbar
+    | .position = (.position // "auto")
+    | .layout = (.layout | obj)
+    | .layout.left = (.layout.left | arr)
+    | .layout.center = (.layout.center | arr)
+    | .layout.right = (.layout.right | arr)
+    | .managed = (.managed | arr)
+    | .origins = (.origins | obj);
+  def topbar_raw: first((.bar.layout[][] | select(eid == $topbar)), (.plugins[] | select(eid == $topbar))) // null;
+  def topbar: topbar_raw | if . == null then null else shape end;
+  # The bridge entry sits at the end of the Omarchy bar right section. An
+  # entry left in `plugins` by an older version moves there too.
+  def ensure_topbar:
+    (topbar // ({} | shape)) as $entry
+    | .plugins |= map(select(eid != $topbar))
+    | if any(.bar.layout[][]; eid == $topbar)
+      then .bar.layout |= map_values(map(if eid == $topbar then shape else . end))
+      else .bar.layout.right += [$entry] end;
+  def update_topbar(f): ensure_topbar | .bar.layout |= map_values(map(if eid == $topbar then f else . end));
+  def on_topbar($id): any((topbar // {layout: {}}) | .layout[]? | .[]?; eid == $id);
+  # Resolve a place (index | before:<id> | after:<id>) inside a list.
+  def place_index($list; $place):
+    if $place == "" then null
+    elif ($place | test("^[0-9]+$")) then ($place | tonumber)
+    else
+      ($place | capture("^(?<how>before|after):(?<ref>.+)$")) as $p
+      | ([$list | to_entries[] | select(.value | eid == $p.ref) | .key] | first) as $at
+      | if $at == null then null elif $p.how == "after" then $at + 1 else $at end
+    end;
+  def insert_at($list; $item; $index):
+    if $index == null or $index >= ($list | length) then $list + [$item]
+    else $list[:$index] + [$item] + $list[$index:] end;
+'
+
+cmd_add() {
+  local id=${1:-} section=${2:-right} place=${3:-} reason
+  [[ -n $id ]] || fail "add requires a widget id"
+  validate_section "$section"
+  validate_place "$place"
+  if ! reason=$(incompatibility "$id"); then
+    fail "$id can't move to the top bar: $reason"
+  fi
+  if current_config | jq -e --arg id "$id" --arg topbar "$TOPBAR_ID" "$JQ_DEFS on_topbar(\$id)" >/dev/null; then
+    fail "$id is already on the top bar (use 'move' to reposition it)"
+  fi
+
+  commit "$NORMALIZE | $JQ_DEFS"'
+    ensure_topbar
+    # Settings the widget carried on the Omarchy bar or inside Bar Folder.
+    | (first(.bar.layout[][] | select(eid == $id) | objects) // {}) as $barEntry
+    | (first(.bar.layout[][] | objects | select(.widgets | type == "array")
+        | .widgetSettings[$id]? | objects) // {}) as $folderSettings
+    | ($folderSettings + ($barEntry | del(.id)) + {id: $id}) as $entry
+    # Where it came from, so `remove` can put it back there.
+    | (first(.bar.layout | to_entries[] | .key as $s | .value | to_entries[]
+             | select(.value | eid == $id) | {where: $s, index: .key})
+        // first(.bar.layout[][] | objects | select(.widgets | type == "array") | eid as $f
+             | .widgets | to_entries[] | select(.value | eid == $id) | {where: ("folder:" + $f), index: .key})
+        // null) as $origin
+    | .bar.layout |= map_values(map(select(eid != $id)
+        | if type == "object" and (.widgets | type == "array") then
+            .widgets |= map(select(eid != $id))
+            | if (.widgetSettings | type) == "object" then .widgetSettings |= del(.[$id]) else . end
+          else . end))
+    | (any(.plugins[]; eid == $id)) as $alreadyEnabled
+    | update_topbar(
+        .layout |= map_values(map(select(eid != $id)))
+        | .layout[$section] = insert_at(.layout[$section]; $entry; place_index(.layout[$section]; $place))
+        | if $alreadyEnabled then . else .managed = ((.managed + [$id]) | unique) end
+        | (([.origins[] | objects | .seq | numbers] | max // 0) + 1) as $seq
+        | if $origin then .origins[$id] = ($origin + {seq: $seq}) else . end)
+    | if $alreadyEnabled then . else .plugins += [{id: $id}] end
+  ' --arg id "$id" --arg topbar "$TOPBAR_ID" --arg section "$section" --arg place "$place"
+  echo "Moved $id to the top bar ($section)."
+}
+
+cmd_remove() {
+  local id=${1:-} section=${2:-} place=${3:-} origin_where origin_index
+  [[ -n $id ]] || fail "remove requires a widget id"
+  current_config | jq -e --arg id "$id" --arg topbar "$TOPBAR_ID" "$JQ_DEFS on_topbar(\$id)" >/dev/null \
+    || fail "$id is not on the top bar"
+
+  origin_where=$(current_config | jq -r --arg id "$id" --arg topbar "$TOPBAR_ID" "$JQ_DEFS"'
+    (topbar.origins[$id] | objects | .where | strings) // ""')
+  origin_index=$(current_config | jq -r --arg id "$id" --arg topbar "$TOPBAR_ID" "$JQ_DEFS"'
+    (topbar.origins[$id] | objects | .index | numbers) // ""')
+
+  if [[ -z $section ]]; then
+    # Back where it came from: a section, or the Bar Folder if still on the bar.
+    if [[ $origin_where == folder:* ]] && current_config | jq -e --arg f "${origin_where#folder:}" "$JQ_DEFS"'
+        any(.bar.layout[][]; eid == $f and (objects | .widgets | type == "array"))' --arg topbar "$TOPBAR_ID" >/dev/null; then
+      section=$origin_where
+      place=$origin_index
+    elif [[ $origin_where =~ ^(left|center|right)$ ]]; then
+      section=$origin_where
+      place=$origin_index
+    else
+      section=$(jq -r '.barWidget.defaultSection // "right"' "$USER_PLUGINS/$id/manifest.json" 2>/dev/null || echo right)
+      [[ $section =~ ^(left|center|right)$ ]] || section=right
+    fi
+  fi
+  [[ $section == folder:* ]] || validate_section "$section"
+  validate_place "$place"
+
+  commit "$NORMALIZE | $JQ_DEFS"'
+    ensure_topbar
+    | (first(topbar.layout[][] | select(eid == $id)) | if type == "object" then . else {id: $id} end) as $entry
+    | (topbar.managed | index($id) != null) as $managed
+    | update_topbar(
+        .layout |= map_values(map(select(eid != $id)))
+        | .managed |= map(select(. != $id))
+        | .origins |= del(.[$id]))
+    | if $managed then .plugins |= map(select(eid != $id)) else . end
+    | if ($section | startswith("folder:")) then
+        ($section | ltrimstr("folder:")) as $folder
+        | ($entry | del(.id)) as $settings
+        | .bar.layout |= map_values(map(
+            if eid == $folder and type == "object" and (.widgets | type == "array") then
+              .widgets = insert_at(.widgets; $id; place_index(.widgets; $place))
+              | if ($settings | length) > 0 then .widgetSettings = ((.widgetSettings | obj) + {($id): $settings}) else . end
+            else . end))
+      else
+        .bar.layout[$section] = insert_at(.bar.layout[$section]; $entry; place_index(.bar.layout[$section]; $place))
+      end
+  ' --arg id "$id" --arg topbar "$TOPBAR_ID" --arg section "$section" --arg place "$place"
+  echo "Moved $id back to the Omarchy bar (${section/folder:*/Bar Folder})."
+}
+
+cmd_move() {
+  local id=${1:-} section=${2:-} place=${3:-}
+  [[ -n $id && -n $section ]] || fail "move requires a widget id and a section"
+  validate_section "$section"
+  validate_place "$place"
+  current_config | jq -e --arg id "$id" --arg topbar "$TOPBAR_ID" "$JQ_DEFS on_topbar(\$id)" >/dev/null \
+    || fail "$id is not on the top bar"
+
+  commit "$NORMALIZE | $JQ_DEFS"'
+    ensure_topbar
+    | (first(topbar.layout[][] | select(eid == $id)) | if type == "object" then . else {id: $id} end) as $entry
+    | update_topbar(
+        .layout |= map_values(map(select(eid != $id)))
+        | .layout[$section] = insert_at(.layout[$section]; $entry; place_index(.layout[$section]; $place)))
+  ' --arg id "$id" --arg topbar "$TOPBAR_ID" --arg section "$section" --arg place "$place"
+  echo "Moved $id to $section on the top bar."
+}
+
+cmd_position() {
+  local value=${1:-}
+  [[ $value =~ ^(auto|top|bottom)$ ]] || fail "position must be auto, top, or bottom"
+  commit "$NORMALIZE | $JQ_DEFS update_topbar(.position = \$value)" --arg topbar "$TOPBAR_ID" --arg value "$value"
+  echo "Top bar position: $value"
+}
+
+cmd_reset() {
+  local ids id
+  # Undo the moves newest first, so each widget's recorded index is exact.
+  ids=$(current_config | jq -r --arg topbar "$TOPBAR_ID" "$JQ_DEFS"'
+    (topbar // {layout: {}, origins: {}}) as $t
+    | [$t.layout[]? | .[]? | eid]
+    | sort_by(-(($t.origins[.] // {}) | .seq? // 0)) | .[]')
+  for id in $ids; do cmd_remove "$id"; done
+  commit "$NORMALIZE | $JQ_DEFS"'
+    .plugins |= map(select(eid != $topbar))
+    | .bar.layout |= map_values(map(select(eid != $topbar)))' --arg topbar "$TOPBAR_ID"
+  echo "Top bar turned off."
+}
+
+cmd_check() {
+  local id=${1:-} reason
+  [[ -n $id ]] || fail "check requires a widget id"
+  if reason=$(incompatibility "$id"); then
+    echo "$id: can move to the top bar"
+  else
+    echo "$id: stays on the Omarchy bar — $reason"
+    return 1
+  fi
+}
+
+cmd_list() {
+  local config id reason
+  config=$(current_config)
+
+  echo "Top bar ($(jq -r --arg topbar "$TOPBAR_ID" "$JQ_DEFS"'
+    topbar | if . then "position: " + .position else "off" end' <<<"$config")):"
+  jq -r --arg topbar "$TOPBAR_ID" "$JQ_DEFS"'
+    (topbar // {layout: {}}) as $t
+    | ["left", "center", "right"][] as $s
+    | "  \($s): " + ([$t.layout[$s] // [] | .[] | eid] | if length == 0 then "-" else join(", ") end)' <<<"$config"
+
+  echo
+  echo "On the Omarchy bar:"
+  for id in $(jq -r --arg topbar "$TOPBAR_ID" "$JQ_DEFS"'
+      [.bar.layout[][] | select(eid != $topbar) | eid, (objects | .widgets? // [] | .[] | eid)] | .[]' <<<"$config"); do
+    if reason=$(incompatibility "$id"); then
+      printf '  %-45s can move\n' "$id"
+    else
+      printf '  %-45s stays (%s)\n' "$id" "$reason"
+    fi
+  done
+}
+
+case "${1:-}" in
+  list | "") cmd_list ;;
+  add) shift; cmd_add "$@" ;;
+  remove) shift; cmd_remove "$@" ;;
+  move) shift; cmd_move "$@" ;;
+  position) shift; cmd_position "$@" ;;
+  check) shift; cmd_check "$@" ;;
+  reset) cmd_reset ;;
+  -h | --help | help) usage ;;
+  *) usage >&2; exit 1 ;;
+esac

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowone.top-bar",
+  "name": "Top Bar",
+  "version": "1.1.0",
+  "author": "shadowone",
+  "license": "MIT",
+  "description": "A second bar on the edge opposite the Omarchy bar that hosts third-party bar widgets. Drag widgets between the bars, or manage it with omarchy-topbar.",
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "TopBarBridge.qml"
+  },
+  "barWidget": {
+    "displayName": "Top Bar",
+    "description": "Invisible link to the Top Bar; holds its layout. Removing it turns the top bar off.",
+    "category": "Bar",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
