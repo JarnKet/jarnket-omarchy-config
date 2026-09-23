@@ -1,0 +1,278 @@
+{
+  "bar": {
+    "centerAnchor": "omarchy.clock",
+    "layout": {
+      "center": [
+        {
+          "id": "omarchy.indicators"
+        },
+        {
+          "edgeSpacing": 38,
+          "id": "njpatel.omapager"
+        },
+        {
+          "format": "ddd d MMM HH:mm",
+          "formatAlt": "d MMMM 'W'ww yyyy",
+          "id": "omarchy.clock",
+          "verticalFormat": "HH\n\u2014\nmm"
+        },
+        {
+          "id": "ashuttl.linecast",
+          "pills": [
+            "weather"
+          ]
+        },
+        {
+          "id": "omarchy.keyboard-layout"
+        },
+        {
+          "id": "io.github.mshareef-git.omavibes"
+        },
+        {
+          "id": "omarchy.system-update"
+        }
+      ],
+      "left": [
+        {
+          "id": "evindor.keystroke"
+        },
+        {
+          "id": "jankeesvw.workspace-name"
+        },
+        {
+          "id": "agx.screen-time"
+        },
+        {
+          "id": "io.github.chris.snitch"
+        },
+        {
+          "id": "omarchy.agents"
+        }
+      ],
+      "right": [
+        {
+          "id": "omarchy.tray"
+        },
+        {
+          "id": "harel.omarchy-synchro"
+        },
+        {
+          "id": "roymelgarv.omarchy-downloads"
+        },
+        {
+          "id": "io.github.arikisonfire.bar-folder",
+          "widgetSettings": {
+            "gigasolo.omavoice": {
+              "enabled": false,
+              "previousAudioSource": "alsa_input.pci-0000_c3_00.6.HiFi__Mic1__source"
+            },
+            "io.github.alexanderpuschkinberlin.keyboard-backlight": {
+              "scheduleEnabled": true
+            }
+          },
+          "widgets": [
+            "io.github.i12bp8.netneighbors",
+            "meviusisback.mouse-settings",
+            "shady.wireless-display-cast",
+            "io.github.grichard99.omaproton-vpn",
+            "bredda.localsend",
+            "gigasolo.omavoice",
+            "ilysorc.pointer-feel",
+            "io.github.07dcolem.target-boot",
+            "io.github.alexanderpuschkinberlin.keyboard-backlight",
+            "cossssmin.domaincheck",
+            "io.github.randazraik.xray",
+            "melonamin.flare"
+          ]
+        },
+        {
+          "id": "io.github.twiking.omasettings"
+        },
+        {
+          "id": "ssupt.audio-control"
+        },
+        {
+          "id": "crmne.hyprmoncfg"
+        },
+        {
+          "id": "omarchy.bluetooth"
+        },
+        {
+          "id": "omarchy.network"
+        },
+        {
+          "id": "shadowone.top-bar",
+          "layout": {
+            "center": [
+              {
+                "id": "costafot.markets"
+              }
+            ],
+            "left": [
+              {
+                "id": "io.github.tymurbogach.modular-hw-monitor"
+              },
+              {
+                "id": "dev.reuk.ports"
+              },
+              {
+                "id": "io.github.pjgeutjens.seismic-atlas"
+              }
+            ],
+            "right": [
+              {
+                "id": "io.github.swey-l1.bar-term"
+              },
+              {
+                "id": "omaplug"
+              },
+              {
+                "id": "segersb.omarchy-printers"
+              },
+              {
+                "id": "akshar.radio-atlas"
+              },
+              {
+                "id": "io.github.kristoferlund.webcam"
+              }
+            ]
+          },
+          "managed": [
+            "akshar.radio-atlas",
+            "costafot.markets",
+            "dev.reuk.ports",
+            "io.github.kristoferlund.webcam",
+            "io.github.pjgeutjens.seismic-atlas",
+            "io.github.swey-l1.bar-term",
+            "io.github.tymurbogach.modular-hw-monitor",
+            "omaplug",
+            "segersb.omarchy-printers"
+          ],
+          "origins": {
+            "akshar.radio-atlas": {
+              "index": 8,
+              "seq": 1,
+              "where": "right"
+            },
+            "costafot.markets": {
+              "index": 8,
+              "seq": 8,
+              "where": "center"
+            },
+            "dev.reuk.ports": {
+              "index": 5,
+              "seq": 3,
+              "where": "left"
+            },
+            "io.github.kristoferlund.webcam": {
+              "index": 2,
+              "seq": 7,
+              "where": "right"
+            },
+            "io.github.pjgeutjens.seismic-atlas": {
+              "index": 5,
+              "seq": 4,
+              "where": "left"
+            },
+            "io.github.swey-l1.bar-term": {
+              "index": 7,
+              "seq": 9,
+              "where": "center"
+            },
+            "io.github.tymurbogach.modular-hw-monitor": {
+              "index": 7,
+              "seq": 2,
+              "where": "left"
+            },
+            "omaplug": {
+              "index": 4,
+              "seq": 6,
+              "where": "right"
+            },
+            "segersb.omarchy-printers": {
+              "index": 2,
+              "seq": 5,
+              "where": "right"
+            }
+          },
+          "position": "auto"
+        },
+        {
+          "id": "omarchy.power",
+          "showPercentage": true
+        },
+        {
+          "id": "jankeesvw.notification-center"
+        }
+      ]
+    },
+    "position": "bottom",
+    "transparent": false
+  },
+  "cloneSourceRestores": [
+    "ssupt.audio-control",
+    "evindor.keystroke",
+    "dumidu.orbital-lock"
+  ],
+  "disabledPlugins": [
+    "omarchy.audio",
+    "omarchy.menu",
+    "omarchy.lock",
+    "omarchy.notifications"
+  ],
+  "idle": {
+    "lock": 300,
+    "screensaver": 150
+  },
+  "plugins": [
+    {
+      "id": "mirador"
+    },
+    {
+      "id": "io.github.grupertal.biometric-hud"
+    },
+    {
+      "id": "expose.window-overview"
+    },
+    {
+      "id": "beam"
+    },
+    {
+      "id": "omarchy-zones"
+    },
+    {
+      "id": "rblalock.panel-notes"
+    },
+    {
+      "id": "dumidu.orbital-lock"
+    },
+    {
+      "id": "akshar.radio-atlas"
+    },
+    {
+      "id": "io.github.tymurbogach.modular-hw-monitor"
+    },
+    {
+      "id": "dev.reuk.ports"
+    },
+    {
+      "id": "io.github.pjgeutjens.seismic-atlas"
+    },
+    {
+      "id": "segersb.omarchy-printers"
+    },
+    {
+      "id": "omaplug"
+    },
+    {
+      "id": "io.github.kristoferlund.webcam"
+    },
+    {
+      "id": "costafot.markets"
+    },
+    {
+      "id": "io.github.swey-l1.bar-term"
+    }
+  ],
+  "version": 1
+}

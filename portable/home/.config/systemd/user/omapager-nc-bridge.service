@@ -1,0 +1,12 @@
+[Unit]
+Description=Copy omapager notifications into Notification Center's archive
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+ExecStart=%h/.local/bin/omapager-nc-bridge
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
