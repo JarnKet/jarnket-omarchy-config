@@ -1,0 +1,51 @@
+diff --git i/Cat.qml w/Cat.qml
+index 58ed7f6..076d142 100644
+--- i/Cat.qml
++++ w/Cat.qml
+@@ -30,13 +30,20 @@ Item {
+   property string omarchyPath: ""
+ 
+   readonly property string pluginId: manifest && manifest.id ? String(manifest.id) : "io.github.tallsam.navbar-cat"
++  // Omarchy 4.0.4 strips __sourceDir from third-party manifests, so fall back
++  // to this file's own directory.
++  readonly property string sourceDir: {
++    if (manifest && manifest.__sourceDir) return String(manifest.__sourceDir)
++    if (!manifest) return ""
++    return String(Qt.resolvedUrl(".")).replace(/\/$/, "")
++  }
+   readonly property string assetDir: {
+-    var dir = manifest && manifest.__sourceDir ? String(manifest.__sourceDir) : ""
++    var dir = sourceDir
+     if (dir === "") return ""
+     return (dir.indexOf("file://") === 0 ? dir : "file://" + dir) + "/assets"
+   }
+   readonly property string helper: {
+-    var dir = manifest && manifest.__sourceDir ? String(manifest.__sourceDir) : ""
++    var dir = sourceDir
+     if (dir === "") return ""
+     return dir.replace(/^file:\/\//, "") + "/bin/navbar-cat-cursor"
+   }
+@@ -52,8 +59,22 @@ Item {
+ 
+   // Settings live inline on this plugin's entry in shell.json's `plugins[]`,
+   // per the shell's storage rules.
++  // Omarchy 4.0.4 gives third-party panels no shellConfig, so read our entry
++  // straight from shell.json when the shell does not provide it.
++  property var fileConfig: null
++  FileView {
++    id: shellJson
++    path: Quickshell.env("HOME") + "/.config/omarchy/shell.json"
++    watchChanges: true
++    onFileChanged: reload()
++    onLoaded: {
++      try { root.fileConfig = JSON.parse(text()) } catch (e) { }
++    }
++  }
++
+   readonly property var config: {
+-    var settings = shell && shell.shellConfig ? shell.shellConfig.plugins : null
++    var source = shell && shell.shellConfig ? shell.shellConfig : root.fileConfig
++    var settings = source ? source.plugins : null
+     if (Array.isArray(settings)) {
+       for (var i = 0; i < settings.length; i++) {
+         if (settings[i] && String(settings[i].id || "") === root.pluginId) return settings[i]
