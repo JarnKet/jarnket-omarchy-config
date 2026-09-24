@@ -73,7 +73,7 @@
       "enabled": true,
       "placement": {
         "kind": "plugin",
-        "index": 16,
+        "index": 12,
         "settings": {}
       }
     },
@@ -104,12 +104,8 @@
       "source": "https://github.com/CostaFot/omarchy-markets.git",
       "sourceState": "portable",
       "revision": "b0b9dfc8aeaca027ded2bd678c38ffe75a6d7211",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 14,
-        "settings": {}
-      }
+      "enabled": false,
+      "placement": null
     },
     {
       "id": "crmne.hyprmoncfg",
@@ -133,12 +129,8 @@
       "source": "https://github.com/RohitKaushal7/omarchy-ports.git",
       "sourceState": "portable",
       "revision": "2f8e55164835201d6c8d8725f26b61b900f64f33",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 9,
-        "settings": {}
-      }
+      "enabled": false,
+      "placement": null
     },
     {
       "id": "dumidu.orbital-lock",
@@ -237,12 +229,10 @@
           },
           "widgets": [
             "io.github.i12bp8.netneighbors",
-            "meviusisback.mouse-settings",
             "shady.wireless-display-cast",
             "io.github.grichard99.omaproton-vpn",
             "bredda.localsend",
             "gigasolo.omavoice",
-            "ilysorc.pointer-feel",
             "io.github.07dcolem.target-boot",
             "io.github.alexanderpuschkinberlin.keyboard-backlight",
             "cossssmin.domaincheck",
@@ -269,13 +259,8 @@
       "source": "https://github.com/ccdwyer/omarchy-snitch.git",
       "sourceState": "portable",
       "revision": "147efa608ba56df3e8bcea0321e2c20d90b204dd",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "left",
-        "index": 3,
-        "settings": {}
-      }
+      "enabled": false,
+      "placement": null
     },
     {
       "id": "io.github.grichard99.omaproton-vpn",
@@ -321,7 +306,7 @@
       "enabled": true,
       "placement": {
         "kind": "plugin",
-        "index": 18,
+        "index": 13,
         "settings": {}
       }
     },
@@ -335,7 +320,7 @@
       "enabled": true,
       "placement": {
         "kind": "plugin",
-        "index": 13,
+        "index": 10,
         "settings": {}
       }
     },
@@ -346,12 +331,8 @@
       "source": "https://github.com/pjgeutjens/omarchy-seismic-atlas.git",
       "sourceState": "portable",
       "revision": "cbc4faf30a29e1d59f8670ec5c857fe9905076be",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 10,
-        "settings": {}
-      }
+      "enabled": false,
+      "placement": null
     },
     {
       "id": "io.github.randazraik.xray",
@@ -373,7 +354,7 @@
       "enabled": true,
       "placement": {
         "kind": "plugin",
-        "index": 15,
+        "index": 11,
         "settings": {}
       }
     },
@@ -384,14 +365,8 @@
       "source": "https://github.com/tallsam/omarchy-navbar-cat.git",
       "sourceState": "portable",
       "revision": "6ddd61a6744bab19b04d131ff4f2e087a504ce20",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 17,
-        "settings": {
-          "size": 24
-        }
-      }
+      "enabled": false,
+      "placement": null
     },
     {
       "id": "io.github.twiking.omasettings",
@@ -415,12 +390,8 @@
       "source": "https://github.com/tymurbogach/omarchy-any-monitor.git",
       "sourceState": "portable",
       "revision": "d5a51451595606795844dd38eb7ecd1a38aeed44",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 8,
-        "settings": {}
-      }
+      "enabled": false,
+      "placement": null
     },
     {
       "id": "io.github.woogy7.workspaces",
@@ -443,7 +414,7 @@
       "placement": {
         "kind": "bar",
         "section": "right",
-        "index": 12,
+        "index": 11,
         "settings": {}
       }
     },
@@ -543,7 +514,7 @@
       "enabled": true,
       "placement": {
         "kind": "plugin",
-        "index": 12,
+        "index": 9,
         "settings": {}
       }
     },
@@ -568,13 +539,8 @@
       "source": "https://github.com/onlyVishesh/omarchy-power-manager.git",
       "sourceState": "portable",
       "revision": "767f8f1c2a01e5f64d6a5c5cfee8c49ce9c162b3",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 11,
-        "settings": {}
-      }
+      "enabled": false,
+      "placement": null
     },
     {
       "id": "rblalock.panel-notes",
@@ -615,7 +581,7 @@
       "enabled": true,
       "placement": {
         "kind": "plugin",
-        "index": 11,
+        "index": 8,
         "settings": {}
       }
     },
@@ -633,22 +599,8 @@
         "index": 10,
         "settings": {
           "layout": {
-            "center": [
-              {
-                "id": "costafot.markets"
-              }
-            ],
-            "left": [
-              {
-                "id": "io.github.tymurbogach.modular-hw-monitor"
-              },
-              {
-                "id": "dev.reuk.ports"
-              },
-              {
-                "id": "io.github.pjgeutjens.seismic-atlas"
-              }
-            ],
+            "center": [],
+            "left": [],
             "right": [
               {
                 "id": "io.github.swey-l1.bar-term"
@@ -669,12 +621,8 @@
           },
           "managed": [
             "akshar.radio-atlas",
-            "costafot.markets",
-            "dev.reuk.ports",
             "io.github.kristoferlund.webcam",
-            "io.github.pjgeutjens.seismic-atlas",
             "io.github.swey-l1.bar-term",
-            "io.github.tymurbogach.modular-hw-monitor",
             "omaplug",
             "segersb.omarchy-printers"
           ],
@@ -684,35 +632,15 @@
               "seq": 1,
               "where": "right"
             },
-            "costafot.markets": {
-              "index": 8,
-              "seq": 8,
-              "where": "center"
-            },
-            "dev.reuk.ports": {
-              "index": 5,
-              "seq": 3,
-              "where": "left"
-            },
             "io.github.kristoferlund.webcam": {
               "index": 2,
               "seq": 7,
               "where": "right"
             },
-            "io.github.pjgeutjens.seismic-atlas": {
-              "index": 5,
-              "seq": 4,
-              "where": "left"
-            },
             "io.github.swey-l1.bar-term": {
               "index": 7,
               "seq": 9,
               "where": "center"
-            },
-            "io.github.tymurbogach.modular-hw-monitor": {
-              "index": 7,
-              "seq": 2,
-              "where": "left"
             },
             "omaplug": {
               "index": 4,

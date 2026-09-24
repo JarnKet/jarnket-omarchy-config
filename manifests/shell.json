@@ -43,9 +43,6 @@
           "id": "agx.screen-time"
         },
         {
-          "id": "io.github.chris.snitch"
-        },
-        {
           "id": "omarchy.agents"
         }
       ],
@@ -75,12 +72,10 @@
           },
           "widgets": [
             "io.github.i12bp8.netneighbors",
-            "meviusisback.mouse-settings",
             "shady.wireless-display-cast",
             "io.github.grichard99.omaproton-vpn",
             "bredda.localsend",
             "gigasolo.omavoice",
-            "ilysorc.pointer-feel",
             "io.github.07dcolem.target-boot",
             "io.github.alexanderpuschkinberlin.keyboard-backlight",
             "cossssmin.domaincheck",
@@ -106,22 +101,8 @@
         {
           "id": "shadowone.top-bar",
           "layout": {
-            "center": [
-              {
-                "id": "costafot.markets"
-              }
-            ],
-            "left": [
-              {
-                "id": "io.github.tymurbogach.modular-hw-monitor"
-              },
-              {
-                "id": "dev.reuk.ports"
-              },
-              {
-                "id": "io.github.pjgeutjens.seismic-atlas"
-              }
-            ],
+            "center": [],
+            "left": [],
             "right": [
               {
                 "id": "io.github.swey-l1.bar-term"
@@ -142,12 +123,8 @@
           },
           "managed": [
             "akshar.radio-atlas",
-            "costafot.markets",
-            "dev.reuk.ports",
             "io.github.kristoferlund.webcam",
-            "io.github.pjgeutjens.seismic-atlas",
             "io.github.swey-l1.bar-term",
-            "io.github.tymurbogach.modular-hw-monitor",
             "omaplug",
             "segersb.omarchy-printers"
           ],
@@ -157,35 +134,15 @@
               "seq": 1,
               "where": "right"
             },
-            "costafot.markets": {
-              "index": 8,
-              "seq": 8,
-              "where": "center"
-            },
-            "dev.reuk.ports": {
-              "index": 5,
-              "seq": 3,
-              "where": "left"
-            },
             "io.github.kristoferlund.webcam": {
               "index": 2,
               "seq": 7,
               "where": "right"
             },
-            "io.github.pjgeutjens.seismic-atlas": {
-              "index": 5,
-              "seq": 4,
-              "where": "left"
-            },
             "io.github.swey-l1.bar-term": {
               "index": 7,
               "seq": 9,
               "where": "center"
-            },
-            "io.github.tymurbogach.modular-hw-monitor": {
-              "index": 7,
-              "seq": 2,
-              "where": "left"
             },
             "omaplug": {
               "index": 4,
@@ -199,9 +156,6 @@
             }
           },
           "position": "auto"
-        },
-        {
-          "id": "onlyvishesh.power-manager"
         },
         {
           "id": "jankeesvw.notification-center"
@@ -252,15 +206,6 @@
       "id": "akshar.radio-atlas"
     },
     {
-      "id": "io.github.tymurbogach.modular-hw-monitor"
-    },
-    {
-      "id": "dev.reuk.ports"
-    },
-    {
-      "id": "io.github.pjgeutjens.seismic-atlas"
-    },
-    {
       "id": "segersb.omarchy-printers"
     },
     {
@@ -270,17 +215,10 @@
       "id": "io.github.kristoferlund.webcam"
     },
     {
-      "id": "costafot.markets"
-    },
-    {
       "id": "io.github.swey-l1.bar-term"
     },
     {
       "id": "bobbynicholas.omaland"
-    },
-    {
-      "id": "io.github.tallsam.navbar-cat",
-      "size": 24
     },
     {
       "id": "io.github.iainfreestone.control-tower"
