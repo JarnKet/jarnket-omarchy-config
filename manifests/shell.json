@@ -54,6 +54,9 @@
           "id": "omarchy.tray"
         },
         {
+          "id": "wian47.removable-drives"
+        },
+        {
           "id": "harel.omarchy-synchro"
         },
         {
@@ -89,13 +92,13 @@
           "id": "io.github.twiking.omasettings"
         },
         {
+          "id": "ssupt.bluetooth-audio"
+        },
+        {
           "id": "ssupt.audio-control"
         },
         {
           "id": "crmne.hyprmoncfg"
-        },
-        {
-          "id": "omarchy.bluetooth"
         },
         {
           "id": "omarchy.network"
@@ -198,8 +201,7 @@
           "position": "auto"
         },
         {
-          "id": "omarchy.power",
-          "showPercentage": true
+          "id": "onlyvishesh.power-manager"
         },
         {
           "id": "jankeesvw.notification-center"
@@ -221,8 +223,8 @@
     "omarchy.notifications"
   ],
   "idle": {
-    "lock": 300,
-    "screensaver": 150
+    "lock": 1800,
+    "screensaver": 1770
   },
   "plugins": [
     {
@@ -272,6 +274,16 @@
     },
     {
       "id": "io.github.swey-l1.bar-term"
+    },
+    {
+      "id": "bobbynicholas.omaland"
+    },
+    {
+      "id": "io.github.tallsam.navbar-cat",
+      "size": 24
+    },
+    {
+      "id": "io.github.iainfreestone.control-tower"
     }
   ],
   "version": 1
