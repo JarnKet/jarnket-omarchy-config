@@ -39,14 +39,9 @@
       "revision": "d5ba9af8bedd3a080995924e80c010283ce0150e",
       "enabled": true,
       "placement": {
-        "kind": "bar",
-        "section": "center",
-        "index": 3,
-        "settings": {
-          "pills": [
-            "weather"
-          ]
-        }
+        "kind": "plugin",
+        "index": 19,
+        "settings": {}
       }
     },
     {
@@ -246,7 +241,6 @@
             "io.github.07dcolem.target-boot",
             "io.github.alexanderpuschkinberlin.keyboard-backlight",
             "cossssmin.domaincheck",
-            "io.github.randazraik.xray",
             "melonamin.flare"
           ]
         }
@@ -360,8 +354,13 @@
       "source": "https://github.com/RandaZraik/omarchy-xray.git",
       "sourceState": "portable",
       "revision": "520c1da26a278bede03285df617a50c8e17997b4",
-      "enabled": false,
-      "placement": null
+      "enabled": true,
+      "placement": {
+        "kind": "bar",
+        "section": "right",
+        "index": 3,
+        "settings": {}
+      }
     },
     {
       "id": "io.github.swey-l1.bar-term",
@@ -443,7 +442,7 @@
       "placement": {
         "kind": "bar",
         "section": "right",
-        "index": 12,
+        "index": 13,
         "settings": {}
       }
     },
@@ -601,7 +600,7 @@
       "placement": {
         "kind": "bar",
         "section": "right",
-        "index": 3,
+        "index": 2,
         "settings": {}
       }
     },
@@ -635,6 +634,16 @@
           "layout": {
             "center": [
               {
+                "alwaysShow": true,
+                "id": "ashuttl.linecast",
+                "pills": [
+                  "weather",
+                  "sunshine",
+                  "moon",
+                  "tides"
+                ]
+              },
+              {
                 "id": "costafot.markets"
               }
             ],
@@ -650,6 +659,9 @@
               }
             ],
             "right": [
+              {
+                "id": "harel.omarchy-synchro"
+              },
               {
                 "id": "io.github.swey-l1.bar-term"
               },
@@ -669,8 +681,10 @@
           },
           "managed": [
             "akshar.radio-atlas",
+            "ashuttl.linecast",
             "costafot.markets",
             "dev.reuk.ports",
+            "harel.omarchy-synchro",
             "io.github.kristoferlund.webcam",
             "io.github.pjgeutjens.seismic-atlas",
             "io.github.swey-l1.bar-term",
@@ -684,6 +698,11 @@
               "seq": 1,
               "where": "right"
             },
+            "ashuttl.linecast": {
+              "index": 3,
+              "seq": 10,
+              "where": "center"
+            },
             "costafot.markets": {
               "index": 8,
               "seq": 8,
@@ -693,6 +712,11 @@
               "index": 5,
               "seq": 3,
               "where": "left"
+            },
+            "harel.omarchy-synchro": {
+              "index": 2,
+              "seq": 11,
+              "where": "right"
             },
             "io.github.kristoferlund.webcam": {
               "index": 2,
