@@ -17,12 +17,6 @@
           "verticalFormat": "HH\n\u2014\nmm"
         },
         {
-          "id": "ashuttl.linecast",
-          "pills": [
-            "weather"
-          ]
-        },
-        {
           "id": "omarchy.keyboard-layout"
         },
         {
@@ -54,10 +48,10 @@
           "id": "wian47.removable-drives"
         },
         {
-          "id": "harel.omarchy-synchro"
+          "id": "roymelgarv.omarchy-downloads"
         },
         {
-          "id": "roymelgarv.omarchy-downloads"
+          "id": "io.github.randazraik.xray"
         },
         {
           "id": "io.github.arikisonfire.bar-folder",
@@ -79,7 +73,6 @@
             "io.github.07dcolem.target-boot",
             "io.github.alexanderpuschkinberlin.keyboard-backlight",
             "cossssmin.domaincheck",
-            "io.github.randazraik.xray",
             "melonamin.flare"
           ]
         },
@@ -101,9 +94,23 @@
         {
           "id": "shadowone.top-bar",
           "layout": {
-            "center": [],
+            "center": [
+              {
+                "alwaysShow": true,
+                "id": "ashuttl.linecast",
+                "pills": [
+                  "weather",
+                  "sunshine",
+                  "moon",
+                  "tides"
+                ]
+              }
+            ],
             "left": [],
             "right": [
+              {
+                "id": "harel.omarchy-synchro"
+              },
               {
                 "id": "io.github.swey-l1.bar-term"
               },
@@ -123,6 +130,8 @@
           },
           "managed": [
             "akshar.radio-atlas",
+            "ashuttl.linecast",
+            "harel.omarchy-synchro",
             "io.github.kristoferlund.webcam",
             "io.github.swey-l1.bar-term",
             "omaplug",
@@ -132,6 +141,16 @@
             "akshar.radio-atlas": {
               "index": 8,
               "seq": 1,
+              "where": "right"
+            },
+            "ashuttl.linecast": {
+              "index": 3,
+              "seq": 10,
+              "where": "center"
+            },
+            "harel.omarchy-synchro": {
+              "index": 2,
+              "seq": 11,
               "where": "right"
             },
             "io.github.kristoferlund.webcam": {
@@ -156,6 +175,10 @@
             }
           },
           "position": "auto"
+        },
+        {
+          "id": "omarchy.power",
+          "showPercentage": true
         },
         {
           "id": "jankeesvw.notification-center"
@@ -222,6 +245,12 @@
     },
     {
       "id": "io.github.iainfreestone.control-tower"
+    },
+    {
+      "id": "ashuttl.linecast"
+    },
+    {
+      "id": "harel.omarchy-synchro"
     }
   ],
   "version": 1
