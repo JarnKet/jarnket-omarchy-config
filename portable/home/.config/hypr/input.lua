@@ -67,9 +67,9 @@ hl.config({
     sensitivity = 0.00,
     accel_profile = "adaptive",
     follow_mouse = 1,
-    natural_scroll = true,
+    natural_scroll = false,
     touchpad = {
-      natural_scroll = true,
+      natural_scroll = false,
     },
     left_handed = false,
     scroll_factor = 1.00,
@@ -80,3 +80,31 @@ hl.config({
 
 -- Pointer Feel preferences (managed by the bar panel).
 dofile(os.getenv("HOME") .. "/.config/hypr/pointer-feel.lua")
+
+-- Per-device split: mouse and touchpad get their own settings.
+-- Device blocks override the shared input values above (and anything
+-- Pointer Feel / OmaSettings write), so edit these to tune each device.
+-- Device names come from `hyprctl devices`.
+
+-- Built-in touchpad (pinned to the feel it had before the split).
+hl.device({
+  name = "elan0676:00-04f3:3195-touchpad",
+  sensitivity = 0.0,
+  accel_profile = "adaptive",
+  natural_scroll = true,
+  scroll_factor = 0.4,
+  clickfinger_behavior = true,
+  disable_while_typing = false,
+  drag_3fg = 1,
+})
+
+-- Bluetooth mouse. Pointer motion comes from Pointer Feel's Win engine;
+-- sensitivity/accel_profile only apply if that engine isn't loaded.
+hl.device({
+  name = "bt4.0-mouse",
+  sensitivity = 0.0,
+  accel_profile = "adaptive",
+  natural_scroll = false,
+  scroll_factor = 1.0,
+  left_handed = false,
+})

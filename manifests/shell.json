@@ -4,23 +4,20 @@
     "layout": {
       "center": [
         {
-          "id": "omarchy.indicators"
-        },
-        {
           "edgeSpacing": 38,
           "id": "njpatel.omapager"
+        },
+        {
+          "id": "omarchy.indicators"
         },
         {
           "format": "ddd d MMM HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
           "id": "omarchy.clock",
-          "verticalFormat": "HH\n\u2014\nmm"
+          "verticalFormat": "HH\n—\nmm"
         },
         {
           "id": "omarchy.keyboard-layout"
-        },
-        {
-          "id": "io.github.mshareef-git.omavibes"
         },
         {
           "id": "omarchy.system-update"
@@ -34,21 +31,15 @@
           "id": "jankeesvw.workspace-name"
         },
         {
-          "id": "agx.screen-time"
-        },
-        {
-          "id": "io.github.chris.snitch"
-        },
-        {
           "id": "omarchy.agents"
         }
       ],
       "right": [
         {
-          "id": "omarchy.tray"
+          "id": "wian47.removable-drives"
         },
         {
-          "id": "wian47.removable-drives"
+          "id": "omarchy.tray"
         },
         {
           "id": "roymelgarv.omarchy-downloads"
@@ -62,22 +53,14 @@
             "gigasolo.omavoice": {
               "enabled": false,
               "previousAudioSource": "alsa_input.pci-0000_c3_00.6.HiFi__Mic1__source"
-            },
-            "io.github.alexanderpuschkinberlin.keyboard-backlight": {
-              "scheduleEnabled": true
             }
           },
           "widgets": [
             "io.github.i12bp8.netneighbors",
-            "meviusisback.mouse-settings",
             "shady.wireless-display-cast",
-            "io.github.grichard99.omaproton-vpn",
             "bredda.localsend",
             "gigasolo.omavoice",
-            "ilysorc.pointer-feel",
             "io.github.07dcolem.target-boot",
-            "io.github.alexanderpuschkinberlin.keyboard-backlight",
-            "cossssmin.domaincheck",
             "melonamin.flare"
           ]
         },
@@ -94,9 +77,6 @@
           "id": "crmne.hyprmoncfg"
         },
         {
-          "id": "omarchy.network"
-        },
-        {
           "id": "shadowone.top-bar",
           "layout": {
             "center": [
@@ -109,29 +89,14 @@
                   "moon",
                   "tides"
                 ]
-              },
-              {
-                "id": "costafot.markets"
               }
             ],
             "left": [
               {
-                "id": "io.github.tymurbogach.modular-hw-monitor"
-              },
-              {
-                "id": "dev.reuk.ports"
-              },
-              {
-                "id": "io.github.pjgeutjens.seismic-atlas"
+                "id": "io.github.tymurbogach.hardwarchy"
               }
             ],
             "right": [
-              {
-                "id": "harel.omarchy-synchro"
-              },
-              {
-                "id": "io.github.swey-l1.bar-term"
-              },
               {
                 "id": "omaplug"
               },
@@ -149,13 +114,8 @@
           "managed": [
             "akshar.radio-atlas",
             "ashuttl.linecast",
-            "costafot.markets",
-            "dev.reuk.ports",
-            "harel.omarchy-synchro",
             "io.github.kristoferlund.webcam",
-            "io.github.pjgeutjens.seismic-atlas",
-            "io.github.swey-l1.bar-term",
-            "io.github.tymurbogach.modular-hw-monitor",
+            "io.github.tymurbogach.hardwarchy",
             "omaplug",
             "segersb.omarchy-printers"
           ],
@@ -200,9 +160,9 @@
               "seq": 9,
               "where": "center"
             },
-            "io.github.tymurbogach.modular-hw-monitor": {
-              "index": 7,
-              "seq": 2,
+            "io.github.tymurbogach.hardwarchy": {
+              "index": 4,
+              "seq": 12,
               "where": "left"
             },
             "omaplug": {
@@ -219,19 +179,15 @@
           "position": "auto"
         },
         {
-          "id": "onlyvishesh.power-manager"
+          "id": "omarchy.network"
         },
         {
-          "id": "omarchy.power",
-          "showPercentage": true
-        },
-        {
-          "id": "jankeesvw.notification-center"
+          "id": "omarchy.power"
         }
       ]
     },
     "position": "bottom",
-    "transparent": false
+    "transparent": true
   },
   "cloneSourceRestores": [
     "ssupt.audio-control",
@@ -241,7 +197,6 @@
   "disabledPlugins": [
     "omarchy.audio",
     "omarchy.menu",
-    "omarchy.lock",
     "omarchy.notifications"
   ],
   "idle": {
@@ -268,19 +223,7 @@
       "id": "rblalock.panel-notes"
     },
     {
-      "id": "dumidu.orbital-lock"
-    },
-    {
       "id": "akshar.radio-atlas"
-    },
-    {
-      "id": "io.github.tymurbogach.modular-hw-monitor"
-    },
-    {
-      "id": "dev.reuk.ports"
-    },
-    {
-      "id": "io.github.pjgeutjens.seismic-atlas"
     },
     {
       "id": "segersb.omarchy-printers"
@@ -292,26 +235,13 @@
       "id": "io.github.kristoferlund.webcam"
     },
     {
-      "id": "costafot.markets"
-    },
-    {
-      "id": "io.github.swey-l1.bar-term"
-    },
-    {
       "id": "bobbynicholas.omaland"
-    },
-    {
-      "id": "io.github.tallsam.navbar-cat",
-      "size": 24
-    },
-    {
-      "id": "io.github.iainfreestone.control-tower"
     },
     {
       "id": "ashuttl.linecast"
     },
     {
-      "id": "harel.omarchy-synchro"
+      "id": "io.github.tymurbogach.hardwarchy"
     }
   ],
   "version": 1

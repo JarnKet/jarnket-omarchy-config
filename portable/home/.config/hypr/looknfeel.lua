@@ -71,3 +71,17 @@ hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 3.04, bezier = "al
 hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 2.36, bezier = "almostLinear" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 4.5, bezier = "easeInOutCubic", style = "slide" })
 -- <<< omamotion managed block <<<
+
+-- >>> omaland managed block >>>
+-- Written by Omaland. Safe to hand-edit: Omaland re-reads this block
+-- every time it opens, and only ever rewrites what's between the fences.
+hl.config({
+  decoration = {
+    border_part_of_window = false,
+  },
+
+  general = {
+    border_size = 0,
+  },
+})
+-- <<< omaland managed block <<<

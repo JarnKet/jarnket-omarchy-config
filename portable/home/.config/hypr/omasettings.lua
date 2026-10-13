@@ -2,6 +2,14 @@
 -- Every value here was set from the OmaSettings window; delete a line
 -- to hand that setting back to your own config.
 
+hl.config({
+  input = {
+    touchpad = {
+      natural_scroll = true,
+    },
+  },
+})
+
 hl.monitor({
   output = "desc:Lenovo Group Limited 0x403D",
   mode = "1920x1200@60.00",

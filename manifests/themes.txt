@@ -1,0 +1,7 @@
+# Themes install.sh clones into ~/.config/omarchy/themes/. thinkpad is the one it applies.
+https://github.com/atif-1402/omarchy-latchdark-theme.git
+https://github.com/bjarneo/omarchy-ash-theme
+https://github.com/HANCORE-linux/omarchy-harbordark-theme.git
+https://github.com/JarnKet/omarchy-thinkpad-theme.git
+https://github.com/TyRichards/omarchy-felix-theme
+https://github.com/YutaKoyanagi10/omarchy-koyanagi-theme

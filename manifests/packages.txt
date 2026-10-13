@@ -1,0 +1,17 @@
+# Packages the config and plugins need, on top of a stock Omarchy install.
+# install.sh takes them from the Arch repos when it can, otherwise the AUR.
+
+hyprmoncfg-bin               # crmne.hyprmoncfg: monitor profiles (AUR)
+gnome-network-displays       # shady.wireless-display-cast: Miracast (AUR)
+noise-suppression-for-voice  # gigasolo.omavoice: mic noise filter
+qt6-multimedia               # io.github.kristoferlund.webcam
+v4l-utils                    # io.github.kristoferlund.webcam
+efibootmgr                   # io.github.07dcolem.target-boot: reboot into another OS
+udisks2                      # wian47.removable-drives
+python-pillow                # njpatel.omapager, theme wallpapers
+python-numpy                 # theme wallpapers
+cmake                        # ilysorc.pointer-feel builds Hyprland modules
+pkgconf                      # ilysorc.pointer-feel
+gcc                          # ilysorc.pointer-feel
+make                         # ilysorc.pointer-feel
+polkit                       # ilysorc.pointer-feel

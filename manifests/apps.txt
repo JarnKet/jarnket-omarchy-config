@@ -1,0 +1,18 @@
+# My everyday apps. install.sh lets you pick which to install (none by default).
+
+brave-origin-bin                # Brave Origin browser (also becomes the default browser)
+visual-studio-code-bin          # VS Code
+intellij-idea-ultimate-edition  # IntelliJ IDEA Ultimate (AUR, large)
+claude-desktop                  # Claude desktop app
+kdeconnect                      # phone link; omapager shows phone notifications
+filezilla                       # FTP/SFTP client
+freerdp                         # remote desktop client (also used by omarchy windows vm)
+proton-vpn-cli                  # Proton VPN
+etcher-bin                      # write OS images to USB sticks (AUR)
+wechat-bin                      # WeChat (AUR)
+bun                             # JavaScript runtime
+pnpm                            # Node package manager
+go                              # Go toolchain
+wrangler                        # Cloudflare Workers CLI
+gws                             # git workspaces helper (AUR)
+qemu-img                        # disk image tool

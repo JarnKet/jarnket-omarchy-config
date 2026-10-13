@@ -1,833 +1,260 @@
 {
-  "schema": 1,
   "plugins": [
-    {
-      "id": "agx.screen-time",
-      "name": "Screen Time",
-      "version": "1.6.1",
-      "source": "https://github.com/ax1g/quickshell-screentime-plugin.git",
-      "sourceState": "portable",
-      "revision": "7678bbcd5b3fb3dbb5bc1ae917c0e476f0218d3a",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "left",
-        "index": 2,
-        "settings": {}
-      }
-    },
     {
       "id": "akshar.radio-atlas",
       "name": "Radio Atlas",
       "version": "0.1.9",
       "source": "https://github.com/AksharP5/omarchy-radio-atlas.git",
-      "sourceState": "portable",
-      "revision": "b290c29c1a9bfd1a0296f05fe995e1cd4e6e6ccd",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 7,
-        "settings": {}
-      }
+      "revision": "a0f28fe8441bf109ce0098b9270c603a0f688318",
+      "local": false
     },
     {
       "id": "ashuttl.linecast",
       "name": "Linecast",
-      "version": "0.9.2",
+      "version": "0.9.3",
       "source": "https://github.com/ashuttl/omarchy-linecast.git",
-      "sourceState": "portable",
-      "revision": "d5ba9af8bedd3a080995924e80c010283ce0150e",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 19,
-        "settings": {}
-      }
+      "revision": "1636f6444f643a3ce659e42198a962408ae96ec2",
+      "local": false
     },
     {
       "id": "beam",
       "name": "Omarchy Beam",
       "version": "0.6.0",
       "source": "https://github.com/TouchWorkStation/Omarchy-Beam-.git",
-      "sourceState": "portable",
       "revision": "907169e932c7ff92a3f01b0d3bd1bd7014a60743",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 3,
-        "settings": {}
-      }
+      "local": false
     },
     {
       "id": "bobbynicholas.omaland",
       "name": "Omaland",
       "version": "1.0.0",
       "source": "https://github.com/bobby-nicholas/omaland.git",
-      "sourceState": "portable",
-      "revision": "442814911289079ee841cae0bce9f394e9708e9a",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 16,
-        "settings": {}
-      }
+      "revision": "48d1c64acd78cd3a2862ccaad17c8045be3dda38",
+      "local": false
     },
     {
       "id": "bredda.localsend",
       "name": "LocalSend",
       "version": "2.0.4",
       "source": "https://github.com/cryptobredda/omarchy-localsend.git",
-      "sourceState": "portable",
       "revision": "52ddbdda6da02261b3f356374d1893a7f2e3b015",
-      "enabled": false,
-      "placement": null
-    },
-    {
-      "id": "cossssmin.domaincheck",
-      "name": "Domain Check",
-      "version": "1.0.0",
-      "source": "https://github.com/cossssmin/omarchy-domaincheck.git",
-      "sourceState": "portable",
-      "revision": "d27c8cd90c513fda0118d6193ff2121057ccae29",
-      "enabled": false,
-      "placement": null
-    },
-    {
-      "id": "costafot.markets",
-      "name": "Markets",
-      "version": "1.1.0",
-      "source": "https://github.com/CostaFot/omarchy-markets.git",
-      "sourceState": "portable",
-      "revision": "b0b9dfc8aeaca027ded2bd678c38ffe75a6d7211",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 14,
-        "settings": {}
-      }
+      "local": false
     },
     {
       "id": "crmne.hyprmoncfg",
       "name": "hyprmoncfg: Multi-Monitor Manager for Omarchy",
-      "version": "2.3.5",
+      "version": "2.7.0",
       "source": "https://github.com/crmne/omarchy-hyprmoncfg.git",
-      "sourceState": "portable",
-      "revision": "dc3b5e726d82af1f1af668d2f3eb2d2778a9cc0d",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 8,
-        "settings": {}
-      }
-    },
-    {
-      "id": "dev.reuk.ports",
-      "name": "Ports",
-      "version": "0.1.0",
-      "source": "https://github.com/RohitKaushal7/omarchy-ports.git",
-      "sourceState": "portable",
-      "revision": "2f8e55164835201d6c8d8725f26b61b900f64f33",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 9,
-        "settings": {}
-      }
-    },
-    {
-      "id": "dumidu.orbital-lock",
-      "name": "Orbital Lock",
-      "version": "0.2.3",
-      "source": "https://github.com/dumidulkdev/omarchy-orbital-lock.git",
-      "sourceState": "portable",
-      "revision": "6639304d250da02dc3e9771dec7a9c0fc0b87cb2",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 6,
-        "settings": {}
-      }
+      "revision": "193e5611f934eec42460ef75f3f46c2a8bd0252a",
+      "local": false
     },
     {
       "id": "evindor.keystroke",
       "name": "Keystroke",
-      "version": "1.4.2",
+      "version": "1.5.0",
       "source": "https://github.com/evindor/keystroke.git",
-      "sourceState": "portable",
-      "revision": "933a245fd50f7bd9def87b46808a452d3f5008ce",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "left",
-        "index": 0,
-        "settings": {}
-      }
+      "revision": "c9cf1a06a2f394cb4f57ad44b0de4ae6574f80e8",
+      "local": false
     },
     {
       "id": "expose.window-overview",
-      "name": "Expos\u00e9",
-      "version": "4.3.0",
+      "name": "Exposé",
+      "version": "5.0.0",
       "source": "https://github.com/kristofferR/omarchy-expose.git",
-      "sourceState": "portable",
-      "revision": "d5340ae48fc1a86177aaf619deb69ef81527d176",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 2,
-        "settings": {}
-      }
+      "revision": "805adb947e634ff4d0c3924cbbe993beae9e3319",
+      "local": false
     },
     {
       "id": "gigasolo.omavoice",
       "name": "Omavoice",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "source": "https://github.com/gigasolo/omavoice.git",
-      "sourceState": "portable",
-      "revision": "4f0acc5af26e25afc25431b4285223a843b3ffaa",
-      "enabled": false,
-      "placement": null
+      "revision": "86ac9be415c07a25162a434956b5b87e64813831",
+      "local": false
     },
     {
       "id": "ilysorc.pointer-feel",
       "name": "Pointer Feel",
       "version": "1.0.0",
       "source": "https://github.com/ilysorc/omarchy-pointer-feel.git",
-      "sourceState": "portable",
       "revision": "a36ee5e054c4584f7e798a7d1d68b507ba7e00f3",
-      "enabled": false,
-      "placement": null
+      "local": false
     },
     {
       "id": "io.github.07dcolem.target-boot",
       "name": "Reboot into",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "source": "https://github.com/07dcolem/omarchy-target-boot.git",
-      "sourceState": "portable",
-      "revision": "05c7cf99918f59c1647d937c613690f2ea51e555",
-      "enabled": false,
-      "placement": null
+      "revision": "d1ca171bdecff500c296307ad23638b0338c04ca",
+      "local": false
     },
     {
       "id": "io.github.arikisonfire.bar-folder",
       "name": "Bar Folder",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "source": "https://github.com/arikisonfire/omarchy-bar-folder.git",
-      "sourceState": "portable",
-      "revision": "40597d02f344c1238d7989c48722da0ccedd5f7d",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 4,
-        "settings": {
-          "widgetSettings": {
-            "gigasolo.omavoice": {
-              "enabled": false,
-              "previousAudioSource": "alsa_input.pci-0000_c3_00.6.HiFi__Mic1__source"
-            },
-            "io.github.alexanderpuschkinberlin.keyboard-backlight": {
-              "scheduleEnabled": true
-            }
-          },
-          "widgets": [
-            "io.github.i12bp8.netneighbors",
-            "meviusisback.mouse-settings",
-            "shady.wireless-display-cast",
-            "io.github.grichard99.omaproton-vpn",
-            "bredda.localsend",
-            "gigasolo.omavoice",
-            "ilysorc.pointer-feel",
-            "io.github.07dcolem.target-boot",
-            "io.github.alexanderpuschkinberlin.keyboard-backlight",
-            "cossssmin.domaincheck",
-            "melonamin.flare"
-          ]
-        }
-      }
-    },
-    {
-      "id": "io.github.cgaray.omamotion",
-      "name": "OmaMotion",
-      "version": "1.3.0",
-      "source": "https://github.com/cgaray/omarchy-omamotion.git",
-      "sourceState": "portable",
-      "revision": "d9144991acb1382752176b7e7de9ade646826e5f",
-      "enabled": false,
-      "placement": null
-    },
-    {
-      "id": "io.github.chris.snitch",
-      "name": "Snitch",
-      "version": "1.0.0",
-      "source": "https://github.com/ccdwyer/omarchy-snitch.git",
-      "sourceState": "portable",
-      "revision": "147efa608ba56df3e8bcea0321e2c20d90b204dd",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "left",
-        "index": 3,
-        "settings": {}
-      }
-    },
-    {
-      "id": "io.github.grichard99.omaproton-vpn",
-      "name": "OmaProton VPN",
-      "version": "1.4.5",
-      "source": "https://github.com/grichard99/omaproton-vpn.git",
-      "sourceState": "portable",
-      "revision": "c1729df540b5c688db8cc85ce81d943d17963529",
-      "enabled": false,
-      "placement": null
+      "revision": "e393b62ace8a3d9fa3974092aea9157cfbf0f2c3",
+      "local": false
     },
     {
       "id": "io.github.grupertal.biometric-hud",
       "name": "Biometric HUD",
       "version": "1.6.0",
       "source": "https://github.com/GruperTal/omarchy-biometric-hud.git",
-      "sourceState": "portable",
       "revision": "b339f9ffc3833163f95bd691232e7698ff5e9391",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 1,
-        "settings": {}
-      }
+      "local": false
     },
     {
       "id": "io.github.i12bp8.netneighbors",
       "name": "NetNeighbors",
       "version": "0.1.2",
       "source": "https://github.com/i12bp8/omarchy-netneighbours.git",
-      "sourceState": "portable",
       "revision": "95f0505cc36cf0cee75f4f007bdf612ceb4674c8",
-      "enabled": false,
-      "placement": null
-    },
-    {
-      "id": "io.github.iainfreestone.control-tower",
-      "name": "Control Tower",
-      "version": "1.0.3",
-      "source": "https://github.com/iainfreestone/omarchy-control-tower.git",
-      "sourceState": "portable",
-      "revision": "74b97df31bd5b58d23e34fd125bc68f724d0a4a7",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 18,
-        "settings": {}
-      }
+      "local": false
     },
     {
       "id": "io.github.kristoferlund.webcam",
       "name": "Webcam Controls",
       "version": "0.1.0",
       "source": "https://github.com/kristoferlund/omarchy-webcam.git",
-      "sourceState": "portable",
-      "revision": "6772b78318adc9d8e507ba2222285c2af682ded4",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 13,
-        "settings": {}
-      }
-    },
-    {
-      "id": "io.github.pjgeutjens.seismic-atlas",
-      "name": "Seismic Atlas",
-      "version": "0.4.1",
-      "source": "https://github.com/pjgeutjens/omarchy-seismic-atlas.git",
-      "sourceState": "portable",
-      "revision": "cbc4faf30a29e1d59f8670ec5c857fe9905076be",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 10,
-        "settings": {}
-      }
+      "revision": "73332ce15f20477fe78b74120d80899068f07a2b",
+      "local": false
     },
     {
       "id": "io.github.randazraik.xray",
       "name": "Omarchy X-Ray",
       "version": "0.5.0",
       "source": "https://github.com/RandaZraik/omarchy-xray.git",
-      "sourceState": "portable",
       "revision": "520c1da26a278bede03285df617a50c8e17997b4",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 3,
-        "settings": {}
-      }
-    },
-    {
-      "id": "io.github.swey-l1.bar-term",
-      "name": "Bar Terminal",
-      "version": "1.0.0",
-      "source": "https://github.com/swey-l1/omarchy-bar-term.git",
-      "sourceState": "portable",
-      "revision": "a1828fd80768509f97f089687cec89fb31795d16",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 15,
-        "settings": {}
-      }
-    },
-    {
-      "id": "io.github.tallsam.navbar-cat",
-      "name": "Navbar Cat",
-      "version": "1.2.0",
-      "source": "https://github.com/tallsam/omarchy-navbar-cat.git",
-      "sourceState": "portable",
-      "revision": "6ddd61a6744bab19b04d131ff4f2e087a504ce20",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 17,
-        "settings": {
-          "size": 24
-        }
-      }
+      "local": false
     },
     {
       "id": "io.github.twiking.omasettings",
       "name": "OmaSettings",
       "version": "1.3.0",
       "source": "https://github.com/twiking/omasettings.git",
-      "sourceState": "portable",
       "revision": "72cfe1640aaece2fef39e4dd155289510f07b2a8",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 5,
-        "settings": {}
-      }
+      "local": false
     },
     {
-      "id": "io.github.tymurbogach.modular-hw-monitor",
-      "name": "Modular HW Monitor",
-      "version": "0.5.0",
-      "source": "https://github.com/tymurbogach/omarchy-any-monitor.git",
-      "sourceState": "portable",
-      "revision": "d5a51451595606795844dd38eb7ecd1a38aeed44",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 8,
-        "settings": {}
-      }
-    },
-    {
-      "id": "io.github.woogy7.workspaces",
-      "name": "Workspace Switcher",
-      "version": "0.2.0",
-      "source": "https://github.com/Woogy7/omarchy-workspace-switcher.git",
-      "sourceState": "portable",
-      "revision": "d92fc423f04801b73296f16bc6c26a719ac743b5",
-      "enabled": false,
-      "placement": null
-    },
-    {
-      "id": "jankeesvw.notification-center",
-      "name": "Notification Center",
-      "version": "1.1.0",
-      "source": "https://github.com/jankeesvw/omarchy-notification-center.git",
-      "sourceState": "portable",
-      "revision": "5dbd5abadaba32d0333fed76798dfc7450448922",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 13,
-        "settings": {}
-      }
+      "id": "io.github.tymurbogach.hardwarchy",
+      "name": "Hardwarchy",
+      "version": "2.3.3",
+      "source": "https://github.com/tymurbogach/hardwarchy.git",
+      "revision": "8a556b36eae9da74d2ec58748c7a459ad873a0e9",
+      "local": false
     },
     {
       "id": "jankeesvw.workspace-name",
       "name": "Workspace name",
-      "version": "1.0.0",
-      "source": "https://github.com/jankeesvw/omarchy-workspace-name.git",
-      "sourceState": "portable",
-      "revision": "b88c51c8245f2142258623d2919094dacc8b20c0",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "left",
-        "index": 1,
-        "settings": {}
-      }
-    },
-    {
-      "id": "mash2rafi.kronos",
-      "name": "Kronos",
       "version": "1.1.0",
-      "source": "https://github.com/MASH2RAFI/omarchy-kronos.git",
-      "sourceState": "portable",
-      "revision": "21643569798791a7537072b3845ce3af1ae9b55b",
-      "enabled": false,
-      "placement": null
+      "source": "https://github.com/jankeesvw/omarchy-workspace-name.git",
+      "revision": "a67eb242176a9f9dafc38d40bd80ddaf0e2f45f6",
+      "local": false
     },
     {
       "id": "melonamin.flare",
       "name": "Flare",
       "version": "0.4.1",
       "source": "https://github.com/melonamin/omarchy-flare.git",
-      "sourceState": "portable",
       "revision": "93f1388c770246e0f419c372de33476f0f0f0e1a",
-      "enabled": false,
-      "placement": null
-    },
-    {
-      "id": "meviusisback.mouse-settings",
-      "name": "Mouse & Pointer",
-      "version": "1.1.1",
-      "source": "https://github.com/meviusisback/mouse-settings.git",
-      "sourceState": "portable",
-      "revision": "bf45935da2ba7a870912c49a04825d33dc06a106",
-      "enabled": false,
-      "placement": null
+      "local": false
     },
     {
       "id": "mirador",
       "name": "Mirador",
-      "version": "2.3",
+      "version": "2.4.0",
       "source": "https://github.com/sanjyay/Mirador.git",
-      "sourceState": "portable",
-      "revision": "09949f75ba8a8819d4d1edfdea9afe696ad87cb0",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 0,
-        "settings": {}
-      }
+      "revision": "0cdf936ddda5a9022059aa6ebe8387eb40ea61fd",
+      "local": false
     },
     {
       "id": "njpatel.omapager",
       "name": "Omapager",
       "version": "1.1.1",
       "source": "https://github.com/njpatel/omapager.git",
-      "sourceState": "portable",
-      "revision": "59591749f42d7059c146604f55925fdb436daba6",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "center",
-        "index": 1,
-        "settings": {
-          "edgeSpacing": 38
-        }
-      }
-    },
-    {
-      "id": "omaconnect",
-      "name": "OmaConnect",
-      "version": "1.4.0",
-      "source": "https://github.com/jitendradara12/omaconnect.git",
-      "sourceState": "portable",
-      "revision": "c2fb7dcae8fdc5a90ca74fc2d38567992bd21e17",
-      "enabled": false,
-      "placement": null
+      "revision": "c389e73516828d18f26e8efec2127c0c3dc3cb97",
+      "local": false
     },
     {
       "id": "omaplug",
       "name": "Plugin Manager",
-      "version": "1.6.5",
+      "version": "1.6.6",
       "source": "https://github.com/fross100/omaplug.git",
-      "sourceState": "portable",
-      "revision": "2a21fe42969b9bd57f825c00827d2d2b11d01ab7",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 12,
-        "settings": {}
-      }
+      "revision": "64df56e876846247ded550890c52b7b190776b3e",
+      "local": false
     },
     {
       "id": "omarchy-zones",
       "name": "Omarchy Zones",
       "version": "0.5.4",
       "source": "https://github.com/shivam-g10/omarchy-zones.git",
-      "sourceState": "portable",
       "revision": "ead717544a1a19d8765396dce1ede1b92bec4381",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 4,
-        "settings": {}
-      }
-    },
-    {
-      "id": "onlyvishesh.power-manager",
-      "name": "Omarchy Power Manager",
-      "version": "2.0.0",
-      "source": "https://github.com/onlyVishesh/omarchy-power-manager.git",
-      "sourceState": "portable",
-      "revision": "767f8f1c2a01e5f64d6a5c5cfee8c49ce9c162b3",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 11,
-        "settings": {}
-      }
+      "local": false
     },
     {
       "id": "rblalock.panel-notes",
       "name": "Panel Notes",
       "version": "0.1.4",
       "source": "https://github.com/rblalock/omarchy-panel-notes.git",
-      "sourceState": "portable",
       "revision": "23dbb7c76bdf6960e89e63c5781d7d2d77d05dae",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 5,
-        "settings": {}
-      }
+      "local": false
     },
     {
       "id": "roymelgarv.omarchy-downloads",
       "name": "Downloads",
       "version": "1.0.1",
       "source": "https://github.com/roymelgarv/omarchy-downloads.git",
-      "sourceState": "portable",
       "revision": "8be9ac3483830ed83f92c98a3b724df2497b24a0",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 2,
-        "settings": {}
-      }
+      "local": false
     },
     {
       "id": "segersb.omarchy-printers",
       "name": "Printers",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "source": "https://github.com/segersb/omarchy-printers.git",
-      "sourceState": "portable",
-      "revision": "6d40e4ad166704da671b837fa091d1b719432c0b",
-      "enabled": true,
-      "placement": {
-        "kind": "plugin",
-        "index": 11,
-        "settings": {}
-      }
+      "revision": "14fef62b08bc4bf25afaf1239f90897dfb345b28",
+      "local": false
     },
     {
       "id": "shadowone.top-bar",
       "name": "Top Bar",
       "version": "1.1.0",
       "source": null,
-      "sourceState": "manual",
       "revision": null,
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 10,
-        "settings": {
-          "layout": {
-            "center": [
-              {
-                "alwaysShow": true,
-                "id": "ashuttl.linecast",
-                "pills": [
-                  "weather",
-                  "sunshine",
-                  "moon",
-                  "tides"
-                ]
-              },
-              {
-                "id": "costafot.markets"
-              }
-            ],
-            "left": [
-              {
-                "id": "io.github.tymurbogach.modular-hw-monitor"
-              },
-              {
-                "id": "dev.reuk.ports"
-              },
-              {
-                "id": "io.github.pjgeutjens.seismic-atlas"
-              }
-            ],
-            "right": [
-              {
-                "id": "harel.omarchy-synchro"
-              },
-              {
-                "id": "io.github.swey-l1.bar-term"
-              },
-              {
-                "id": "omaplug"
-              },
-              {
-                "id": "segersb.omarchy-printers"
-              },
-              {
-                "id": "akshar.radio-atlas"
-              },
-              {
-                "id": "io.github.kristoferlund.webcam"
-              }
-            ]
-          },
-          "managed": [
-            "akshar.radio-atlas",
-            "ashuttl.linecast",
-            "costafot.markets",
-            "dev.reuk.ports",
-            "harel.omarchy-synchro",
-            "io.github.kristoferlund.webcam",
-            "io.github.pjgeutjens.seismic-atlas",
-            "io.github.swey-l1.bar-term",
-            "io.github.tymurbogach.modular-hw-monitor",
-            "omaplug",
-            "segersb.omarchy-printers"
-          ],
-          "origins": {
-            "akshar.radio-atlas": {
-              "index": 8,
-              "seq": 1,
-              "where": "right"
-            },
-            "ashuttl.linecast": {
-              "index": 3,
-              "seq": 10,
-              "where": "center"
-            },
-            "costafot.markets": {
-              "index": 8,
-              "seq": 8,
-              "where": "center"
-            },
-            "dev.reuk.ports": {
-              "index": 5,
-              "seq": 3,
-              "where": "left"
-            },
-            "harel.omarchy-synchro": {
-              "index": 2,
-              "seq": 11,
-              "where": "right"
-            },
-            "io.github.kristoferlund.webcam": {
-              "index": 2,
-              "seq": 7,
-              "where": "right"
-            },
-            "io.github.pjgeutjens.seismic-atlas": {
-              "index": 5,
-              "seq": 4,
-              "where": "left"
-            },
-            "io.github.swey-l1.bar-term": {
-              "index": 7,
-              "seq": 9,
-              "where": "center"
-            },
-            "io.github.tymurbogach.modular-hw-monitor": {
-              "index": 7,
-              "seq": 2,
-              "where": "left"
-            },
-            "omaplug": {
-              "index": 4,
-              "seq": 6,
-              "where": "right"
-            },
-            "segersb.omarchy-printers": {
-              "index": 2,
-              "seq": 5,
-              "where": "right"
-            }
-          },
-          "position": "auto"
-        }
-      },
-      "manualStep": "Configure a portable SSH or HTTPS Git origin before seeding another machine."
+      "local": true
     },
     {
       "id": "shady.wireless-display-cast",
       "name": "Wireless Display Cast",
       "version": "1.2.0",
       "source": "https://github.com/shadyuop/omarchy-wireless-display-cast.git",
-      "sourceState": "portable",
       "revision": "3e0b2dfa659dbfc9ddb0d1dfd5c4237054ab863e",
-      "enabled": false,
-      "placement": null
+      "local": false
     },
     {
       "id": "ssupt.audio-control",
       "name": "Advanced Audio Control",
-      "version": "0.8.1",
+      "version": "0.9.0-dev.27",
       "source": "https://github.com/ssupt/omarchy-audio-control.git",
-      "sourceState": "portable",
-      "revision": "71c0b6a695b6aa10c66d550e462c79919eebdf2d",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 7,
-        "settings": {}
-      }
+      "revision": "14f6f5dc88e1f49dc916ddba80c01076c4e2a429",
+      "local": false
     },
     {
       "id": "ssupt.bluetooth-audio",
       "name": "Advanced Bluetooth Audio",
-      "version": "0.6.2",
+      "version": "0.7.0",
       "source": "https://github.com/ssupt/omarchy-bluetooth-audio.git",
-      "sourceState": "portable",
-      "revision": "4c8b0792f4ded73bff08e80f9c1ef069a1f2612c",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 6,
-        "settings": {}
-      }
-    },
-    {
-      "id": "stappmus.activity-monitor",
-      "name": "Activity Monitor",
-      "version": "2.1.1",
-      "source": "https://github.com/stappmus/omarchy-activity-monitor.git",
-      "sourceState": "portable",
-      "revision": "b25a98c7ff2a688ab74d86d2be42249e2db2f9cf",
-      "enabled": false,
-      "placement": null
-    },
-    {
-      "id": "szaidi.scoring-matrix",
-      "name": "Omarchy Hardware Score",
-      "version": "0.1.0-beta.2",
-      "source": "https://github.com/szaidi-code/scoring-matrix.git",
-      "sourceState": "portable",
-      "revision": "b3163afb0f75e906ed05836d1be05e929cf7a70e",
-      "enabled": false,
-      "placement": null
+      "revision": "96704bfbd0360abe5d69003032ab0932c0981a86",
+      "local": false
     },
     {
       "id": "wian47.removable-drives",
       "name": "Removable Drives",
       "version": "1.8.0",
       "source": "https://github.com/Wian47/omarchy-removable-drives.git",
-      "sourceState": "portable",
       "revision": "f46384be00f030e67d6be10d5e60bf6a20a8001d",
-      "enabled": true,
-      "placement": {
-        "kind": "bar",
-        "section": "right",
-        "index": 1,
-        "settings": {}
-      }
+      "local": false
     }
   ]
 }

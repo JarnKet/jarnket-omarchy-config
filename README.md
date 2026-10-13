@@ -1,247 +1,172 @@
-# Omarchy configuration
+# ShadowOne's Omarchy setup
 
-My Omarchy desktop: Hyprland config, terminals, the shell bar layout, 50+
-shell plugins, package lists and a few custom extras. Captured with
-[Omarchy Synchro](https://github.com/harel/omarchy-synchro). Review every diff
-before committing.
+My [Omarchy](https://omarchy.org) desktop, ready to install on another machine:
+Hyprland config, terminal settings, 32 shell plugins with my bar layout (a
+bottom bar and a second Top Bar), the
+[ThinkPad theme](https://github.com/JarnKet/omarchy-thinkpad-theme) with its
+ASCII wallpapers, and the packages it all needs.
 
-## Branches
+![ThinkPad theme](https://raw.githubusercontent.com/JarnKet/omarchy-thinkpad-theme/main/preview.png)
 
-| Branch   | Use it for | What's different |
-|----------|------------|------------------|
-| `main`   | Desktop / plugged-in machines | Full setup, every plugin on |
-| `laptop` | Running on battery | Battery-heavy plugins turned off (see below) |
+## Install
 
-Plugins turned off on `laptop`, and why (measured on a T14s Gen 6 AMD):
+You need a working Omarchy 4 install (this was captured on 4.0.4), an internet
+connection, and sudo. Open a terminal **inside the desktop** and run:
 
-| Plugin | Cost when on |
+```bash
+curl -fsSL https://raw.githubusercontent.com/JarnKet/jarnket-omarchy-config/main/install.sh | bash
+```
+
+It downloads this repo to `~/.local/share/jarnket-omarchy-config`, shows the
+steps, and asks before it starts. Most of the time goes to downloads. Or
+clone it yourself:
+
+```bash
+git clone https://github.com/JarnKet/jarnket-omarchy-config.git
+cd jarnket-omarchy-config
+./install.sh --dry-run   # see what would change
+./install.sh
+```
+
+Run it again any time; it skips what's already in place.
+
+### What it does
+
+| Step | What happens |
+|------|--------------|
+| `packages` | Installs what the plugins need: `hyprmoncfg-bin`, `gnome-network-displays` (AUR), build tools for Pointer Feel, and a few libraries ([list](manifests/packages.txt)) |
+| `apps` | Lets you pick from my apps: Brave Origin, VS Code, IntelliJ, Claude, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
+| `config` | Hyprland (`~/.config/hypr`), Alacritty/Ghostty/Kitty/foot, lazygit, starship, Omarchy hooks. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
+| `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
+| `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
+| `theme` | Clones the ThinkPad theme plus 5 others, renders the ASCII wallpapers with **your** username, switches to it |
+| `services` | Turns on `hyprmoncfgd`, which switches monitor profiles when you plug screens in |
+
+Before it changes a file it copies the old one to
+`~/.local/state/jarnket-omarchy-config/backups/<time>/`.
+
+### Options
+
+```text
+-y, --yes          don't ask; take the defaults (installs no optional apps)
+-n, --dry-run      show what would change and change nothing
+    --only LIST    run only these steps, e.g. --only config,bar
+    --skip LIST    skip these steps, e.g. --skip apps,theme
+    --apps WHICH   all, none, or ask (default: ask)
+    --pinned       check plugins out at the exact versions I last tested
+    --boot-logo    also put the ThinkPad logo on the boot/login screen (sudo)
+    --undo [DIR]   restore the newest backup and remove what was added
+```
+
+With `curl | bash`, pass options after `bash -s --`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JarnKet/jarnket-omarchy-config/main/install.sh | bash -s -- --dry-run
+```
+
+### Undo
+
+```bash
+~/.local/share/jarnket-omarchy-config/install.sh --undo
+```
+
+This puts back every file it replaced, deletes the ones it created, removes
+the plugins and themes it added, and switches back to your old theme. Packages
+stay installed.
+
+## Good to know
+
+- **Keyboard:** two layouts, US and Lao (`us,la(stea)`). Switch with
+  Left Alt + Left Shift or both Alt keys. Change it in `~/.config/hypr/input.lua`.
+- **Print Screen** copies a screenshot to the clipboard and doesn't save a file.
+- **Super + Alt + E** opens Panel Notes.
+- **Two bars:** the Omarchy bar at the bottom, and the Top Bar (my plugin) for
+  extra widgets. Drag widgets between them, or use `omarchy-topbar list`.
+- **Hardware plugins** only do something if you have the hardware: fingerprint
+  (Biometric HUD), webcam, Miracast (Wireless Display Cast), printers.
+- **Pointer Feel** builds two small Hyprland modules on your machine. If the
+  mouse feel stops working after a Hyprland update, rebuild them with
+  `~/.config/omarchy/plugins/ilysorc.pointer-feel/install.sh --yes`.
+- Plugins install at their newest versions. If one breaks after an Omarchy
+  update, `--pinned` gets the versions this was tested with, or
+  `omarchy plugin update` gets the fixes.
+- Not in this repo on purpose: SSH/GPG keys, browser profiles, passwords,
+  tokens, keyrings, my personal wallpaper.
+
+## Plugins
+
+| Plugin | What it does |
 |--------|--------------|
-| `io.github.chris.snitch` | ~40% of a CPU core, all the time |
-| `onlyvishesh.power-manager` | Starts 2 extra shell processes every 5 s |
-| `meviusisback.mouse-settings`, `ilysorc.pointer-feel` | Constant status polling |
-| `io.github.pjgeutjens.seismic-atlas`, `costafot.markets` | Network polling |
-| `io.github.tymurbogach.modular-hw-monitor` | ~7 processes per second |
-| `dev.reuk.ports` | Repeated port scans |
-| `io.github.tallsam.navbar-cat` | Redraws the bar 30 times a second |
-
-Every plugin is still listed in `manifests/plugins.json` on both branches;
-the turned-off ones just have `"enabled": false`.
+| [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
+| [Omapager](https://github.com/njpatel/omapager) | Notifications that stack and group (replaces the built-in ones) |
+| [Keystroke](https://github.com/evindor/keystroke) | Raycast-style command palette instead of the Omarchy menu |
+| [Exposé](https://github.com/kristofferR/omarchy-expose) | All windows at once; 3-finger swipe up/down |
+| [Mirador](https://github.com/sanjyay/Mirador) | Overview of workspaces and their windows |
+| [Omarchy Zones](https://github.com/shivam-g10/omarchy-zones) | FancyZones-style window zones (Super + Shift + drag) |
+| [Workspace name](https://github.com/jankeesvw/omarchy-workspace-name) | Name and icon of the current workspace |
+| [Bar Folder](https://github.com/arikisonfire/omarchy-bar-folder) | Folds bar icons into one folder |
+| [Hardwarchy](https://github.com/tymurbogach/hardwarchy) | CPU, GPU, memory, network, disk, fan in the bar |
+| [Linecast](https://github.com/ashuttl/omarchy-linecast) | Weather, sun, moon and tides |
+| [hyprmoncfg](https://github.com/crmne/omarchy-hyprmoncfg) | Monitor profiles that come back when you plug in |
+| [OmaSettings](https://github.com/twiking/omasettings) | One window for every Omarchy setting |
+| [Omaland](https://github.com/bobby-nicholas/omaland) | Edit Hyprland's look with a live preview |
+| [Pointer Feel](https://github.com/ilysorc/omarchy-pointer-feel) | Windows- or Mac-style mouse acceleration |
+| [Advanced Audio Control](https://github.com/ssupt/omarchy-audio-control) | PipeWire mixer (replaces the built-in audio widget) |
+| [Advanced Bluetooth Audio](https://github.com/ssupt/omarchy-bluetooth-audio) | Bluetooth codecs and per-device settings |
+| [Omavoice](https://github.com/gigasolo/omavoice) | Clean virtual microphone for calls |
+| [Removable Drives](https://github.com/Wian47/omarchy-removable-drives) | Mount and eject USB drives, SD cards, phones |
+| [Downloads](https://github.com/roymelgarv/omarchy-downloads) | Recent downloads in the bar |
+| [LocalSend](https://github.com/cryptobredda/omarchy-localsend) | AirDrop-style sharing with nearby devices |
+| [NetNeighbors](https://github.com/i12bp8/omarchy-netneighbours) | Every device on your Wi-Fi |
+| [Omarchy X-Ray](https://github.com/RandaZraik/omarchy-xray) | Trace a window, port or file to the process behind it |
+| [Panel Notes](https://github.com/rblalock/omarchy-panel-notes) | Markdown notes per app |
+| [Omarchy Beam](https://github.com/TouchWorkStation/Omarchy-Beam-) | Turn a link into a QR code |
+| [Radio Atlas](https://github.com/AksharP5/omarchy-radio-atlas) | Live radio on a globe |
+| [Printers](https://github.com/segersb/omarchy-printers) | Printer settings and print previews |
+| [Webcam Controls](https://github.com/kristoferlund/omarchy-webcam) | Webcam settings with a live preview |
+| [Wireless Display Cast](https://github.com/shadyuop/omarchy-wireless-display-cast) | Cast to a Miracast screen |
+| [Reboot into](https://github.com/07dcolem/omarchy-target-boot) | Reboot straight into Windows or another OS |
+| [Biometric HUD](https://github.com/GruperTal/omarchy-biometric-hud) | Windows Hello-style tile for fingerprint/face unlock |
+| [Flare](https://github.com/melonamin/omarchy-flare) | Click highlights for demos and recordings |
+| [Plugin Manager](https://github.com/fross100/omaplug) | Enable, update and remove plugins from the bar |
 
 ## What's in here
 
 ```text
-portable/home/     Files copied into ~ on any machine (hypr, terminals, hooks, menu, ...)
-device/omarchy/    Monitor + input config for the ThinkPad (hostname "omarchy")
+install.sh         the installer
+snapshot.sh        copies my live setup back into this repo
+portable/home/     files copied into ~ on every machine
+device/<model>/    monitor layout, only for that laptop model
+personal/home/     my JARNKET screensaver text (asked for, default no)
 manifests/
-  shell.json       Bar layout, widget settings, plugin list, idle timers
-  plugins.json     Every plugin: git source, revision, enabled, placement
-  native.txt       pacman packages
-  aur.txt          AUR packages
-policy/            Synchro allowlist: which paths get captured
-extras/
-  plugins/         Plugins I wrote (not on GitHub): shadowone.top-bar
-  patches/         Local fixes to third-party plugins
+  files.tsv        which files snapshot.sh and install.sh handle
+  plugins.json     every plugin: git source and tested revision
+  shell.json       bar layout and widget settings
+  packages.txt     packages the setup needs
+  apps.txt         my optional apps
+  themes.txt       themes to clone
+extras/plugins/    plugins I wrote: shadowone.top-bar
 ```
 
-Not saved here (on purpose): SSH/GPG keys, browser profiles, passwords,
-tokens, keyrings, caches.
+Paths to my home folder (`/home/shadowone/...`) in the config files are
+rewritten to yours when they're installed.
 
----
-
-## Set up a new PC
-
-Takes about 30 minutes, mostly package downloads. Run the steps in order.
-
-### 1. Install Omarchy
-
-Install Omarchy from [omarchy.org](https://omarchy.org), log in, and run
-`omarchy update` once so the shell is up to date.
-
-### 2. Sign in to GitHub and clone this repo
-
-The repo is private and this setup uses HTTPS through the `gh` CLI (no SSH
-key).
-
-```bash
-omarchy pkg add github-cli
-gh auth login            # GitHub.com → HTTPS → log in with browser
-gh auth setup-git
-mkdir -p ~/Work
-git clone https://github.com/JarnKet/jarnket-omarchy-config.git ~/Work/omarchy-config
-cd ~/Work/omarchy-config
-git switch laptop        # or stay on main for a desktop
-```
-
-### 3. Install packages
-
-```bash
-cd ~/Work/omarchy-config
-omarchy pkg add $(cat manifests/native.txt)
-omarchy pkg aur add $(cat manifests/aur.txt)
-```
-
-If one package is no longer in the repos, the whole command stops. Remove that
-name from the list, or install the rest in smaller groups.
-
-### 4. Install Omarchy Synchro
-
-```bash
-omarchy plugin add https://github.com/harel/omarchy-synchro.git --yes
-S=~/.config/omarchy/plugins/harel.omarchy-synchro/bin/omarchy-synchro
-$S config select ~/Work/omarchy-config
-$S seed --stage check     # confirms Omarchy + repo are compatible
-```
-
-### 5. Restore config files
-
-Always preview first. Synchro backs up any file it replaces.
-
-```bash
-$S restore                # preview: lists files that would change
-$S restore --apply        # copy portable/ into ~
-```
-
-The monitor and input files in `device/omarchy/` only restore when the new
-PC's hostname is `omarchy`. On other hardware, set up monitors fresh
-(`hyprmoncfg`) and copy `device/omarchy/home/.config/hypr/input.lua` by hand
-if you want the same touchpad settings:
-
-```bash
-$S restore --include-device          # preview, same hostname only
-$S restore --include-device --apply
-```
-
-### 6. Install the plugins
-
-Clone every plugin that's turned on in this branch from its saved git source:
-
-```bash
-cd ~/Work/omarchy-config
-jq -r '.plugins[] | select(.enabled and .source) | .source' manifests/plugins.json |
-  while read -r url; do omarchy plugin add "$url" --yes; done
-```
-
-To install every plugin, including the ones turned off on `laptop`, drop
-`.enabled and` from the filter. `plugins.json` also records the exact
-`revision` each plugin was at, in case a newer version breaks.
-
-Then install my own Top Bar plugin, which isn't on GitHub:
-
-```bash
-cp -r extras/plugins/shadowone.top-bar ~/.config/omarchy/plugins/
-mkdir -p ~/.local/bin
-ln -sf ~/.config/omarchy/plugins/shadowone.top-bar/omarchy-topbar ~/.local/bin/omarchy-topbar
-```
-
-### 7. Apply the bar layout
-
-This step turns the plugins on and puts every widget in its place.
-
-```bash
-cp ~/.config/omarchy/shell.json ~/.config/omarchy/shell.json.bak.$(date +%s)
-cp manifests/shell.json ~/.config/omarchy/shell.json
-omarchy restart shell
-omarchy-topbar list       # check the second bar came up
-```
-
-`shell.json` also keeps `omarchy.notifications` disabled so it doesn't fight
-omapager (running both gives blank notification toasts).
-
-### 8. Reapply local plugin fixes
-
-Omarchy 4.0.4 broke two plugins; these patches fix them. Run them again after
-any `omarchy plugin update` of these plugins.
-
-```bash
-cd ~/.config/omarchy/plugins/ashuttl.linecast && git apply ~/Work/omarchy-config/extras/patches/ashuttl.linecast.patch
-# navbar-cat is off on the laptop branch; only needed if you turn it on:
-cd ~/.config/omarchy/plugins/io.github.tallsam.navbar-cat && git apply ~/Work/omarchy-config/extras/patches/io.github.tallsam.navbar-cat.patch
-```
-
-- **linecast:** its panel couldn't be closed (Esc, click, IPC).
-- **navbar-cat:** assets failed to load and its size setting was ignored.
-
-### 9. Plugin extra setup steps
-
-Some plugins need a one-time step after cloning:
-
-| Plugin | Step | Branch |
-|--------|------|--------|
-| `beam` | `~/.config/omarchy/plugins/beam/install.sh` | both |
-| `io.github.chris.snitch` | `cd ~/.config/omarchy/plugins/io.github.chris.snitch && ./build.sh` (Rust) | main only |
-| `ilysorc.pointer-feel` | `cd ~/.config/omarchy/plugins/ilysorc.pointer-feel && ./install.sh` | main only |
-| `bredda.localsend` | `cd ~/.config/omarchy/plugins/bredda.localsend && ./scripts/build-controller` | main only |
-| `onlyvishesh.power-manager` | `sudo ~/.config/omarchy/plugins/onlyvishesh.power-manager/extras/install.sh` (root backend; without it, Apply silently fails) | main only |
-
-### 10. Services and system tweaks
-
-```bash
-# omapager → Notification Center bridge (files restored in step 5)
-chmod +x ~/.local/bin/omapager-nc-bridge
-systemctl --user daemon-reload
-systemctl --user enable --now omapager-nc-bridge.service
-```
-
-ThinkPad only, not stored in this repo (needs root):
-
-- `/usr/lib/systemd/system-sleep/thinkpad-kbd-backlight`: keeps the keyboard
-  backlight off after lid close/resume. This systemd only runs sleep hooks
-  from `/usr/lib/systemd/system-sleep/`, not `/etc/`.
-- Battery charge limit: write to
-  `/sys/class/power_supply/BAT0/charge_control_end_threshold`.
-
-### 11. Check it worked
-
-```bash
-$S seed --stage plugins   # plugins installed vs. missing
-$S seed --stage report    # manual steps left over
-hyprctl configerrors      # should print nothing
-```
-
----
-
-## Everyday use
+## Updating this repo (for me)
 
 After changing something on the live system:
 
 ```bash
 cd ~/Work/omarchy-config
-git branch --show-current            # make sure you're on the branch you mean
-$S snapshot                          # preview
-$S snapshot --apply
-git diff                             # review; nothing secret should appear
+./snapshot.sh            # copies the live files, plugin list, bar layout, themes
+git diff                 # this repo is public: check nothing private got in
 git commit -am "Describe the change"
 git push
 ```
 
-Synchro saves whatever is running **now**. Switching git branches does
-**not** change your desktop. To actually move the live system to the other
-branch's setup:
+`snapshot.sh` also lists packages I installed that aren't in `packages.txt` or
+`apps.txt`, and warns about plugins with local edits (a fresh clone won't have
+them). To record which monitor layout goes with a new laptop model, run it on
+that laptop: device files land in `device/<its model>/`.
 
-```bash
-git switch main                      # or laptop
-$S restore --apply
-cp manifests/shell.json ~/.config/omarchy/shell.json
-omarchy restart shell
-```
-
-After changing the Top Bar plugin, refresh its copy here:
-
-```bash
-rsync -a --delete ~/.config/omarchy/plugins/shadowone.top-bar/ extras/plugins/shadowone.top-bar/
-```
-
-After changing a local plugin fix, re-export its patch:
-
-```bash
-(cd ~/.config/omarchy/plugins/ashuttl.linecast && git diff) > extras/patches/ashuttl.linecast.patch
-```
-
-## Known issues
-
-- `shell.json` references `io.github.mshareef-git.omavibes` (bar center) and
-  `io.github.alexanderpuschkinberlin.keyboard-backlight` (Bar Folder), but
-  neither plugin is installed and neither has a saved source. Their slots stay
-  empty.
-- Print Screen is rebound in `hypr/bindings.lua` to copy screenshots to the
-  clipboard only.
+The `laptop` branch is an old battery-saving snapshot from 2026-09-24 and isn't
+maintained. `main` is the current setup.

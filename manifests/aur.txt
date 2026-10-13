@@ -1,7 +1,0 @@
-brave-origin-bin
-etcher-bin
-gnome-network-displays
-google-chrome
-gws
-hyprmoncfg-bin
-intellij-idea-ultimate-edition

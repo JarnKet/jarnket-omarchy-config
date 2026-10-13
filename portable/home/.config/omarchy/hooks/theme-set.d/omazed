@@ -1,2 +1,4 @@
 #!/bin/bash
+# Keep Zed's theme in step with Omarchy's (no-op when omazed isn't installed).
+command -v omazed >/dev/null || exit 0
 omazed set "$1"

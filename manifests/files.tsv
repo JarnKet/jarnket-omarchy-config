@@ -1,0 +1,34 @@
+# What snapshot.sh copies from ~ into this repo, and install.sh copies back.
+# scope<TAB>path relative to ~ (a file or a folder)
+#
+#   portable  every machine                       -> portable/home/
+#   device    only machines of the same model     -> device/<model>/home/
+#   personal  asked for, default no (my branding) -> personal/home/
+
+portable	.config/hypr/hyprland.lua
+portable	.config/hypr/autostart.lua
+portable	.config/hypr/bindings.lua
+portable	.config/hypr/input.lua
+portable	.config/hypr/looknfeel.lua
+portable	.config/hypr/omalang_binds.lua
+portable	.config/hypr/switch-keyboard-layout.sh
+portable	.config/hypr/omasettings.lua
+portable	.config/hypr/pointer-feel.lua
+portable	.config/hypr/hyprsunset.conf
+portable	.config/hypr/xdph.conf
+portable	.config/alacritty/alacritty.toml
+portable	.config/foot/foot.ini
+portable	.config/ghostty/config
+portable	.config/kitty/kitty.conf
+portable	.config/lazygit/config.yml
+portable	.config/starship.toml
+portable	.config/mimeapps.list
+portable	.config/omarchy/extensions
+portable	.config/omarchy/hooks
+portable	.config/omarchy/hardwarchy.json
+portable	.config/omarchy/audio-control.json
+
+device	.config/hypr/monitors.lua
+device	.config/hypr/hyprmoncfg-monitors.lua
+
+personal	.config/omarchy/branding/screensaver.txt
