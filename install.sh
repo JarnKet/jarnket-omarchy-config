@@ -398,9 +398,7 @@ put_file() { # put_file source dest
     return 1
   fi
   mode=$(stat -c %a "$src")
-  if ((DRY_RUN)); then
-    printf '    %s[dry-run]%s write ~/%s\n' "$DIM" "$RESET" "${dest#"$HOME"/}"
-  else
+  if ((!DRY_RUN)); then
     backup "$dest"
     mkdir -p "$(dirname "$dest")"
     rm -f "$dest"
