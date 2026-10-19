@@ -528,12 +528,21 @@ step_plugins() {
     added=$((added + 1))
   done
 
-  # The Top Bar's command-line tool.
-  local topbar=$PLUGINS_DIR/shadowone.top-bar/omarchy-topbar
-  if [[ -x $topbar || $DRY_RUN == 1 ]] && [[ "$(readlink "$HOME/.local/bin/omarchy-topbar" 2>/dev/null)" != "$topbar" ]]; then
-    backup "$HOME/.local/bin/omarchy-topbar"
-    mkdir -p "$HOME/.local/bin"
-    run ln -sfn "$topbar" "$HOME/.local/bin/omarchy-topbar"
+  # Command-line tools of my plugins: omarchy-topbar and diskkeeper.
+  local tool name
+  for tool in "$PLUGINS_DIR/shadowone.top-bar/omarchy-topbar" "$PLUGINS_DIR/shadowone.disk-keeper/bin/diskkeeper"; do
+    name=$(basename "$tool")
+    if [[ -x $tool || $DRY_RUN == 1 ]] && [[ "$(readlink "$HOME/.local/bin/$name" 2>/dev/null)" != "$tool" ]]; then
+      backup "$HOME/.local/bin/$name"
+      mkdir -p "$HOME/.local/bin"
+      run ln -sfn "$tool" "$HOME/.local/bin/$name"
+    fi
+  done
+
+  # Disk Keeper's System items (old packages, journal, snapshots) need a small
+  # root helper. It's left to you because it puts files in /usr.
+  if [[ -d $PLUGINS_DIR/shadowone.disk-keeper && ! -e /usr/local/libexec/diskkeeper-root ]]; then
+    info "Disk Keeper: for its System items, run once: sudo bash ~/.config/omarchy/plugins/shadowone.disk-keeper/root/install.sh"
   fi
 
   ok "$added added, $present already installed"

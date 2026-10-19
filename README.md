@@ -1,7 +1,7 @@
 # ShadowOne's Omarchy setup
 
 My [Omarchy](https://omarchy.org) desktop, ready to install on another machine:
-Hyprland config, terminal settings, 32 shell plugins with my bar layout (a
+Hyprland config, terminal settings, 33 shell plugins with my bar layout (a
 bottom bar and a second Top Bar), the
 [ThinkPad theme](https://github.com/JarnKet/omarchy-thinkpad-theme) with its
 ASCII wallpapers, and the packages it all needs.
@@ -87,6 +87,10 @@ stay installed.
 - **Pointer Feel** builds two small Hyprland modules on your machine. If the
   mouse feel stops working after a Hyprland update, rebuild them with
   `~/.config/omarchy/plugins/ilysorc.pointer-feel/install.sh --yes`.
+- **Disk Keeper** never deletes on its own: click the disk icon, check what it
+  found, then clean. Its System items (old packages, journal, snapshots) need a
+  root helper, installed once with
+  `sudo bash ~/.config/omarchy/plugins/shadowone.disk-keeper/root/install.sh`.
 - Plugins install at their newest versions. If one breaks after an Omarchy
   update, `--pinned` gets the versions this was tested with, or
   `omarchy plugin update` gets the fixes.
@@ -98,6 +102,7 @@ stay installed.
 | Plugin | What it does |
 |--------|--------------|
 | [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
+| [Disk Keeper](extras/plugins/shadowone.disk-keeper) | Free space in the bar, a warning before the disk fills up, and a panel to clean caches, old packages, build folders and Docker leftovers (mine) |
 | [Omapager](https://github.com/njpatel/omapager) | Notifications that stack and group (replaces the built-in ones) |
 | [Keystroke](https://github.com/evindor/keystroke) | Raycast-style command palette instead of the Omarchy menu |
 | [Exposé](https://github.com/kristofferR/omarchy-expose) | All windows at once; 3-finger swipe up/down |
@@ -145,7 +150,7 @@ manifests/
   packages.txt     packages the setup needs
   apps.txt         my optional apps
   themes.txt       themes to clone
-extras/plugins/    plugins I wrote: shadowone.top-bar
+extras/plugins/    plugins I wrote: shadowone.top-bar, shadowone.disk-keeper
 ```
 
 Paths to my home folder (`/home/shadowone/...`) in the config files are

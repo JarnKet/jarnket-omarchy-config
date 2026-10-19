@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Disk Keeper</vendor>
+  <icon_name>drive-harddisk</icon_name>
+
+  <action id="io.github.shadowone.diskkeeper.clean">
+    <description>Clean system caches with Disk Keeper</description>
+    <message>Authentication is required to clean old packages, system logs, crash dumps or snapshots.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/local/libexec/diskkeeper-root</annotate>
+  </action>
+</policyconfig>

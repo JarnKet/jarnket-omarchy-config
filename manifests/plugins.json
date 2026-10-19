@@ -217,6 +217,14 @@
       "local": false
     },
     {
+      "id": "shadowone.disk-keeper",
+      "name": "Disk Keeper",
+      "version": "1.0.0",
+      "source": null,
+      "revision": null,
+      "local": true
+    },
+    {
       "id": "shadowone.top-bar",
       "name": "Top Bar",
       "version": "1.1.0",

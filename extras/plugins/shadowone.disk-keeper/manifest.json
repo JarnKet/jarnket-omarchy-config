@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowone.disk-keeper",
+  "name": "Disk Keeper",
+  "version": "1.0.0",
+  "author": "ShadowOne",
+  "license": "MIT",
+  "description": "Free space in the bar, a warning before the disk fills up, and a panel to see and safely clean caches, old packages, build folders, Docker leftovers and large files.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Disk Keeper",
+    "description": "Shows free space on /, warns when it runs low, and opens a panel to clean up.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "warnFreeGB": 20,
+      "criticalFreeGB": 10,
+      "notifications": true,
+      "pollMinutes": 5,
+      "barLabel": "free"
+    },
+    "schema": [
+      {
+        "key": "barLabel",
+        "type": "enum",
+        "label": "Text beside the icon",
+        "options": ["free", "percent", "none"],
+        "defaultValue": "free",
+        "description": "Free space (26G), percent used (81%), or icon only."
+      },
+      {
+        "key": "warnFreeGB",
+        "type": "integer",
+        "label": "Warn below (GB free)",
+        "min": 1,
+        "max": 2000,
+        "step": 1,
+        "defaultValue": 20,
+        "description": "The icon turns red and a notification appears when free space drops below this."
+      },
+      {
+        "key": "criticalFreeGB",
+        "type": "integer",
+        "label": "Critical below (GB free)",
+        "min": 1,
+        "max": 2000,
+        "step": 1,
+        "defaultValue": 10,
+        "description": "Urgent notification, repeated at most every 6 hours while it lasts."
+      },
+      {
+        "key": "notifications",
+        "type": "boolean",
+        "label": "Low-space notifications",
+        "defaultValue": true,
+        "description": "Send a desktop notification when free space crosses a threshold."
+      },
+      {
+        "key": "pollMinutes",
+        "type": "integer",
+        "label": "Check every (minutes)",
+        "min": 1,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 5,
+        "description": "How often free space is read. Each check is one short process."
+      }
+    ]
+  }
+}

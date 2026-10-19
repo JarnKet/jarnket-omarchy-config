@@ -1,0 +1,286 @@
+#!/usr/bin/python3 -IB
+"""Disk Keeper root helper. Installed root-owned at /usr/local/libexec/diskkeeper-root
+and only reachable through pkexec (policy io.github.shadowone.diskkeeper).
+
+It accepts a fixed vocabulary of tokens and nothing else:
+
+  pacman-cache:keep=1|2        paccache -rk N, paccache -ruk0, stale download-* dirs
+  journal:max=100M|200M|500M   journalctl --vacuum-size
+  coredumps:age=0|3|7|14d      /var/lib/systemd/coredump/core.* older than the age
+  snapshots-list               snapper -c root list (read only)
+  snapshots-delete:ids=N,...   snapper -c root delete --sync (never default/active/newest)
+
+Usage: diskkeeper-root [--dry-run] --json TOKEN...
+Every token is validated before anything runs. Without PKEXEC_UID (direct
+sudo) only --dry-run is allowed.
+"""
+
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import syslog
+import time
+
+PACMAN_PKG = "/var/cache/pacman/pkg"
+PACMAN_LOCK = "/var/lib/pacman/db.lck"
+COREDUMP_DIR = "/var/lib/systemd/coredump"
+
+TOKEN_RES = {
+    "pacman-cache": re.compile(r"pacman-cache:keep=([12])"),
+    "journal": re.compile(r"journal:max=(100M|200M|500M)"),
+    "coredumps": re.compile(r"coredumps:age=(0|3|7|14)d"),
+    "snapshots-list": re.compile(r"snapshots-list"),
+    "snapshots-delete": re.compile(r"snapshots-delete:ids=([0-9]{1,6}(?:,[0-9]{1,6}){0,19})"),
+}
+
+_UNITS = {"B": 1, "K": 1024, "KIB": 1024, "M": 1024 ** 2, "MIB": 1024 ** 2, "G": 1024 ** 3, "GIB": 1024 ** 3}
+
+
+class UsageError(Exception):
+    pass
+
+
+def validate_tokens(tokens):
+    """[(verb, match)] or raise UsageError. Pure; unit-tested."""
+    if not 1 <= len(tokens) <= 5:
+        raise UsageError("expected 1 to 5 tokens")
+    plan = []
+    seen = set()
+    for tok in tokens:
+        verb = tok.split(":", 1)[0]
+        rx = TOKEN_RES.get(verb)
+        m = rx.fullmatch(tok) if rx else None
+        if not m:
+            raise UsageError("invalid token: %r" % tok[:80])
+        if verb in seen:
+            raise UsageError("duplicate verb: %s" % verb)
+        seen.add(verb)
+        plan.append((verb, m))
+    if "snapshots-list" in seen and len(tokens) != 1:
+        raise UsageError("snapshots-list must be the only token")
+    return plan
+
+
+def parse_size(text):
+    m = re.match(r"\s*([0-9.]+)\s*([A-Za-z]*)", text or "")
+    if not m:
+        return 0
+    try:
+        return int(float(m.group(1)) * _UNITS.get((m.group(2) or "B").upper(), 1))
+    except ValueError:
+        return 0
+
+
+def run(argv, timeout):
+    try:
+        return subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True, errors="replace", timeout=timeout, check=False)
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(argv, 124, "", "timed out")
+    except OSError as exc:
+        return subprocess.CompletedProcess(argv, 127, "", str(exc))
+
+
+def verb_pacman_cache(m, dry):
+    keep = int(m.group(1))
+    if os.path.exists(PACMAN_LOCK):
+        return {"ok": False, "message": "pacman is busy (database locked)"}
+    freed = 0
+    notes = []
+    for args in (["-k%d" % keep], ["-u", "-k0"]):
+        r = run(["/usr/bin/paccache", "-d" if dry else "-r"] + args, 300)
+        found = re.search(r"disk space saved:\s*([0-9.]+\s*\w+)", r.stdout + r.stderr)
+        if found:
+            freed += parse_size(found.group(1))
+        if r.returncode not in (0, 1):
+            notes.append((r.stderr or r.stdout).strip()[-200:])
+    # Stale temp dirs from interrupted downloads (owned by alpm, older than a day).
+    cutoff = time.time() - 86400
+    removed = 0
+    fd = os.open(PACMAN_PKG, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for entry in os.scandir(fd):
+            if not re.fullmatch(r"download-[A-Za-z0-9]{6}", entry.name):
+                continue
+            st = os.stat(entry.name, dir_fd=fd, follow_symlinks=False)
+            if stat.S_ISDIR(st.st_mode) and st.st_mtime < cutoff:
+                removed += 1
+                if not dry:
+                    shutil.rmtree(entry.name, dir_fd=fd)
+    finally:
+        os.close(fd)
+    msg = "Freed %s" % human(freed) + (", %d stale download folders" % removed if removed else "")
+    return {"ok": not notes, "message": msg + ("; " + "; ".join(notes) if notes else ""), "freedBytes": freed}
+
+
+def verb_journal(m, dry):
+    limit = m.group(1)
+    if dry:
+        r = run(["/usr/bin/journalctl", "--disk-usage"], 60)
+        used = re.search(r"take up\s+([0-9.]+\s*\w+)", r.stdout + r.stderr)
+        size = parse_size(used.group(1)) if used else 0
+        return {"ok": True, "message": "Would shrink %s to %s" % (human(size), limit),
+                "freedBytes": max(0, size - parse_size(limit))}
+    r = run(["/usr/bin/journalctl", "--vacuum-size=" + limit], 120)
+    freed = sum(parse_size(x) for x in re.findall(r"freed\s+([0-9.]+\s*\w+)", r.stdout + r.stderr))
+    return {"ok": r.returncode == 0, "message": "Freed %s" % human(freed) if r.returncode == 0 else r.stderr.strip()[-200:],
+            "freedBytes": freed}
+
+
+def verb_coredumps(m, dry):
+    age = int(m.group(1)) * 86400
+    cutoff = time.time() - age
+    freed = 0
+    count = 0
+    fd = os.open(COREDUMP_DIR, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for entry in os.scandir(fd):
+            name = entry.name
+            if not re.fullmatch(r"core\.[^/]+", name):
+                continue
+            st = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            if not stat.S_ISREG(st.st_mode) or st.st_uid != 0 or st.st_mtime >= cutoff:
+                continue
+            freed += st.st_blocks * 512
+            count += 1
+            if not dry:
+                os.unlink(name, dir_fd=fd)
+    finally:
+        os.close(fd)
+    return {"ok": True, "message": "%s %d dump%s (%s)" % ("Would remove" if dry else "Removed", count,
+                                                           "" if count == 1 else "s", human(freed)),
+            "freedBytes": freed}
+
+
+def snapper_list():
+    r = run(["/usr/bin/snapper", "--jsonout", "-c", "root", "list", "--disable-used-space"], 120)
+    if r.returncode != 0:
+        raise RuntimeError((r.stderr or r.stdout).strip()[-200:] or "snapper failed")
+    data = json.loads(r.stdout)
+    rows = data.get("root") if isinstance(data, dict) else None
+    if not isinstance(rows, list):
+        raise RuntimeError("unexpected snapper output")
+    out = []
+    for row in rows:
+        try:
+            number = int(row.get("number"))
+        except (TypeError, ValueError):
+            continue
+        out.append({
+            "number": number,
+            "type": str(row.get("type", "")),
+            "pre": row.get("pre-number"),
+            "date": str(row.get("date", "")),
+            "description": str(row.get("description", ""))[:200],
+            "cleanup": str(row.get("cleanup", "")),
+            "default": bool(row.get("default")),
+            "active": bool(row.get("active")),
+        })
+    return out
+
+
+def protected_numbers(snaps):
+    real = [s for s in snaps if s["number"] > 0]
+    newest = max((s["number"] for s in real), default=None)
+    protected = {0}
+    if newest is not None:
+        protected.add(newest)
+    protected.update(s["number"] for s in snaps if s["default"] or s["active"])
+    return protected
+
+
+def verb_snapshots_list(m, dry):
+    snaps = snapper_list()
+    prot = protected_numbers(snaps)
+    for s in snaps:
+        s["protected"] = s["number"] in prot
+    return {"ok": True, "message": "%d snapshots" % len([s for s in snaps if s["number"] > 0]),
+            "snapshots": [s for s in snaps if s["number"] > 0]}
+
+
+def verb_snapshots_delete(m, dry):
+    ids = [int(x) for x in m.group(1).split(",")]
+    r = run(["/usr/bin/findmnt", "-no", "FSROOT", "/"], 10)
+    if r.stdout.strip() != "/@":
+        return {"ok": False, "message": "Booted from a snapshot; refusing to delete snapshots"}
+    snaps = snapper_list()
+    known = {s["number"] for s in snaps}
+    prot = protected_numbers(snaps)
+    bad = [i for i in ids if i not in known or i in prot]
+    if bad:
+        return {"ok": False, "message": "Refused snapshots: %s (missing, newest, default or active)" % ", ".join(map(str, bad))}
+    if dry:
+        return {"ok": True, "message": "Would delete %s" % ", ".join(map(str, ids))}
+    r = run(["/usr/bin/snapper", "-c", "root", "delete", "--sync"] + [str(i) for i in ids], 900)
+    return {"ok": r.returncode == 0,
+            "message": ("Deleted %s" % ", ".join(map(str, ids))) if r.returncode == 0 else r.stderr.strip()[-200:]}
+
+
+VERBS = {
+    "pacman-cache": verb_pacman_cache,
+    "journal": verb_journal,
+    "coredumps": verb_coredumps,
+    "snapshots-list": verb_snapshots_list,
+    "snapshots-delete": verb_snapshots_delete,
+}
+
+
+def human(n):
+    n = float(n)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1000 or unit == "TB":
+            return ("%.0f %s" if unit in ("B", "KB") else "%.1f %s") % (n, unit)
+        n /= 1000
+    return "%d B" % n
+
+
+def main(argv):
+    dry = False
+    tokens = []
+    for arg in argv:
+        if arg == "--dry-run":
+            dry = True
+        elif arg == "--json":
+            pass
+        else:
+            tokens.append(arg)
+    try:
+        plan = validate_tokens(tokens)
+    except UsageError as exc:
+        print(json.dumps({"schema": 1, "ok": False, "error": str(exc)}))
+        return 2
+    if os.geteuid() != 0:
+        print(json.dumps({"schema": 1, "ok": False, "error": "must run as root (through pkexec)"}))
+        return 2
+    caller = os.environ.get("PKEXEC_UID", "")
+    if not caller and not dry:
+        print(json.dumps({"schema": 1, "ok": False, "error": "only --dry-run is allowed outside pkexec"}))
+        return 2
+
+    os.environ.clear()
+    os.environ.update({"PATH": "/usr/bin:/usr/sbin", "LC_ALL": "C.UTF-8"})
+    os.umask(0o022)
+    os.chdir("/")
+    syslog.openlog("diskkeeper-root", 0, syslog.LOG_AUTHPRIV)
+
+    results = []
+    all_ok = True
+    for (verb, m), tok in zip(plan, tokens):
+        syslog.syslog(syslog.LOG_NOTICE, "uid=%s %s%s" % (caller or "?", tok, " (dry run)" if dry else ""))
+        try:
+            res = VERBS[verb](m, dry)
+        except Exception as exc:  # report, never traceback into the UI
+            res = {"ok": False, "message": "%s: %s" % (type(exc).__name__, exc)}
+        res["token"] = tok
+        all_ok = all_ok and res.get("ok", False)
+        results.append(res)
+    print(json.dumps({"schema": 1, "ok": all_ok, "dryRun": dry, "verbs": results}))
+    return 0 if all_ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
