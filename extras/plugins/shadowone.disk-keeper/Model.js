@@ -298,6 +298,9 @@ function blockedText(blocked) {
   if (blocked.reason === "bad-name") return "unreadable name"
   if (blocked.reason === "helper-missing") return "needs setup"
   if (blocked.reason === "helper-outdated") return "update helper"
+  if (blocked.reason === "inactive") return "switched off"
+  if (blocked.reason === "stale") return "needs fix"
+  if (blocked.reason === "reboot") return "restart needed"
   return blocked.reason
 }
 

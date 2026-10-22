@@ -9,6 +9,10 @@ It accepts a fixed vocabulary of tokens and nothing else:
   coredumps:age=0|3|7|14d      /var/lib/systemd/coredump/core.* older than the age
   snapshots-list               snapper -c root list (read only)
   snapshots-delete:ids=N,...   snapper -c root delete --sync (never default/active/newest)
+  hibernation:remove=swapfile,root-swapfile,resume
+                               an unused swapfile (/swap/swapfile, /swapfile) that carries a swap
+                               signature and is neither switched on nor in fstab; resume settings
+                               (backed up, then limine-mkinitcpio) once no disk swap is configured
 
 Usage: diskkeeper-root [--dry-run] --json TOKEN...
 Every token is validated before anything runs. Without PKEXEC_UID (direct
@@ -28,6 +32,9 @@ import time
 PACMAN_PKG = "/var/cache/pacman/pkg"
 PACMAN_LOCK = "/var/lib/pacman/db.lck"
 COREDUMP_DIR = "/var/lib/systemd/coredump"
+SWAPFILES = {"swapfile": "/swap/swapfile", "root-swapfile": "/swapfile"}
+RESUME_FILES = ("/etc/limine-entry-tool.d/resume.conf", "/etc/mkinitcpio.conf.d/omarchy_resume.conf")
+BACKUPS = "/var/backups"
 
 TOKEN_RES = {
     "pacman-cache": re.compile(r"pacman-cache:keep=([12])"),
@@ -35,6 +42,8 @@ TOKEN_RES = {
     "coredumps": re.compile(r"coredumps:age=(0|3|7|14)d"),
     "snapshots-list": re.compile(r"snapshots-list"),
     "snapshots-delete": re.compile(r"snapshots-delete:ids=([0-9]{1,6}(?:,[0-9]{1,6}){0,19})"),
+    "hibernation": re.compile(r"hibernation:remove=((?:swapfile|root-swapfile|resume)"
+                              r"(?:,(?:swapfile|root-swapfile|resume)){0,2})"),
 }
 
 _UNITS = {"B": 1, "K": 1024, "KIB": 1024, "M": 1024 ** 2, "MIB": 1024 ** 2, "G": 1024 ** 3, "GIB": 1024 ** 3}
@@ -220,12 +229,127 @@ def verb_snapshots_delete(m, dry):
             "message": ("Deleted %s" % ", ".join(map(str, ids))) if r.returncode == 0 else r.stderr.strip()[-200:]}
 
 
+def read_swap_lines(path, column, wanted=None, header=False):
+    """Field 0 of each line of /proc/swaps or fstab; `wanted` filters on field `column`."""
+    out = []
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            if header:
+                next(fh, None)
+            for line in fh:
+                fields = line.split("#", 1)[0].split()
+                if len(fields) > column and (wanted is None or fields[column] == wanted):
+                    out.append(fields[0].replace("\\040", " "))
+    except OSError:
+        pass
+    return out
+
+
+def swap_signature(dir_fd, name, page_size=None):
+    """'swap', 'image' (a hibernation image is in it) or None. Reads the first page only."""
+    page_size = page_size or os.sysconf("SC_PAGE_SIZE")
+    fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NOCTTY, dir_fd=dir_fd)
+    try:
+        page = os.pread(fd, page_size, 0)
+    finally:
+        os.close(fd)
+    if len(page) < page_size:
+        return None
+    sig = page[page_size - 10:]
+    if sig == b"SWAPSPACE2":
+        return "swap"
+    if sig.startswith(b"S1SUSPEND"):
+        return "image"
+    return None
+
+
+def remove_swapfile(path, active, fstab, dry):
+    """(freed bytes, message). Refuses anything that is not an unused, root-owned swapfile."""
+    if path in active:
+        return 0, "%s is switched on; refused" % path
+    if path in fstab:
+        return 0, "%s is in /etc/fstab; refused" % path
+    parent, name = os.path.split(path)
+    try:
+        fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except FileNotFoundError:
+        return 0, "%s is already gone" % path
+    try:
+        try:
+            st = os.stat(name, dir_fd=fd, follow_symlinks=False)
+        except FileNotFoundError:
+            return 0, "%s is already gone" % path
+        if not stat.S_ISREG(st.st_mode) or st.st_uid != 0:
+            return 0, "%s is not a root-owned file; refused" % path
+        sig = swap_signature(fd, name)
+        if sig is None:
+            return 0, "%s has no swap signature; refused" % path
+        size = st.st_blocks * 512
+        if not dry:
+            os.unlink(name, dir_fd=fd)
+        left = os.listdir(fd)
+    finally:
+        os.close(fd)
+    what = "%s %s (%s%s)" % ("Would remove" if dry else "Removed", path, human(size),
+                             ", held an old hibernation image" if sig == "image" else "")
+    # Omarchy keeps its swapfile in a subvolume of its own; drop it once empty.
+    if parent == "/swap" and not left and not dry:
+        r = run(["/usr/bin/btrfs", "subvolume", "show", parent], 30)
+        if r.returncode == 0:
+            r = run(["/usr/bin/btrfs", "subvolume", "delete", parent], 120)
+            what += " and the /swap subvolume" if r.returncode == 0 else "; /swap stays: " + r.stderr.strip()[-120:]
+    return size, what
+
+
+def remove_resume_settings(active, fstab, dry):
+    """(ok, message). Only once no disk swap is left that hibernation could use."""
+    disk = [p for p in active + fstab if not p.startswith("/dev/zram")]
+    if disk:
+        return False, "Resume settings kept: hibernation can still use %s" % disk[0]
+    present = [p for p in RESUME_FILES if os.path.lexists(p)]
+    if not present:
+        return True, "No resume settings left"
+    if dry:
+        return True, "Would remove %s and rebuild the boot image" % ", ".join(present)
+    backup = os.path.join(BACKUPS, "diskkeeper-resume-" + time.strftime("%Y%m%d%H%M%S"))
+    os.makedirs(backup, mode=0o700)
+    for p in present:
+        shutil.copy2(p, backup, follow_symlinks=False)
+        os.unlink(p)
+    r = run(["/usr/bin/limine-mkinitcpio"], 900)
+    if r.returncode != 0:
+        return False, "Removed resume settings (copy in %s), but limine-mkinitcpio failed: %s" % (
+            backup, (r.stderr or r.stdout).strip()[-200:])
+    return True, "Removed resume settings (copy in %s) and rebuilt the boot image" % backup
+
+
+def verb_hibernation(m, dry):
+    wanted = set(m.group(1).split(","))
+    active = read_swap_lines("/proc/swaps", 1, header=True)
+    fstab = read_swap_lines("/etc/fstab", 2, "swap")
+    freed = 0
+    ok = True
+    messages = []
+    for key in ("swapfile", "root-swapfile"):
+        if key in wanted:
+            size, msg = remove_swapfile(SWAPFILES[key], active, fstab, dry)
+            freed += size
+            ok = ok and (size > 0 or "already gone" in msg)
+            messages.append(msg)
+    if "resume" in wanted:
+        done, msg = remove_resume_settings(active, fstab, dry)
+        ok = ok and done
+        messages.append(msg)
+    return {"ok": ok, "message": "; ".join(messages), "freedBytes": freed}
+
+
 VERBS = {
     "pacman-cache": verb_pacman_cache,
     "journal": verb_journal,
     "coredumps": verb_coredumps,
     "snapshots-list": verb_snapshots_list,
     "snapshots-delete": verb_snapshots_delete,
+    "hibernation": verb_hibernation,
 }
 
 

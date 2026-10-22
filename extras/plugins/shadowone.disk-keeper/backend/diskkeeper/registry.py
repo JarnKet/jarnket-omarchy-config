@@ -785,6 +785,7 @@ def all_categories():
         BraveCache(), JetBrainsCache(), VSCodeCache(), ClaudeDesktopCache(),
         DownloadedTools(),
         rootcats.PacmanCache(), rootcats.Journal(), rootcats.Coredumps(), rootcats.Snapshots(),
+        rootcats.Hibernation(),
         docker.BuildCache(), docker.DanglingImages(), docker.UnusedImages(), docker.DanglingVolumes(),
         DownloadsOld(), Trash(),
     ]

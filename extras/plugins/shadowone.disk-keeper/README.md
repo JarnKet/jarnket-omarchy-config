@@ -5,7 +5,7 @@ An Omarchy bar widget that keeps the root disk from filling up.
 - **Bar:** free space on `/` (`󰋊 26G`). Turns red below the warning threshold (20 GB by default) and shows an alert icon below the critical one (10 GB).
 - **Notifications:** sent when the level gets worse; a critical one repeats at most every 6 hours. With Omarchy's own notifications a click opens the panel. omapager only runs allowlisted click commands, so there you click the disk icon instead.
 - **Panel**, with three tabs:
-  - **Clean up:** developer caches (yay, npm, npx, pnpm, mise, bun…), app caches (Brave, IntelliJ, VS Code, Claude Desktop, only while the app is closed), downloaded tools, system items (old packages, journal, crash dumps, snapshots), Docker, old Downloads and the Trash.
+  - **Clean up:** developer caches (yay, npm, npx, pnpm, mise, bun…), app caches (Brave, IntelliJ, VS Code, Claude Desktop, only while the app is closed), downloaded tools, system items (old packages, journal, crash dumps, snapshots, hibernation), Docker, old Downloads and the Trash.
   - **Explore:** the biggest folders and files in `$HOME`. You can move them to the Trash, open them, or add them to a keep list.
   - **Projects:** `node_modules`, `.next`, `.turbo`, `dist`… in `~/Projects` and `~/Work`.
 
@@ -37,6 +37,7 @@ Toggle the panel from a keybind with `omarchy-shell shell toggle shadowone.disk-
 - **Build folders inside git need git's confirmation:** they must be ignored and contain no tracked file. Outside git, only always-generated names qualify, and only next to a project file.
 - **Explore and old Downloads never delete.** They only move to the Trash.
 - **Docker:** containers are never pruned, and volumes are never pruned in bulk. Unused volumes are removed one by one by name, after a second confirmation.
+- **Hibernation:** Linux writes each hibernation image into the same swapfile and clears it on resume, so images never pile up. The panel shows the swapfile in use (never offered) and warns when the resume settings are older than the swapfile or a restart is pending. It only offers leftovers: a swapfile at `/swap/swapfile` or `/swapfile` that is neither switched on nor in `/etc/fstab`, and resume settings once no disk swap is configured. The helper checks the swap signature before deleting, and backs up the resume files to `/var/backups` before it rebuilds the boot image.
 - **Root work** goes through `/usr/local/libexec/diskkeeper-root`, through `pkexec` with `auth_admin`. All system items of one clean share a single fingerprint prompt. The helper accepts only a fixed list of tokens.
 - **Nothing is written into the plugin folder.** The shell reloads every plugin on any change there. Python always runs with `-IB`.
 

@@ -171,3 +171,154 @@ class Snapshots(RootCategory):
         if not keys:
             return None
         return "snapshots-delete:ids=" + ",".join(keys)
+
+
+# Hibernation. Linux writes the image into the same swapfile every time and
+# swapon clears it after resume, so images never pile up. What can go stale
+# is a whole setup: a swapfile nobody switches on, or resume settings left in
+# the boot entry after the swapfile is gone.
+PROC_SWAPS = "/proc/swaps"
+FSTAB = "/etc/fstab"
+SWAPFILES = {"swapfile": "/swap/swapfile", "root-swapfile": "/swapfile"}
+RESUME_CONF = "/etc/limine-entry-tool.d/resume.conf"
+RESUME_HOOK = "/etc/mkinitcpio.conf.d/omarchy_resume.conf"
+RUNNING_RESUME_OFFSET = "/sys/power/resume_offset"
+RESUME_FIX = ("sudo rm %s %s && omarchy-hibernation-setup" % (RESUME_CONF, RESUME_HOOK))
+
+
+def active_swaps(path=None):
+    """Swap paths the kernel uses now. /proc/swaps escapes spaces as \\040."""
+    out = []
+    try:
+        with open(path or PROC_SWAPS, encoding="utf-8", errors="replace") as fh:
+            next(fh, None)
+            for line in fh:
+                fields = line.split()
+                if fields:
+                    out.append(fields[0].replace("\\040", " "))
+    except OSError:
+        pass
+    return out
+
+
+def fstab_swaps(path=None):
+    """First fields of the swap lines in fstab."""
+    out = []
+    try:
+        with open(path or FSTAB, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                fields = line.split("#", 1)[0].split()
+                if len(fields) >= 3 and fields[2] == "swap":
+                    out.append(fields[0].replace("\\040", " "))
+    except OSError:
+        pass
+    return out
+
+
+def resume_offset(path):
+    """resume_offset=N from a boot drop-in, or the bare number in /sys/power/resume_offset."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+    except OSError:
+        return None
+    m = re.search(r"resume_offset=([0-9]+)", text) or re.fullmatch(r"\s*([0-9]+)\s*", text)
+    return int(m.group(1)) if m else None
+
+
+def hibernate_delay(ctx):
+    r = ctx.run(["systemd-analyze", "cat-config", "systemd/sleep.conf"], timeout=15, env={"LC_ALL": "C"})
+    found = re.findall(r"^HibernateDelaySec=(\S+)", r.stdout, re.M)
+    return found[-1] if found else None
+
+
+class Hibernation(RootCategory):
+    id = "hibernation"
+    title = "Hibernation"
+    description = ("The swapfile that holds memory while the laptop hibernates. Each hibernate reuses it, so old images "
+                   "never pile up; only leftovers of an earlier setup are offered.")
+    itemized = True
+    estimate_kind = "du"
+
+    def state(self, ctx):
+        if "hibernation" in ctx.memo:
+            return ctx.memo["hibernation"]
+        active = active_swaps()
+        fstab = fstab_swaps()
+        files = {}
+        for key, path in SWAPFILES.items():
+            try:
+                st = os.lstat(path)
+            except OSError:
+                continue
+            if stat.S_ISREG(st.st_mode):
+                files[key] = (path, st)
+        resume = [p for p in (RESUME_CONF, RESUME_HOOK) if os.path.lexists(p)]
+        disk_swap = [p for p in active + fstab if not p.startswith("/dev/zram")]
+        st = {"active": active, "fstab": fstab, "files": files, "resume": resume, "diskSwap": disk_swap,
+              "on": bool(resume) and any(path in active for path, _ in files.values()),
+              "delay": hibernate_delay(ctx) if resume else None}
+        ctx.memo["hibernation"] = st
+        return st
+
+    def available(self, ctx):
+        s = self.state(ctx)
+        return bool(s["files"] or s["resume"])
+
+    def note(self, ctx):
+        s = self.state(ctx)
+        if s["on"]:
+            return "On: closing the lid sleeps, then hibernates" + (" after %s" % s["delay"] if s["delay"] else "")
+        if not s["diskSwap"]:
+            return "Off. These are left over from an earlier setup."
+        return None
+
+    def estimate(self, ctx):
+        s = self.state(ctx)
+        items = []
+
+        def add(key, label, detail, size=0, blocked=None, mtime=0):
+            items.append({"key": key, "label": label, "detail": detail, "bytes": size, "mtime": mtime, "id": None,
+                          "actionable": blocked is None, "blocked": blocked, "selected": blocked is None})
+
+        for key, (path, st) in s["files"].items():
+            size = st.st_blocks * 512
+            if path in s["active"]:
+                why = "Needed to hibernate. To turn hibernation off: omarchy-hibernation-remove" if s["resume"] \
+                    else "Used as swap only; there are no resume settings, so nothing hibernates into it"
+                add(key, "Hibernation swapfile", path, size, registry.blocked("in-use", "%s · %s" % (path, why)),
+                    int(st.st_mtime))
+            elif path in s["fstab"]:
+                add(key, "Swapfile switched off", path, size,
+                    registry.blocked("inactive", "%s is in /etc/fstab but not switched on: sudo swapon -a" % path),
+                    int(st.st_mtime))
+            else:
+                add(key, "Unused swapfile", "%s · not in /etc/fstab and not switched on" % path, size,
+                    mtime=int(st.st_mtime))
+
+        if s["resume"] and not s["diskSwap"]:
+            add("resume", "Old resume settings",
+                "The boot entry still looks for a hibernation image. Removing them rebuilds the boot image (about a minute)")
+        elif s["on"]:
+            used = [(p, st) for p, st in s["files"].values() if p in s["active"]]
+            conf_mtime = os.lstat(RESUME_CONF).st_mtime if os.path.exists(RESUME_CONF) else None
+            # The swapfile's ctime is when it was made: hibernation and swapping
+            # write around the VFS. Resume settings older than it point elsewhere.
+            if conf_mtime is not None and any(st.st_ctime > conf_mtime + 5 for _, st in used):
+                add("resume-stale", "Resume settings out of date", "",
+                    blocked=registry.blocked("stale", "Older than the swapfile, so a hibernated session would not come "
+                                                      "back. Fix: " + RESUME_FIX))
+            else:
+                configured = resume_offset(RESUME_CONF)
+                running = resume_offset(RUNNING_RESUME_OFFSET)
+                if configured is not None and configured != running:
+                    add("reboot", "Restart needed", "",
+                        blocked=registry.blocked("reboot", "Resume settings changed since this boot. Restart before "
+                                                           "relying on hibernation"))
+        return sum(i["bytes"] for i in items if i["actionable"]), items
+
+    def token(self, ctx, keys):
+        if keys is None:
+            keys = [i["key"] for i in self.estimate(ctx)[1] if i["actionable"]]
+        picked = [k for k in ("swapfile", "root-swapfile", "resume") if k in set(keys)]
+        return "hibernation:remove=" + ",".join(picked) if picked else None
