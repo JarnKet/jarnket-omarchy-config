@@ -3,20 +3,11 @@
 hl.monitor({
   output = "desc:Lenovo Group Limited 0x403D",
   mode = "1920x1200@60.00",
-  position = "2006x0",
-  scale = 1.5,
+  position = "1574x1240",
+  scale = 1.6,
   vrr = 0,
   sdr_min_luminance = 0.2,
   sdr_max_luminance = 80,
-  mirror = "desc:LG Electronics webOS TV 0x01010101",
 })
 
-hl.monitor({
-  output = "desc:LG Electronics webOS TV 0x01010101",
-  mode = "4096x2160@60.00",
-  position = "-2522x904",
-  scale = 3.2,
-  vrr = 0,
-  sdr_min_luminance = 0.2,
-  sdr_max_luminance = 80,
-})
+hl.config({ input = { touchdevice = { transform = 0 }, tablet = { transform = 0 } } })

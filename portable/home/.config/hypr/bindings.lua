@@ -32,6 +32,12 @@
 pcall(require, "hypr.omalang_binds")
 -- omalang:binds end
 
+-- Use Strata instead of Nautilus for Omarchy's file-manager shortcuts.
+hl.unbind("SUPER + SHIFT + F")
+hl.unbind("SUPER + ALT + SHIFT + F")
+o.bind("SUPER + SHIFT + F", "File manager", { launch = "strata" })
+o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)", "uwsm-app -- strata \"$(omarchy-cmd-terminal-cwd)\"")
+
 -- Panel Notes shortcut
 o.bind("SUPER + ALT + E", "Panel Notes", "omarchy-shell panel-notes toggle")
 
@@ -42,3 +48,6 @@ o.bind("PRINT", "Screenshot (clipboard only)", "omarchy-capture-screenshot smart
 -- BEGIN io.github.chris.snitch
 o.bind("SUPER + SHIFT + ALT + S", "Snitch", "omarchy-shell shell toggle io.github.chris.snitch '{}'")
 -- END io.github.chris.snitch
+
+-- Claude Code session history (all projects); Enter resumes in the session's folder.
+o.bind("SUPER + ALT + C", "Claude history", "omarchy-launch-tui claude-history")

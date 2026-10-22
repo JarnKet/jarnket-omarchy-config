@@ -37,8 +37,10 @@ hl.config({
       -- Enable the touchpad while typing.
       disable_while_typing = false,
 
-      -- Left-click-and-drag with three fingers.
-      drag_3fg = 1,
+      -- Left-click-and-drag with FOUR fingers (2). With 3 fingers (1), libinput
+      -- turns any 3-finger swipe that doesn't move 5 mm in its first 80 ms into
+      -- a drag, which cancels slow workspace swipes halfway.
+      drag_3fg = 2,
     },
   },
 })
@@ -50,6 +52,13 @@ o.window("com.mitchellh.ghostty", { scroll_touchpad = 0.2 })
 --Enable touchpad gestures for changing workspaces.
 --See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Gestures/
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+hl.config({
+  gestures = {
+    -- Commit to the next workspace after 30% of the swipe (default 50%),
+    -- closer to macOS/GNOME. Quick flicks still switch regardless.
+    workspace_swipe_cancel_ratio = 0.3,
+  },
+})
 hl.gesture({ fingers = 3, direction = "up", action = function()
   os.execute("omarchy-shell expose open &")
 end })
@@ -81,6 +90,14 @@ hl.config({
 -- Pointer Feel preferences (managed by the bar panel).
 dofile(os.getenv("HOME") .. "/.config/hypr/pointer-feel.lua")
 
+-- Windows scales Enhance pointer precision by ONE system DPI on every monitor.
+-- My Windows runs at 150% (registry AppliedDPI = 144), so pin the Win engine
+-- to that; without it the MSI (scale 1) felt 1.5x slower than Windows.
+-- system_dpi is a local patch in the vendored windows-pointer-linux plugin.cpp.
+if hl.plugin.windows_pointer_linux then
+  hl.config({ plugin = { windows_pointer_linux = { system_dpi = 144 } } })
+end
+
 -- Per-device split: mouse and touchpad get their own settings.
 -- Device blocks override the shared input values above (and anything
 -- Pointer Feel / OmaSettings write), so edit these to tune each device.
@@ -95,7 +112,7 @@ hl.device({
   scroll_factor = 0.4,
   clickfinger_behavior = true,
   disable_while_typing = false,
-  drag_3fg = 1,
+  drag_3fg = 2, -- 4-finger drag, keeps 3 fingers free for workspace swipes
 })
 
 -- Bluetooth mouse. Pointer motion comes from Pointer Feel's Win engine;

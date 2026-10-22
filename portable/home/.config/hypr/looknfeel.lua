@@ -72,6 +72,12 @@ hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 2.36, bezier = "a
 hl.animation({ leaf = "workspaces", enabled = true, speed = 4.5, bezier = "easeInOutCubic", style = "slide" })
 -- <<< omamotion managed block <<<
 
+-- Smooth workspace swipe: when you lift your fingers mid-swipe, the slide
+-- finishes with an ease-out (fast start, soft landing) instead of
+-- easeInOutCubic, which stalls right after release before speeding up.
+hl.curve("swipeOut", { type = "bezier", points = { { 0.25, 0.9 }, { 0.3, 1 } } })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 3.5, bezier = "swipeOut", style = "slide" })
+
 -- >>> omaland managed block >>>
 -- Written by Omaland. Safe to hand-edit: Omaland re-reads this block
 -- every time it opens, and only ever rewrites what's between the fences.

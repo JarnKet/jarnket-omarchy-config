@@ -27,4 +27,8 @@
   // Example: replace the default About action by reusing the same id. Existing
   // fields are kept unless overridden.
   // "about": {"icon":"","label":"About","action":"omarchy-launch-or-focus-tui \"zsh -c 'fastfetch; read -k 1'\""},
+
+  // Suspend follows the lid: sleep, then hibernate after 3 h on battery
+  // (logind SleepOperation, ~/.local/share/suspend-then-hibernate).
+  "system.suspend": {"action":"systemctl sleep"}
 }

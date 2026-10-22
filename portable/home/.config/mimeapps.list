@@ -8,5 +8,10 @@ x-scheme-handler/mailto=HEY.desktop
 x-scheme-handler/claude-cli=claude-code-url-handler.desktop
 x-scheme-handler/claude=com.anthropic.Claude.desktop
 x-scheme-handler/jetbrains=jetbrainsd.desktop
+inode/directory=io.github.lgse.Strata.desktop
+application/vnd.microsoft.portable-executable=wine-run-exe.desktop
+application/x-ms-dos-executable=wine-run-exe.desktop
+application/x-msdownload=wine-run-exe.desktop
+application/x-msi=wine-run-exe.desktop
 
 [Added Associations]
