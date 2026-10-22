@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowone.power",
+  "name": "Battery",
+  "version": "1.1.0",
+  "author": "ShadowOne (from Omarchy power)",
+  "description": "Battery, conservation mode, battery health, and power profiles",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Battery",
+    "description": "Battery, conservation mode, battery health, and power profiles",
+    "category": "System",
+    "allowMultiple": false
+  },
+  "omarchy": {
+    "clonedFrom": "omarchy.power"
+  }
+}

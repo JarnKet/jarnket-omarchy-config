@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowone.clock",
+  "name": "Clock & Google Calendar",
+  "version": "1.1.0",
+  "author": "ShadowOne",
+  "license": "MIT",
+  "description": "Omarchy's clock and calendar popup, plus read-only Google Calendar events from any number of Google accounts, with reminders.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Clock & Google Calendar",
+    "description": "Date/time label with a calendar popup that shows your Google Calendar events.",
+    "category": "Time",
+    "allowMultiple": false,
+    "defaults": {
+      "syncMinutes": 10,
+      "reminderMinutes": 10,
+      "hideDeclined": true,
+      "showEventDots": true
+    },
+    "schema": [
+      {
+        "key": "syncMinutes",
+        "type": "integer",
+        "label": "Sync every (minutes)",
+        "min": 5,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 10,
+        "description": "How often events are fetched from Google. Opening the calendar also syncs when the data is over 2 minutes old."
+      },
+      {
+        "key": "reminderMinutes",
+        "type": "integer",
+        "label": "Remind before events (minutes)",
+        "min": 0,
+        "max": 120,
+        "step": 1,
+        "defaultValue": 10,
+        "description": "A notification this long before each timed event. 0 turns reminders off. Do Not Disturb still applies."
+      },
+      {
+        "key": "hideDeclined",
+        "type": "boolean",
+        "label": "Hide declined invitations",
+        "defaultValue": true,
+        "description": "Leave out events you said no to."
+      },
+      {
+        "key": "showEventDots",
+        "type": "boolean",
+        "label": "Dots on days with events",
+        "defaultValue": true,
+        "description": "Small dots in the month grid, in each calendar's Google colour."
+      }
+    ]
+  },
+  "omarchy": {
+    "clonedFrom": "omarchy.clock"
+  }
+}

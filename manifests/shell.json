@@ -1,6 +1,6 @@
 {
   "bar": {
-    "centerAnchor": "omarchy.clock",
+    "centerAnchor": "shadowone.clock",
     "layout": {
       "center": [
         {
@@ -13,7 +13,7 @@
         {
           "format": "ddd d MMM HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
-          "id": "omarchy.clock",
+          "id": "shadowone.clock",
           "verticalFormat": "HH\n—\nmm"
         },
         {
@@ -185,12 +185,12 @@
           "id": "omarchy.network"
         },
         {
-          "id": "omarchy.power"
+          "id": "shadowone.power"
         }
       ]
     },
     "position": "bottom",
-    "transparent": true
+    "transparent": false
   },
   "cloneSourceRestores": [
     "ssupt.audio-control",

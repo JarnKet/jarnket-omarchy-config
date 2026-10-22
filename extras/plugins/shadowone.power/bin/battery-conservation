@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# battery-conservation: Battery conservation mode through UPower's charge limit.
+#
+#   battery-conservation on        stop charging at the limit (75 -> 80% on this ThinkPad)
+#   battery-conservation off       charge to 100% again
+#   battery-conservation toggle    flip between the two
+#   battery-conservation status    show the mode, charge level and battery health
+#   battery-conservation --shell   the same as key<TAB>value lines, for the Battery panel
+#
+# UPower writes the thresholds, keeps the choice across reboots and lets the
+# active session change it without a password (polkit action
+# org.freedesktop.UPower.enable-charging-limit). The limit itself comes from the
+# CHARGE_LIMIT udev property (UPower's hwdb ships 75,80).
+
+set -euo pipefail
+
+SERVICE=org.freedesktop.UPower
+IFACE=org.freedesktop.UPower.Device
+
+die() { echo "battery-conservation: $*" >&2; exit 1; }
+
+battery_path() {
+  upower -e 2>/dev/null | grep -m1 '/battery_BAT' || true
+}
+
+# Reads UPower properties in order, one value per line, without busctl's type
+# prefix or string quotes.
+props() {
+  busctl get-property "$SERVICE" "$DEV" "$IFACE" "$@" |
+    sed -E 's/^[a-z] //; s/^"(.*)"$/\1/'
+}
+
+technology_name() {
+  case $1 in
+    1) echo "Lithium ion" ;;
+    2) echo "Lithium polymer" ;;
+    3) echo "Lithium iron phosphate" ;;
+    4) echo "Lead acid" ;;
+    5) echo "Nickel cadmium" ;;
+    6) echo "Nickel metal hydride" ;;
+    *) echo "" ;;
+  esac
+}
+
+load() {
+  local values
+  values=$(props ChargeThresholdSupported ChargeThresholdEnabled ChargeStartThreshold \
+    ChargeEndThreshold Capacity EnergyFull EnergyFullDesign ChargeCycles Technology \
+    Vendor Model Percentage State)
+  {
+    read -r SUPPORTED; read -r ENABLED; read -r START; read -r END
+    read -r HEALTH; read -r FULL; read -r DESIGN; read -r CYCLES; read -r TECH
+    read -r VENDOR; read -r MODEL; read -r PERCENT; read -r STATE
+  } <<<"$values"
+}
+
+state_name() {
+  case $1 in
+    1) echo "charging" ;;
+    2) echo "discharging" ;;
+    3) echo "empty" ;;
+    4) echo "fully charged" ;;
+    5) echo "holding" ;;
+    6) echo "pending discharge" ;;
+    *) echo "unknown" ;;
+  esac
+}
+
+condition() {
+  awk -v h="$1" 'BEGIN {
+    if (h <= 0) print ""
+    else if (h >= 80) print "Good"
+    else if (h >= 60) print "Fair"
+    else print "Worn"
+  }'
+}
+
+set_limit() {
+  [[ $SUPPORTED == true ]] || die "this battery has no charge limit support"
+  local err
+  if ! err=$(busctl call "$SERVICE" "$DEV" "$IFACE" EnableChargeThreshold b "$1" 2>&1); then
+    die "UPower refused: ${err:-unknown error}"
+  fi
+}
+
+cmd_shell() {
+  [[ $SUPPORTED == true ]] && printf 'supported\tyes\n' || printf 'supported\tno\n'
+  [[ $ENABLED == true ]] && printf 'enabled\tyes\n' || printf 'enabled\tno\n'
+  printf 'start\t%s\nend\t%s\n' "$START" "$END"
+  awk -v h="$HEALTH" -v f="$FULL" -v d="$DESIGN" 'BEGIN {
+    if (h > 0) printf "health\t%.1f\n", h
+    if (f > 0) printf "full_wh\t%.1f\n", f
+    if (d > 0) printf "design_wh\t%.1f\n", d
+  }'
+  (( CYCLES > 0 )) && printf 'cycles\t%s\n' "$CYCLES"
+  local tech
+  tech=$(technology_name "$TECH")
+  [[ -n $tech ]] && printf 'technology\t%s\n' "$tech"
+  [[ -n $VENDOR$MODEL ]] && printf 'model\t%s\n' "$(echo "$VENDOR $MODEL" | xargs)"
+  return 0
+}
+
+cmd_status() {
+  if [[ $SUPPORTED != true ]]; then
+    echo "Conservation: not supported by this battery"
+  elif [[ $ENABLED == true ]]; then
+    if (( START > 0 )); then
+      echo "Conservation: on (stops at ${END}%, resumes below ${START}%)"
+    else
+      echo "Conservation: on (stops at ${END}%)"
+    fi
+  else
+    echo "Conservation: off (charges to 100%)"
+  fi
+  printf 'Charge:       %.0f%% (%s)\n' "$PERCENT" "$(state_name "$STATE")"
+  awk -v h="$HEALTH" -v f="$FULL" -v d="$DESIGN" -v c="$(condition "$HEALTH")" 'BEGIN {
+    if (h > 0) printf "Health:       %.1f%% of design (%.1f / %.1f Wh) · %s\n", h, f, d, c
+  }'
+  (( CYCLES > 0 )) && echo "Cycles:       $CYCLES"
+  return 0
+}
+
+DEV=$(battery_path)
+case ${1:-status} in
+  -h|--help|help) sed -n '2,8s/^# \{0,1\}//p' "$0"; exit 0 ;;
+esac
+if [[ -z $DEV ]]; then
+  [[ ${1:-} == --shell ]] && exit 0
+  die "no battery found"
+fi
+load
+
+case ${1:-status} in
+  on|enable)   set_limit true; load; cmd_status ;;
+  off|disable) set_limit false; load; cmd_status ;;
+  toggle)
+    if [[ $ENABLED == true ]]; then set_limit false; else set_limit true; fi
+    load; cmd_status ;;
+  status)  cmd_status ;;
+  --shell) cmd_shell ;;
+  *) die "unknown command '$1' (use on, off, toggle or status)" ;;
+esac
