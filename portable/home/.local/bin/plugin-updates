@@ -1,0 +1,305 @@
+#!/usr/bin/env bash
+# plugin-updates: notice when Omarchy shell plugins have updates, and review them.
+#
+#   plugin-updates check [--force]  fetch every git plugin and send a notification
+#                                   when something new is waiting (plugin-updates.timer
+#                                   runs this every 6 h; it reminds again after 3 days)
+#   plugin-updates list             fetch and print what is waiting
+#   plugin-updates review           go through each waiting plugin: its commits, the
+#                                   diff on request, then update or skip it
+#
+# Upstream is fetched into refs/plugin-updates/upstream inside each checkout, so a
+# check never touches the working tree or the FETCH_HEAD that `omarchy plugin
+# update` and Plugin Manager use. An update installs exactly the commit that was
+# reviewed, fast-forward only, and rolls back if omarchy-plugin-validate rejects
+# it. Plugins with local edits can keep them (3-way apply) or drop them; either
+# way the edits are saved first under ~/.local/state/plugin-updates/patches.
+
+set -uo pipefail
+
+PLUGINS_DIR=${PLUGIN_UPDATES_DIR:-$HOME/.config/omarchy/plugins}
+STATE_DIR=${PLUGIN_UPDATES_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/plugin-updates}
+REF=refs/plugin-updates/upstream
+REMIND_AFTER=$((3 * 24 * 3600))
+SELF=$(readlink -f "$0")
+
+export GIT_TERMINAL_PROMPT=0
+export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
+
+mkdir -p "$STATE_DIR"
+
+die() { echo "plugin-updates: $*" >&2; exit 1; }
+
+git_plugins() {
+  local dir
+  for dir in "$PLUGINS_DIR"/*/; do
+    [[ -d ${dir}.git ]] && basename "$dir"
+  done
+}
+
+plugin_name() {
+  local name
+  name=$(jq -r '.name // empty' "$PLUGINS_DIR/$1/manifest.json" 2>/dev/null)
+  echo "${name:-$1}"
+}
+
+commits() { (( $1 == 1 )) && echo "1 commit" || echo "$1 commits"; }
+
+# id <TAB> state <TAB> behind <TAB> ahead <TAB> dirty <TAB> upstream sha
+# state: current | behind (can fast-forward) | diverged (upstream rewrote history) | error
+status_one() {
+  local id=$1 dir=$PLUGINS_DIR/$1 up ahead behind dirty=0 state
+  if ! up=$(git -C "$dir" rev-parse -q --verify "$REF^{commit}" 2>/dev/null); then
+    printf '%s\terror\t0\t0\t0\t-\n' "$id"
+    return
+  fi
+  read -r ahead behind < <(git -C "$dir" rev-list --left-right --count "HEAD...$up" 2>/dev/null)
+  ahead=${ahead:-0} behind=${behind:-0}
+  [[ -n $(git -C "$dir" status --porcelain --untracked-files=no) ]] && dirty=1
+  if (( behind == 0 )); then state=current
+  elif (( ahead == 0 )); then state=behind
+  else state=diverged
+  fi
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "$state" "$behind" "$ahead" "$dirty" "$up"
+}
+
+# Written in one go: the Plugin Updates bar widget watches this file.
+write_status() {
+  local id out
+  out=$(for id in $(git_plugins); do status_one "$id"; done)
+  printf '%s\n' "$out" > "$STATE_DIR/status.tsv"
+}
+
+refresh() {
+  : > "$STATE_DIR/fetch-failed"
+  git_plugins | xargs -r -P 8 -I{} "$SELF" _fetch {} >> "$STATE_DIR/fetch-failed"
+  write_status
+}
+
+pending() { awk -F'\t' '$2 == "behind" || $2 == "diverged"' "$STATE_DIR/status.tsv"; }
+
+pending_key() { cut -f1,6 | sort | sha256sum | cut -c1-16; }
+
+# Remember what was announced, so the timer stays quiet until something new lands
+# or REMIND_AFTER passes.
+remember() {
+  local lines
+  lines=$(pending)
+  if [[ -z $lines ]]; then
+    rm -f "$STATE_DIR/notified"
+  else
+    echo "$(pending_key <<<"$lines") $(date +%s)" > "$STATE_DIR/notified"
+  fi
+}
+
+escape_markup() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
+
+notify() {
+  local lines=$1 count title body action id state behind ahead dirty sha line
+  count=$(wc -l <<<"$lines")
+  (( count == 1 )) && title="1 plugin update" || title="$count plugin updates"
+  body=$(while IFS=$'\t' read -r id state behind ahead dirty sha; do
+      line="$(plugin_name "$id") · $(commits "$behind")"
+      (( dirty )) && line+=" · your local edits"
+      [[ $state == diverged ]] && line+=" · history rewritten"
+      echo "$line"
+    done < <(head -n 8 <<<"$lines") | escape_markup)
+  (( count > 8 )) && body+=$'\n'"+ $((count - 8)) more"
+
+  # Omapager shows a normal card for at most 30 s and keeps it in History
+  # without the button; the bar widget stays until the updates are dealt with.
+  # --wait keeps the button alive while the card is up. Omapager holds cards back
+  # during Do Not Disturb, so the wait is capped below the 6 h timer period.
+  action=$(timeout 5h notify-send --app-name="Plugin updates" --icon=system-software-update \
+    --expire-time=30000 --action=review="Review & update" --wait "$title" "$body") || true
+  if [[ $action == review ]]; then
+    omarchy-launch-floating-terminal-with-presentation "$SELF review"
+  fi
+}
+
+cmd_check() {
+  local force=0 lines key now last_key="" last_time=0
+  [[ ${1:-} == --force ]] && force=1
+
+  exec 9>"$STATE_DIR/lock"
+  flock -n 9 || exit 0
+  refresh
+  lines=$(pending)
+  if [[ -z $lines ]]; then
+    rm -f "$STATE_DIR/notified"
+    return 0
+  fi
+
+  key=$(pending_key <<<"$lines")
+  now=$(date +%s)
+  [[ -f $STATE_DIR/notified ]] && read -r last_key last_time < "$STATE_DIR/notified"
+  if (( ! force )) && [[ $last_key == "$key" ]] && (( now - last_time < REMIND_AFTER )); then
+    return 0
+  fi
+  echo "$key $now" > "$STATE_DIR/notified"
+  exec 9>&-
+  notify "$lines"
+}
+
+cmd_list() {
+  local lines id state behind ahead dirty sha note failed
+  exec 9>"$STATE_DIR/lock"
+  flock -w 120 9 || die "another check is still running"
+  refresh
+  lines=$(pending)
+  if [[ -z $lines ]]; then
+    echo "All plugins are up to date."
+  else
+    while IFS=$'\t' read -r id state behind ahead dirty sha; do
+      note=""
+      (( dirty )) && note+="  (your local edits)"
+      [[ $state == diverged ]] && note+="  (upstream rewrote history)"
+      printf '%-40s %s%s\n' "$id" "$(commits "$behind")" "$note"
+    done <<<"$lines"
+  fi
+  failed=$(paste -sd' ' "$STATE_DIR/fetch-failed")
+  [[ -n $failed ]] && echo "Could not reach: $failed"
+  return 0
+}
+
+show_diff() {
+  local dir=$1
+  shift
+  git -C "$dir" diff --color=always "$@" | less -R
+}
+
+# apply_update <id> <sha> <clean|keep|drop>
+apply_update() {
+  local id=$1 sha=$2 mode=$3 dir=$PLUGINS_DIR/$1 old backup=""
+  old=$(git -C "$dir" rev-parse HEAD)
+
+  if [[ $mode == clean ]]; then
+    if ! git -C "$dir" merge --ff-only --quiet "$sha"; then
+      echo "  ✗ Could not fast-forward; $id was left as it was."
+      return 1
+    fi
+  else
+    mkdir -p "$STATE_DIR/patches"
+    backup=$STATE_DIR/patches/$id-$(date +%Y%m%d-%H%M%S).patch
+    git -C "$dir" diff --binary HEAD > "$backup" || return 1
+    if ! git -C "$dir" stash push --quiet -m "plugin-updates $(date -Is)"; then
+      echo "  ✗ Could not set your edits aside; $id was left as it was."
+      return 1
+    fi
+    if ! git -C "$dir" merge --ff-only --quiet "$sha"; then
+      git -C "$dir" stash pop --quiet
+      echo "  ✗ Could not fast-forward; $id was left as it was."
+      return 1
+    fi
+    if [[ $mode == keep ]]; then
+      if git -C "$dir" apply --3way "$backup" >/dev/null 2>&1; then
+        git -C "$dir" reset --quiet
+      else
+        git -C "$dir" reset --quiet --hard "$old"
+        git -C "$dir" stash pop --quiet
+        echo "  ✗ Your edits clash with the new version, so $id was left as it was."
+        echo "    To take the update anyway, choose \"Update, drop my edits\" and redo them by hand."
+        rm -f "$backup"
+        return 1
+      fi
+    fi
+    git -C "$dir" stash drop --quiet
+  fi
+
+  if ! omarchy-plugin-validate "$dir" >/dev/null 2>&1; then
+    git -C "$dir" reset --quiet --hard "$old"
+    [[ -n $backup ]] && git -C "$dir" apply "$backup"
+    echo "  ✗ The new version failed omarchy plugin validate, so $id was rolled back."
+    return 1
+  fi
+
+  echo "  ✓ Updated ${old:0:7} → ${sha:0:7}"
+  [[ $mode == keep ]] && echo "    Your edits were re-applied (copy: ${backup/#$HOME/\~})"
+  [[ $mode == drop ]] && echo "    Your old edits are saved in ${backup/#$HOME/\~}"
+  return 0
+}
+
+cmd_review() {
+  local lines total i=0 updated=0 rc
+  local id state behind ahead dirty sha dir name choice options
+  exec 9>"$STATE_DIR/lock"
+  flock -w 120 9 || die "another check is still running"
+
+  gum spin --title "Checking plugin repositories..." -- "$SELF" _refresh
+  lines=$(pending)
+  if [[ -z $lines ]]; then
+    echo "All plugins are up to date."
+    remember
+    return 0
+  fi
+  total=$(wc -l <<<"$lines")
+
+  while IFS=$'\t' read -r id state behind ahead dirty sha <&3; do
+    i=$((i + 1))
+    dir=$PLUGINS_DIR/$id
+    name=$(plugin_name "$id")
+    echo
+    gum style --bold "[$i/$total] $name  ($id)"
+    git -C "$dir" log --no-decorate --format='  %h  %s  (%ar)' "HEAD..$sha" | head -n 15
+    (( behind > 15 )) && echo "  … and $((behind - 15)) more"
+    git -C "$dir" diff --shortstat HEAD "$sha"
+    echo "  $(git -C "$dir" remote get-url origin 2>/dev/null)"
+
+    if [[ $state == diverged ]]; then
+      echo "  Upstream rewrote its history ($(commits "$ahead") here are not upstream), so this"
+      echo "  can't fast-forward. Reinstall it from Plugin Manager to get the new version."
+      options=("Show full diff" "Skip")
+    elif (( dirty )); then
+      echo "  You edited these files locally:"
+      git -C "$dir" status --porcelain --untracked-files=no | sed 's/^/    /'
+      options=("Update, keep my edits" "Update, drop my edits" "Show full diff" "Show my edits" "Skip")
+    else
+      options=("Update" "Show full diff" "Skip")
+    fi
+
+    while true; do
+      choice=$(gum choose --header "$name:" "${options[@]}")
+      rc=$?
+      if (( rc == 130 )); then
+        echo "Stopped."
+        break 2
+      fi
+      (( rc == 0 )) || choice=Skip
+      case $choice in
+        "Show full diff") show_diff "$dir" HEAD "$sha" ;;
+        "Show my edits") show_diff "$dir" HEAD ;;
+        "Update") apply_update "$id" "$sha" clean && updated=$((updated + 1)); break ;;
+        "Update, keep my edits") apply_update "$id" "$sha" keep && updated=$((updated + 1)); break ;;
+        "Update, drop my edits") apply_update "$id" "$sha" drop && updated=$((updated + 1)); break ;;
+        *) echo "  Skipped."; break ;;
+      esac
+    done
+  done 3<<<"$lines"
+
+  write_status
+  remember
+  echo
+  if (( updated )); then
+    omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
+    echo "Updated $updated plugin(s)."
+    if gum confirm "Restart the shell so the updated plugins load cleanly?"; then
+      omarchy restart shell
+    fi
+  else
+    echo "Nothing was updated."
+  fi
+}
+
+case ${1:-check} in
+  check) shift; cmd_check "$@" ;;
+  list) cmd_list ;;
+  review) cmd_review ;;
+  _fetch)
+    timeout 60 git -C "$PLUGINS_DIR/$2" fetch --quiet --no-tags --no-write-fetch-head \
+      origin "+HEAD:$REF" 2>/dev/null || echo "$2"
+    ;;
+  _refresh) refresh ;;
+  _apply) apply_update "$2" "$3" "$4" ;;
+  -h | --help) sed -n '2,17p' "$SELF" | sed 's/^# \{0,1\}//' ;;
+  *) die "unknown command '$1' (check, list, review)" ;;
+esac

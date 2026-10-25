@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# The Plymouth and SDDM theme files belong to the omarchy-settings package, so
+# every Omarchy update puts the stock logo back. Put the ThinkPad one back
+# when that has happened (it rebuilds the UKI, and sudo asks once).
+
+set -e
+
+# Only on machines that chose the ThinkPad boot logo: install.sh --boot-logo
+# leaves this marker (or create it by hand).
+[[ -e $HOME/.local/state/omarchy/thinkpad-boot-logo ]] || exit 0
+
+theme=thinkpad
+
+if [[ $(omarchy-plymouth-current) != "$theme" ]]; then
+  echo "Restoring the $theme boot and login screen (the update reset it)..."
+  omarchy-plymouth-set-by-theme "$theme"
+fi

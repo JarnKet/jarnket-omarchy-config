@@ -9,13 +9,17 @@ Omarchy's bar battery widget and popup (cloned from `omarchy.power` with
 - **Battery health**: capacity left compared with a new battery (e.g. 87%,
   Good ≥ 80 / Fair ≥ 60 / Worn), full and design capacity in Wh, charge cycles
   and wear.
+- **Sleep**: a *Hibernate after long sleep* switch. Closing the lid sleeps
+  first, then hibernates after 30 min, 1, 2, 3 or 6 h on battery (or below 5%),
+  like Windows Modern Standby. On the charger it keeps sleeping.
 
 Everything else (power profiles, percentage toggle, `SUPER + CTRL + P`, the
 menu's *Battery Percentage* item) works as in the built-in widget, because the
 shell routes calls for `omarchy.power` to this clone.
 
-Keys in the popup: `↑`/`↓` move between the conservation switch and the power
-profiles, `←`/`→` pick a profile, `Enter` toggles or applies.
+Keys in the popup: `↑`/`↓` move between the conservation switch, the
+hibernation switch, its delay and the power profiles, `←`/`→` pick a delay or a
+profile, `Enter` toggles or applies.
 
 For a keybinding, `omarchy-shell omarchy.power toggleConservation` flips the
 mode without opening the popup (it reads the current state first), or use the
@@ -39,6 +43,36 @@ battery-conservation --shell    # key<TAB>value lines the popup reads
 
 The popup reads it when opened and every 5 s while open; nothing polls while it
 is closed.
+
+## How hibernation is switched
+
+Turning it on makes a 16 GB swapfile in its own Btrfs subvolume (`/swap/swapfile`,
+needs 24 GB free), adds the `resume` hook and `resume=`/`resume_offset=` to the
+boot entry (rebuilt with `limine-mkinitcpio`, about a minute), and sets lid close
+to logind's `sleep` with `SleepOperation=suspend-then-hibernate suspend`: when
+the memory in use would not fit in the swapfile, it falls back to plain sleep
+instead of refusing. Turning it off removes all of it. The paths match
+`omarchy-hibernation-setup`, so Omarchy's own *Hibernate* menu item and
+`omarchy-hibernation-remove` keep working.
+
+That needs root, so `bin/hibernate-mode` reads the state without it and runs
+`/usr/local/libexec/hibernate-mode-root` through `pkexec` (polkit
+`io.github.shadowone.hibernate-mode`, fingerprint or password). The helper only
+accepts `on DELAY`, `off` and `delay DELAY`. Install it once; the switch opens a
+terminal for this when the helper is missing or changed:
+
+```
+sudo bash ~/.config/omarchy/plugins/shadowone.power/root/install.sh
+```
+
+```
+hibernate-mode on [30min|1h|2h|3h|6h] | off | delay DELAY | status
+hibernate-mode --shell          # key<TAB>value lines the popup reads
+```
+
+After turning it on, restart once so the new boot entry is in use; the switch
+says so until then. When Linux is hibernated, don't boot another OS that
+writes to a partition Linux has mounted.
 
 ## Develop
 

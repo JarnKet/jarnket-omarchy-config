@@ -30,5 +30,9 @@
 
   // Suspend follows the lid: sleep, then hibernate after 3 h on battery
   // (logind SleepOperation, ~/.local/share/suspend-then-hibernate).
-  "system.suspend": {"action":"systemctl sleep"}
+  "system.suspend": {"action":"systemctl sleep"},
+
+  // Ask Claude quick-ask panel (shadowone.ask-claude). Keystroke lists it first
+  // at its root through ~/.local/share/keystroke/extensions/ask-claude.
+  "ask-claude": {"icon":"󰙴","label":"Ask Claude","description":"Quick question to Claude Sonnet (Super+A)","action":"omarchy-shell shadowone.ask-claude open"}
 }

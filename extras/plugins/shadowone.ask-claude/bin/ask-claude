@@ -1,0 +1,247 @@
+#!/usr/bin/env -S python3 -IB
+"""ask-claude: quick questions to Claude Sonnet through the signed-in Claude Code CLI.
+
+  ask-claude "question"            stream the answer in the terminal
+  ask-claude -c "follow-up"        continue the last conversation
+  ask-claude --json [--session ID] -- "question"
+                                   JSON lines for the Ask Claude bar panel:
+                                     {"t": "session", "id": ...}
+                                     {"t": "text", "d": ...}
+                                     {"t": "tool", "name": ..., "detail": ...}
+                                     {"t": "done", "id": ..., "ms": ..., "limits": {...}}
+                                     {"t": "error", "message": ...}
+
+It runs `claude -p` with your Claude subscription login (no API key), a short
+system prompt instead of Claude Code's coding-agent prompt, no MCP servers, no
+hooks or plugins, and only the web search / web fetch tools. Conversations are
+ordinary Claude Code sessions kept under ~/.local/state/ask-claude, so
+`claude --resume <id>` there picks one up in the full CLI.
+
+Anything in ~/.config/ask-claude/context.md (where you live, your languages,
+your machine) is added to the system prompt, so local questions get local
+answers. That file stays on this machine.
+"""
+
+import argparse
+import json
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+MODEL = os.environ.get("ASK_CLAUDE_MODEL", "claude-sonnet-5-5")
+EFFORT = os.environ.get("ASK_CLAUDE_EFFORT", "low")
+TOOLS = "WebSearch,WebFetch"
+HOME = os.path.expanduser("~")
+STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local/state"), "ask-claude")
+CONTEXT_FILE = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config"), "ask-claude", "context.md")
+LAST_SESSION = os.path.join(STATE_DIR, "last-session")
+
+SYSTEM_PROMPT = """\
+You answer quick questions typed into an "Ask Claude" panel on the user's Linux \
+desktop (Omarchy: Arch Linux with Hyprland). It is now {now}.
+
+Lead with the answer. Keep it short unless the question needs depth: no preamble, \
+no restating the question, no closing offers. Use Markdown lightly: short lists, \
+`inline code`, and fenced code blocks for commands. Reply in the language the user \
+writes in.
+
+You can search and fetch the web. Use it for anything current, local, or that you \
+are unsure of, and name your sources briefly. You cannot see the screen or run \
+anything on this computer; when an action is needed, give the exact command or steps.\
+"""
+
+
+def claude_binary():
+    found = shutil.which("claude")
+    if found:
+        return found
+    fallback = os.path.join(HOME, ".local/bin/claude")
+    return fallback if os.path.exists(fallback) else "claude"
+
+
+def system_prompt():
+    prompt = SYSTEM_PROMPT.format(now=time.strftime("%A %d %B %Y, %H:%M %Z (UTC%z)"))
+    try:
+        with open(CONTEXT_FILE, encoding="utf-8") as handle:
+            context = handle.read(4000).strip()
+    except OSError:
+        context = ""
+    if context:
+        prompt += "\n\nAbout the user:\n" + context
+    return prompt
+
+
+def claude_command(session):
+    command = [
+        claude_binary(), "-p",
+        "--model", MODEL,
+        "--effort", EFFORT,
+        "--setting-sources", "",
+        "--strict-mcp-config",
+        "--disable-slash-commands",
+        "--tools", TOOLS,
+        "--allowedTools", TOOLS,
+        "--system-prompt", system_prompt(),
+        "--output-format", "stream-json",
+        "--include-partial-messages",
+        "--verbose",
+    ]
+    if session:
+        command += ["--resume", session]
+    return command
+
+
+def tool_detail(name, data):
+    data = data if isinstance(data, dict) else {}
+    if name == "WebSearch":
+        return str(data.get("query", ""))
+    if name == "WebFetch":
+        return str(data.get("url", ""))
+    return ""
+
+
+def run(question, session, emit):
+    """Run one turn. emit(event_dict) receives the simplified events."""
+    os.makedirs(STATE_DIR, exist_ok=True)
+    started = time.monotonic()
+    try:
+        child = subprocess.Popen(
+            claude_command(session),
+            cwd=STATE_DIR,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,
+        )
+    except OSError as error:
+        emit({"t": "error", "message": "Could not start claude: %s" % error})
+        return 1
+
+    def stop(signum, _frame):
+        try:
+            os.killpg(child.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        emit({"t": "stopped"})
+        sys.exit(130)
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+
+    child.stdin.write(question)
+    child.stdin.close()
+
+    session_id = session
+    limits = {}
+    wrote_text = False
+    tool_since_text = False
+    result = None
+
+    for line in child.stdout:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        kind = event.get("type")
+        if kind == "system" and event.get("subtype") == "init":
+            session_id = event.get("session_id") or session_id
+            emit({"t": "session", "id": session_id})
+        elif kind == "stream_event":
+            inner = event.get("event") or {}
+            delta = inner.get("delta") or {}
+            if inner.get("type") == "content_block_delta" and delta.get("type") == "text_delta":
+                text = delta.get("text", "")
+                if not text:
+                    continue
+                if wrote_text and tool_since_text:
+                    text = "\n\n" + text
+                tool_since_text = False
+                wrote_text = True
+                emit({"t": "text", "d": text})
+        elif kind == "assistant":
+            for block in (event.get("message") or {}).get("content") or []:
+                if block.get("type") in ("tool_use", "server_tool_use"):
+                    tool_since_text = True
+                    name = block.get("name", "")
+                    emit({"t": "tool", "name": name, "detail": tool_detail(name, block.get("input"))})
+        elif kind == "rate_limit_event":
+            windows = (event.get("rate_limit_info") or {}).get("unifiedWindows") or {}
+            for window, info in windows.items():
+                if isinstance(info, dict) and "utilization" in info:
+                    limits[window] = {"used": info.get("utilization"), "resetsAt": info.get("resetsAt")}
+        elif kind == "result":
+            result = event
+
+    child.wait()
+    stderr = child.stderr.read().strip()
+    elapsed = int((time.monotonic() - started) * 1000)
+
+    if result is None or result.get("is_error") or result.get("subtype") != "success":
+        message = ""
+        if result is not None:
+            message = str(result.get("result") or result.get("subtype") or "")
+        if not message and stderr:
+            message = stderr.splitlines()[-1]
+        emit({"t": "error", "message": message or "claude exited with status %d" % child.returncode})
+        return 1
+
+    session_id = result.get("session_id") or session_id
+    if session_id:
+        with open(LAST_SESSION, "w") as handle:
+            handle.write(session_id + "\n")
+    emit({"t": "done", "id": session_id, "ms": elapsed, "limits": limits})
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="ask-claude", description="Quick questions to Claude Sonnet.")
+    parser.add_argument("--json", action="store_true", help="emit JSON lines (for the bar panel)")
+    parser.add_argument("--session", help="continue this session id")
+    parser.add_argument("-c", "--continue", dest="cont", action="store_true", help="continue the last conversation")
+    parser.add_argument("question", nargs="*")
+    args = parser.parse_args()
+
+    question = " ".join(args.question).strip()
+    if not question and not sys.stdin.isatty():
+        question = sys.stdin.read().strip()
+    if not question:
+        parser.error("ask a question")
+
+    session = args.session
+    if args.cont and not session:
+        try:
+            with open(LAST_SESSION) as handle:
+                session = handle.read().strip() or None
+        except OSError:
+            session = None
+
+    if args.json:
+        def emit(event):
+            sys.stdout.write(json.dumps(event, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
+    else:
+        dim = "\033[2m" if sys.stderr.isatty() else ""
+        reset = "\033[0m" if dim else ""
+
+        def emit(event):
+            kind = event["t"]
+            if kind == "text":
+                sys.stdout.write(event["d"])
+                sys.stdout.flush()
+            elif kind == "tool":
+                label = {"WebSearch": "searching", "WebFetch": "reading"}.get(event["name"], event["name"])
+                sys.stderr.write("%s› %s %s%s\n" % (dim, label, event.get("detail", ""), reset))
+            elif kind == "done":
+                sys.stdout.write("\n")
+            elif kind == "error":
+                sys.stderr.write("ask-claude: %s\n" % event["message"])
+
+    return run(question, session, emit)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

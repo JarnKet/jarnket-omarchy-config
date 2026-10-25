@@ -5,7 +5,7 @@
       "name": "Radio Atlas",
       "version": "0.1.9",
       "source": "https://github.com/AksharP5/omarchy-radio-atlas.git",
-      "revision": "a0f28fe8441bf109ce0098b9270c603a0f688318",
+      "revision": "b81d9d21b1c7bef890d4bc8c8b22080f9b4047c8",
       "local": false
     },
     {
@@ -29,7 +29,7 @@
       "name": "Omaland",
       "version": "1.0.0",
       "source": "https://github.com/bobby-nicholas/omaland.git",
-      "revision": "48d1c64acd78cd3a2862ccaad17c8045be3dda38",
+      "revision": "22e736a9c3bb76ac79b52cdf7a576ae91459ead9",
       "local": false
     },
     {
@@ -43,17 +43,25 @@
     {
       "id": "crmne.hyprmoncfg",
       "name": "hyprmoncfg: Multi-Monitor Manager for Omarchy",
-      "version": "2.7.0",
+      "version": "2.10.1",
       "source": "https://github.com/crmne/omarchy-hyprmoncfg.git",
-      "revision": "193e5611f934eec42460ef75f3f46c2a8bd0252a",
+      "revision": "e17d756b7ba8cee2470ef480318104b2876fe1b1",
+      "local": false
+    },
+    {
+      "id": "davedes.omadoctor",
+      "name": "OmaDoctor",
+      "version": "0.5.0",
+      "source": "https://github.com/Davedes83/OmaDoctor.git",
+      "revision": "78c45b1a09db190d6c4f55f17e182fe60796b1e8",
       "local": false
     },
     {
       "id": "evindor.keystroke",
       "name": "Keystroke",
-      "version": "1.5.0",
+      "version": "1.5.2",
       "source": "https://github.com/evindor/keystroke.git",
-      "revision": "c9cf1a06a2f394cb4f57ad44b0de4ae6574f80e8",
+      "revision": "0c74f2dd7466f25faf2cda4a39697f237afbe774",
       "local": false
     },
     {
@@ -83,9 +91,9 @@
     {
       "id": "io.github.07dcolem.target-boot",
       "name": "Reboot into",
-      "version": "1.1.0",
+      "version": "1.3.2",
       "source": "https://github.com/07dcolem/omarchy-target-boot.git",
-      "revision": "d1ca171bdecff500c296307ad23638b0338c04ca",
+      "revision": "1dd19a779c55b8c86b187a558ce9addeaa287897",
       "local": false
     },
     {
@@ -113,27 +121,35 @@
       "local": false
     },
     {
+      "id": "io.github.juancasanueva.plugin-manager",
+      "name": "Plugin Manager",
+      "version": "1.11.2",
+      "source": "https://github.com/juancasanueva/omarchy-plugin-manager.git",
+      "revision": "06fd09f0997f003bea2b8cb86609982e16ae7c75",
+      "local": false
+    },
+    {
       "id": "io.github.kristoferlund.webcam",
       "name": "Webcam Controls",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "source": "https://github.com/kristoferlund/omarchy-webcam.git",
-      "revision": "73332ce15f20477fe78b74120d80899068f07a2b",
+      "revision": "84068f854aa063ca534a961c18d88382231ca7a9",
       "local": false
     },
     {
       "id": "io.github.randazraik.xray",
       "name": "Omarchy X-Ray",
-      "version": "0.5.0",
+      "version": "0.7.0",
       "source": "https://github.com/RandaZraik/omarchy-xray.git",
-      "revision": "520c1da26a278bede03285df617a50c8e17997b4",
+      "revision": "8fe0c36956cdb210d4591de98f6aacfc2db09f31",
       "local": false
     },
     {
       "id": "io.github.twiking.omasettings",
       "name": "OmaSettings",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "source": "https://github.com/twiking/omasettings.git",
-      "revision": "72cfe1640aaece2fef39e4dd155289510f07b2a8",
+      "revision": "dfadccb1e7350f7cfebc37c40d390c58883f26d2",
       "local": false
     },
     {
@@ -141,15 +157,15 @@
       "name": "Hardwarchy",
       "version": "2.3.3",
       "source": "https://github.com/tymurbogach/hardwarchy.git",
-      "revision": "8a556b36eae9da74d2ec58748c7a459ad873a0e9",
+      "revision": "9151a1dc1fe49382993ece1dc4b4a4827b1d697b",
       "local": false
     },
     {
       "id": "jankeesvw.workspace-name",
       "name": "Workspace name",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "source": "https://github.com/jankeesvw/omarchy-workspace-name.git",
-      "revision": "a67eb242176a9f9dafc38d40bd80ddaf0e2f45f6",
+      "revision": "8e9de7f6752f38a37633d8375e875727770c89b7",
       "local": false
     },
     {
@@ -165,7 +181,7 @@
       "name": "Mirador",
       "version": "2.4.0",
       "source": "https://github.com/sanjyay/Mirador.git",
-      "revision": "0cdf936ddda5a9022059aa6ebe8387eb40ea61fd",
+      "revision": "cd0d86f304beda7696cd4e5c685206d54c940796",
       "local": false
     },
     {
@@ -174,14 +190,6 @@
       "version": "1.1.1",
       "source": "https://github.com/njpatel/omapager.git",
       "revision": "c389e73516828d18f26e8efec2127c0c3dc3cb97",
-      "local": false
-    },
-    {
-      "id": "omaplug",
-      "name": "Plugin Manager",
-      "version": "1.6.6",
-      "source": "https://github.com/fross100/omaplug.git",
-      "revision": "64df56e876846247ded550890c52b7b190776b3e",
       "local": false
     },
     {
@@ -217,6 +225,14 @@
       "local": false
     },
     {
+      "id": "shadowone.ask-claude",
+      "name": "Ask Claude",
+      "version": "1.0.0",
+      "source": null,
+      "revision": null,
+      "local": true
+    },
+    {
       "id": "shadowone.clock",
       "name": "Clock & Google Calendar",
       "version": "1.1.0",
@@ -227,6 +243,14 @@
     {
       "id": "shadowone.disk-keeper",
       "name": "Disk Keeper",
+      "version": "1.0.0",
+      "source": null,
+      "revision": null,
+      "local": true
+    },
+    {
+      "id": "shadowone.plugin-updates",
+      "name": "Plugin Updates",
       "version": "1.0.0",
       "source": null,
       "revision": null,
@@ -259,17 +283,17 @@
     {
       "id": "ssupt.audio-control",
       "name": "Advanced Audio Control",
-      "version": "0.9.0-dev.27",
+      "version": "0.9.1",
       "source": "https://github.com/ssupt/omarchy-audio-control.git",
-      "revision": "14f6f5dc88e1f49dc916ddba80c01076c4e2a429",
+      "revision": "c822e48fa3b0d8f3cc2f0bf96eace416f30f0764",
       "local": false
     },
     {
       "id": "ssupt.bluetooth-audio",
       "name": "Advanced Bluetooth Audio",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "source": "https://github.com/ssupt/omarchy-bluetooth-audio.git",
-      "revision": "96704bfbd0360abe5d69003032ab0932c0981a86",
+      "revision": "7cbf8b96d981931fce50a61047eb9bb731f9cfbe",
       "local": false
     },
     {

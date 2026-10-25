@@ -51,3 +51,9 @@ o.bind("SUPER + SHIFT + ALT + S", "Snitch", "omarchy-shell shell toggle io.githu
 
 -- Claude Code session history (all projects); Enter resumes in the session's folder.
 o.bind("SUPER + ALT + C", "Claude history", "omarchy-launch-tui claude-history")
+
+-- Touchpad feels heavy? Press, move one finger for 3 s; report in ~/.local/state/touchpad-lag/.
+o.bind("SUPER + ALT + T", "Touchpad lag capture", "$HOME/.local/bin/touchpad-lag-capture")
+
+-- Ask Claude quick-ask panel (shadowone.ask-claude bar plugin).
+o.bind("SUPER + A", "Ask Claude", "omarchy-shell shadowone.ask-claude toggle")

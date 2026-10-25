@@ -1,0 +1,182 @@
+#!/bin/bash
+# hibernate-mode-root: the root half of the Battery panel's Hibernation switch.
+# Installed root-owned at /usr/local/libexec/hibernate-mode-root and reached
+# only through pkexec (polkit action io.github.shadowone.hibernate-mode).
+#
+#   on DELAY      16 GB swapfile, resume hook and kernel arguments, and lid
+#                 close sleeps, then hibernates after DELAY on battery
+#   off           all of that removed again, swapfile deleted
+#   delay DELAY   how long it sleeps before hibernating
+#
+# DELAY is one of 30min 1h 2h 3h 6h. Paths match omarchy-hibernation-setup, so
+# omarchy-hibernation-available and omarchy-hibernation-remove keep working.
+
+set -euo pipefail
+export PATH=/usr/bin:/usr/sbin LC_ALL=C.UTF-8
+umask 022
+cd /
+
+SWAP_SUBVOL=/swap
+SWAP_FILE=/swap/swapfile
+SWAP_SIZE=16G
+MIN_FREE_GB=24
+RESUME_HOOK=/etc/mkinitcpio.conf.d/omarchy_resume.conf
+RESUME_CONF=/etc/limine-entry-tool.d/resume.conf
+RTC_CONF=/etc/limine-entry-tool.d/rtc-alarm.conf
+SLEEP_CONF=/etc/systemd/sleep.conf.d/60-suspend-then-hibernate.conf
+LOGIND_CONF=/etc/systemd/logind.conf.d/60-lid-sleep.conf
+KBD_HOOK_SRC=/usr/share/omarchy/default/systemd/system-sleep/keyboard-backlight
+KBD_HOOK=/usr/lib/systemd/system-sleep/keyboard-backlight
+
+die() {
+  echo "hibernate-mode: $*" >&2
+  exit 1
+}
+
+valid_delay() { [[ $1 =~ ^(30min|1h|2h|3h|6h)$ ]]; }
+
+swap_active() { swapon --show=NAME --noheadings | grep -Fxq "$SWAP_FILE"; }
+
+free_gb() { df --output=avail -BG / | tail -1 | tr -dc 0-9; }
+
+rebuild() {
+  echo "Rebuilding the boot image"
+  limine-mkinitcpio >/dev/null 2>&1 || die "limine-mkinitcpio failed; run it in a terminal to see why"
+}
+
+write_file() { # write_file <path> <content>, atomically
+  mkdir -p "${1%/*}"
+  printf '%s\n' "$2" >"$1.tmp"
+  mv -f "$1.tmp" "$1"
+}
+
+write_sleep_conf() {
+  write_file "$SLEEP_CONF" "# Battery panel (hibernate-mode): sleep first, then hibernate after $1 or
+# below 5% battery, whichever comes first. On AC power the countdown waits for
+# the charger to be pulled.
+[Sleep]
+HibernateDelaySec=$1
+HibernateOnACPower=no"
+}
+
+write_logind_conf() {
+  write_file "$LOGIND_CONF" '# Battery panel (hibernate-mode): "sleep" takes the first operation possible
+# right now. Hibernation needs free swap for all active memory; without it
+# plain suspend is used, rather than refusing to sleep with the lid closed.
+[Login]
+HandleLidSwitch=sleep
+HandleLidSwitchExternalPower=sleep
+SleepOperation=suspend-then-hibernate suspend'
+}
+
+cmd_on() {
+  [[ -f /sys/power/image_size ]] || die "this kernel can't hibernate"
+  command -v limine-mkinitcpio >/dev/null || die "needs the Limine bootloader (limine-mkinitcpio)"
+  if [[ -r /sys/kernel/security/lockdown ]] && ! grep -q '\[none\]' /sys/kernel/security/lockdown; then
+    die "kernel lockdown (Secure Boot) blocks hibernation"
+  fi
+
+  if ! swaplabel "$SWAP_FILE" &>/dev/null; then
+    local avail
+    avail=$(free_gb)
+    ((avail >= MIN_FREE_GB)) || die "needs $MIN_FREE_GB GB free on the disk, only $avail GB"
+    if ! btrfs subvolume show "$SWAP_SUBVOL" &>/dev/null; then
+      [[ ! -e $SWAP_SUBVOL ]] || die "$SWAP_SUBVOL exists but is not a Btrfs subvolume"
+      btrfs subvolume create "$SWAP_SUBVOL" >/dev/null
+      chattr +C "$SWAP_SUBVOL"
+    fi
+    echo "Creating the $SWAP_SIZE swapfile"
+    btrfs filesystem mkswapfile -s "$SWAP_SIZE" "$SWAP_FILE" >/dev/null
+  fi
+  if ! grep -Fq "$SWAP_FILE" /etc/fstab; then
+    cp -a /etc/fstab "/etc/fstab.$(date +%Y%m%d%H%M%S).back"
+    printf '\n# Btrfs swapfile for system hibernation\n%s none swap defaults,pri=0 0 0\n' "$SWAP_FILE" >>/etc/fstab
+  fi
+  swap_active || swapon -p 0 "$SWAP_FILE"
+  systemctl daemon-reload
+
+  if [[ ! -e $KBD_HOOK && -f $KBD_HOOK_SRC ]]; then
+    install -m 0755 "$KBD_HOOK_SRC" "$KBD_HOOK"
+  fi
+
+  # Rewritten whenever it differs, so a recreated swapfile never leaves the
+  # boot entry pointing at the old offset.
+  local offset device need_rebuild=0
+  offset=$(btrfs inspect-internal map-swapfile -r "$SWAP_FILE")
+  [[ $offset =~ ^[0-9]+$ ]] || die "could not find the swapfile's resume offset"
+  device=$(findmnt -no SOURCE -T "$SWAP_FILE" | sed 's/\[.*\]//')
+  local resume_line="KERNEL_CMDLINE[default]+=\" resume=$device resume_offset=$offset\""
+  if [[ $(cat "$RESUME_CONF" 2>/dev/null) != "$resume_line" ]]; then
+    write_file "$RESUME_CONF" "$resume_line"
+    need_rebuild=1
+  fi
+  if [[ $(cat "$RESUME_HOOK" 2>/dev/null) != "HOOKS+=(resume)" ]]; then
+    write_file "$RESUME_HOOK" "HOOKS+=(resume)"
+    need_rebuild=1
+  fi
+  # s2idle laptops need the ACPI RTC alarm to wake up and hibernate.
+  if grep -q '\[s2idle\]' /sys/power/mem_sleep 2>/dev/null && [[ ! -f $RTC_CONF ]]; then
+    write_file "$RTC_CONF" 'KERNEL_CMDLINE[default]+=" rtc_cmos.use_acpi_alarm=1"'
+    need_rebuild=1
+  fi
+  if ((need_rebuild)); then
+    rebuild
+  fi
+
+  write_sleep_conf "$1"
+  write_logind_conf
+  systemctl kill -s HUP systemd-logind
+  echo "Hibernation is on: hibernates after $1 of sleep on battery"
+}
+
+cmd_off() {
+  # swapoff first: when it fails (not enough memory), nothing has changed yet.
+  if swap_active; then
+    echo "Moving swapped-out memory back"
+    swapoff "$SWAP_FILE" || die "swapoff failed; close some apps and try again"
+  fi
+  rm -f "$SLEEP_CONF" "$LOGIND_CONF"
+  systemctl kill -s HUP systemd-logind
+  if grep -Fq "$SWAP_FILE" /etc/fstab; then
+    cp -a /etc/fstab "/etc/fstab.$(date +%Y%m%d%H%M%S).back"
+    sed -i "\|$SWAP_FILE|d; /^# Btrfs swapfile for system hibernation\$/d" /etc/fstab
+  fi
+  rm -f "$SWAP_FILE"
+  if btrfs subvolume show "$SWAP_SUBVOL" &>/dev/null; then
+    btrfs subvolume delete "$SWAP_SUBVOL" >/dev/null
+  fi
+  systemctl daemon-reload
+  if [[ -e $RESUME_HOOK || -e $RESUME_CONF ]]; then
+    rm -f "$RESUME_HOOK" "$RESUME_CONF"
+    rebuild
+  fi
+  echo "Hibernation is off: closing the lid only sleeps"
+}
+
+cmd_delay() {
+  [[ -f $LOGIND_CONF ]] || die "hibernation is off"
+  write_sleep_conf "$1"
+  echo "Hibernates after $1 of sleep"
+}
+
+[[ $EUID -eq 0 ]] || die "must run as root, through pkexec"
+
+case ${1:-} in
+  on | delay)
+    [[ $# -eq 2 ]] && valid_delay "$2" || die "usage: $1 30min|1h|2h|3h|6h"
+    ;;
+  off)
+    [[ $# -eq 1 ]] || die "usage: off"
+    ;;
+  *) die "usage: on DELAY | off | delay DELAY" ;;
+esac
+
+exec 9>/run/hibernate-mode.lock
+flock -n 9 || die "already changing hibernation"
+logger -t hibernate-mode -p authpriv.notice "uid=${PKEXEC_UID:-?} $*"
+
+case $1 in
+  on) cmd_on "$2" ;;
+  off) cmd_off ;;
+  delay) cmd_delay "$2" ;;
+esac

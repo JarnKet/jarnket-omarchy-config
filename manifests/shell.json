@@ -4,11 +4,14 @@
     "layout": {
       "center": [
         {
-          "edgeSpacing": 38,
-          "id": "njpatel.omapager"
-        },
-        {
-          "id": "omarchy.indicators"
+          "id": "omarchy.indicators",
+          "items": [
+            "Dictation",
+            "ScreenRecording",
+            "Reminder",
+            "NightLight",
+            "StayAwake"
+          ]
         },
         {
           "format": "ddd d MMM HH:mm",
@@ -21,6 +24,9 @@
         },
         {
           "id": "omarchy.system-update"
+        },
+        {
+          "id": "shadowone.plugin-updates"
         }
       ],
       "left": [
@@ -32,6 +38,9 @@
         },
         {
           "id": "omarchy.agents"
+        },
+        {
+          "id": "shadowone.ask-claude"
         }
       ],
       "right": [
@@ -82,6 +91,11 @@
         {
           "id": "shadowone.top-bar",
           "layout": {
+            "left": [
+              {
+                "id": "io.github.tymurbogach.hardwarchy"
+              }
+            ],
             "center": [
               {
                 "alwaysShow": true,
@@ -94,12 +108,15 @@
                 ]
               }
             ],
-            "left": [
-              {
-                "id": "io.github.tymurbogach.hardwarchy"
-              }
-            ],
             "right": [
+              {
+                "id": "io.github.juancasanueva.plugin-manager",
+                "allowUnverifiedUpdates": true,
+                "allowUnverifiedInstalls": true
+              },
+              {
+                "id": "davedes.omadoctor"
+              },
               {
                 "id": "omaplug"
               },
@@ -117,6 +134,8 @@
           "managed": [
             "akshar.radio-atlas",
             "ashuttl.linecast",
+            "davedes.omadoctor",
+            "io.github.juancasanueva.plugin-manager",
             "io.github.kristoferlund.webcam",
             "io.github.tymurbogach.hardwarchy",
             "omaplug",
@@ -138,6 +157,11 @@
               "seq": 8,
               "where": "center"
             },
+            "davedes.omadoctor": {
+              "index": 2,
+              "seq": 14,
+              "where": "right"
+            },
             "dev.reuk.ports": {
               "index": 5,
               "seq": 3,
@@ -146,6 +170,11 @@
             "harel.omarchy-synchro": {
               "index": 2,
               "seq": 11,
+              "where": "right"
+            },
+            "io.github.juancasanueva.plugin-manager": {
+              "index": 2,
+              "seq": 13,
               "where": "right"
             },
             "io.github.kristoferlund.webcam": {
@@ -185,12 +214,18 @@
           "id": "omarchy.network"
         },
         {
-          "id": "shadowone.power"
+          "id": "shadowone.power",
+          "showPercentage": true
+        },
+        {
+          "alwaysShow": true,
+          "edgeSpacing": 38,
+          "id": "njpatel.omapager"
         }
       ]
     },
     "position": "bottom",
-    "transparent": false
+    "transparent": true
   },
   "cloneSourceRestores": [
     "ssupt.audio-control",
@@ -245,6 +280,12 @@
     },
     {
       "id": "io.github.tymurbogach.hardwarchy"
+    },
+    {
+      "id": "io.github.juancasanueva.plugin-manager"
+    },
+    {
+      "id": "davedes.omadoctor"
     }
   ],
   "version": 1

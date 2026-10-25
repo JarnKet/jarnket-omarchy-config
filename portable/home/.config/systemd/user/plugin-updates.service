@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Omarchy shell plugins for updates
+Documentation=file://%h/.local/bin/plugin-updates
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/plugin-updates check
+# The notification waits (up to 5 h) for its "Review & update" button.
+TimeoutStartSec=6h
+Nice=10
+IOSchedulingClass=idle

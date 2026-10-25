@@ -80,6 +80,20 @@ stay installed.
   Left Alt + Left Shift or both Alt keys. Change it in `~/.config/hypr/input.lua`.
 - **Print Screen** copies a screenshot to the clipboard and doesn't save a file.
 - **Super + Alt + E** opens Panel Notes.
+- **Super + A** (or the sparkle in the bar, or the first row of Super + Space)
+  opens Ask Claude: type a question, the answer streams in from Claude Sonnet,
+  follow-ups keep the conversation. It goes through the Claude Code CLI and your
+  own Claude login, so install Claude Code and run `claude` once to sign in. In
+  Super + Space, `ask <question>` sends it straight away, and any typed text gets
+  an **Ask Claude here** row. `ask-claude "question"` works in a terminal. Put a
+  line or two about yourself (city, languages) in `~/.config/ask-claude/context.md`
+  for local answers.
+- **Plugin updates** are checked every 6 hours. When a plugin has new commits
+  you get a notification and a puzzle icon in the middle of the bar; click
+  either to go through the changes and pick what to install
+  (`plugin-updates review`). Nothing updates on its own.
+- **Notifications:** the bell next to the battery. Left-click for Do Not
+  Disturb, right-click for recent notifications and history.
 - **Two bars:** the Omarchy bar at the bottom, and the Top Bar (my plugin) for
   extra widgets. Drag widgets between them, or use `omarchy-topbar list`.
 - **Hardware plugins** only do something if you have the hardware: fingerprint
@@ -103,6 +117,10 @@ stay installed.
 |--------|--------------|
 | [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
 | [Disk Keeper](extras/plugins/shadowone.disk-keeper) | Free space in the bar, a warning before the disk fills up, and a panel to clean caches, old packages, build folders and Docker leftovers (mine) |
+| [Ask Claude](extras/plugins/shadowone.ask-claude) | Quick questions to Claude Sonnet from the bar or Super + A, through the Claude Code CLI (mine) |
+| [Plugin Updates](extras/plugins/shadowone.plugin-updates) | A bar icon while plugin updates are waiting; click to review them (mine) |
+| [Clock](extras/plugins/shadowone.clock) | Omarchy's clock with your Google Calendar events and reminders; `omacal setup` explains the one-time Google setup (mine) |
+| [Battery](extras/plugins/shadowone.power) | Omarchy's battery panel plus an 80% charge limit switch, battery health and hibernate-after-sleep (mine) |
 | [Omapager](https://github.com/njpatel/omapager) | Notifications that stack and group (replaces the built-in ones) |
 | [Keystroke](https://github.com/evindor/keystroke) | Raycast-style command palette instead of the Omarchy menu |
 | [Exposé](https://github.com/kristofferR/omarchy-expose) | All windows at once; 3-finger swipe up/down |
@@ -133,7 +151,8 @@ stay installed.
 | [Reboot into](https://github.com/07dcolem/omarchy-target-boot) | Reboot straight into Windows or another OS |
 | [Biometric HUD](https://github.com/GruperTal/omarchy-biometric-hud) | Windows Hello-style tile for fingerprint/face unlock |
 | [Flare](https://github.com/melonamin/omarchy-flare) | Click highlights for demos and recordings |
-| [Plugin Manager](https://github.com/fross100/omaplug) | Enable, update and remove plugins from the bar |
+| [Plugin Manager](https://github.com/juancasanueva/omarchy-plugin-manager) | Browse, install, update and remove plugins from the bar |
+| [OmaDoctor](https://github.com/Davedes83/OmaDoctor) | Health check of the system: services, disk, audio, display |
 
 ## What's in here
 
@@ -150,7 +169,8 @@ manifests/
   packages.txt     packages the setup needs
   apps.txt         my optional apps
   themes.txt       themes to clone
-extras/plugins/    plugins I wrote: shadowone.top-bar, shadowone.disk-keeper
+extras/plugins/    plugins I wrote (shadowone.*): top bar, disk keeper, ask claude,
+                   plugin updates, clock, battery
 ```
 
 Paths to my home folder (`/home/shadowone/...`) in the config files are

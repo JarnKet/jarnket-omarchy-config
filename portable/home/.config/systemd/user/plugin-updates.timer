@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Omarchy shell plugins for updates every 6 hours
+
+[Timer]
+OnStartupSec=10min
+OnCalendar=*-*-* 00/6:00:00
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

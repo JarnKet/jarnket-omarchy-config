@@ -43,7 +43,7 @@ Steps, in order:
   plugins   clone the shell plugins and run their setup scripts
   bar       bar layout and widget settings (shell.json)
   theme     ThinkPad theme, its ASCII wallpapers, extra themes
-  services  user services the plugins need (hyprmoncfgd)
+  services  user services: hyprmoncfgd, plugin update checks
 
 Options:
   -y, --yes          don't ask; take the defaults (installs no optional apps)
@@ -197,6 +197,7 @@ start_backup() {
   : >"$BACKUP_DIR/created.txt"
   : >"$BACKUP_DIR/plugins-added.txt"
   : >"$BACKUP_DIR/themes-added.txt"
+  : >"$BACKUP_DIR/services-enabled.txt"
   current_theme >"$BACKUP_DIR/previous-theme" || true
 }
 
@@ -219,7 +220,7 @@ backup() {
   fi
 }
 
-record() { # record plugins-added|themes-added value
+record() { # record plugins-added|themes-added|services-enabled value
   ((DRY_RUN)) || printf '%s\n' "$2" >>"$BACKUP_DIR/$1.txt"
 }
 
@@ -254,6 +255,15 @@ undo() {
     run rm -rf "${THEMES_DIR:?}/$name"
     ok "removed theme $name"
   done <"$dir/themes-added.txt"
+  local unit
+  while IFS= read -r unit; do
+    [[ -n $unit ]] || continue
+    if run systemctl --user disable --now "$unit" >/dev/null 2>&1; then
+      ok "turned off $unit"
+    else
+      problem "couldn't turn off $unit"
+    fi
+  done < <(cat "$dir/services-enabled.txt" 2>/dev/null)
 
   while IFS= read -r rel; do
     [[ -n $rel ]] || continue
@@ -528,9 +538,10 @@ step_plugins() {
     added=$((added + 1))
   done
 
-  # Command-line tools of my plugins: omarchy-topbar and diskkeeper.
+  # Command-line tools of my plugins: omarchy-topbar, diskkeeper and ask-claude.
   local tool name
-  for tool in "$PLUGINS_DIR/shadowone.top-bar/omarchy-topbar" "$PLUGINS_DIR/shadowone.disk-keeper/bin/diskkeeper"; do
+  for tool in "$PLUGINS_DIR/shadowone.top-bar/omarchy-topbar" "$PLUGINS_DIR/shadowone.disk-keeper/bin/diskkeeper" \
+    "$PLUGINS_DIR/shadowone.ask-claude/bin/ask-claude"; do
     name=$(basename "$tool")
     if [[ -x $tool || $DRY_RUN == 1 ]] && [[ "$(readlink "$HOME/.local/bin/$name" 2>/dev/null)" != "$tool" ]]; then
       backup "$HOME/.local/bin/$name"
@@ -543,6 +554,11 @@ step_plugins() {
   # root helper. It's left to you because it puts files in /usr.
   if [[ -d $PLUGINS_DIR/shadowone.disk-keeper && ! -e /usr/local/libexec/diskkeeper-root ]]; then
     info "Disk Keeper: for its System items, run once: sudo bash ~/.config/omarchy/plugins/shadowone.disk-keeper/root/install.sh"
+  fi
+
+  # Ask Claude answers through the Claude Code CLI and your own Claude login.
+  if [[ -d $PLUGINS_DIR/shadowone.ask-claude ]] && ! command -v claude >/dev/null; then
+    manual "Ask Claude (Super+A) needs Claude Code: curl -fsSL https://claude.ai/install.sh | bash, then run claude once to sign in"
   fi
 
   ok "$added added, $present already installed"
@@ -626,6 +642,14 @@ step_theme() {
     need_sudo
     info "putting the ThinkPad logo on the boot and login screens (rebuilds the initramfs)"
     run omarchy plymouth set by theme "$THEME_NAME" || problem "boot logo didn't apply"
+    # The post-update hook puts the logo back after Omarchy updates, but only
+    # where this marker says the logo was chosen.
+    local marker=$HOME/.local/state/omarchy/thinkpad-boot-logo
+    if [[ ! -e $marker ]]; then
+      backup "$marker"
+      run mkdir -p "$(dirname "$marker")"
+      run touch "$marker"
+    fi
   else
     info "Boot/login logo not changed (add --boot-logo for that)."
   fi
@@ -647,6 +671,19 @@ step_services() {
     fi
   else
     info "hyprmoncfg isn't installed; skipped hyprmoncfgd"
+  fi
+
+  # Checks the plugins for updates every 6 h and notifies; nothing installs on its own.
+  if [[ -f $HOME/.config/systemd/user/plugin-updates.timer ]]; then
+    systemctl --user daemon-reload >/dev/null 2>&1 || true
+    if systemctl --user is-enabled -q plugin-updates.timer 2>/dev/null; then
+      ok "plugin-updates.timer already on"
+    elif run systemctl --user enable --now plugin-updates.timer >/dev/null 2>&1; then
+      record services-enabled plugin-updates.timer
+      ok "plugin-updates.timer on (a notification when plugins have updates)"
+    else
+      problem "couldn't start plugin-updates.timer"
+    fi
   fi
 }
 

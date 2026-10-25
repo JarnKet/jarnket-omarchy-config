@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowone.ask-claude",
+  "name": "Ask Claude",
+  "version": "1.0.0",
+  "author": "ShadowOne",
+  "license": "MIT",
+  "description": "Quick questions to Claude Sonnet from the bar or SUPER+A, answered through the signed-in Claude Code CLI.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Ask Claude",
+    "description": "A sparkle button that opens a quick-ask panel: type a question, get a streamed answer, ask follow-ups.",
+    "category": "AI",
+    "allowMultiple": false,
+    "defaultSection": "left"
+  }
+}

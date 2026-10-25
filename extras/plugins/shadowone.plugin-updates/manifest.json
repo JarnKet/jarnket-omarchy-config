@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowone.plugin-updates",
+  "name": "Plugin Updates",
+  "version": "1.0.0",
+  "author": "ShadowOne",
+  "license": "MIT",
+  "description": "Shows an icon while shell plugin updates are waiting; click it to review and install them.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Plugin Updates",
+    "description": "Appears while plugin updates are waiting. Click to review and install them.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "center"
+  }
+}

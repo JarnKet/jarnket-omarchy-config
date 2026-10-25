@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Plugin Updates
+Comment=Review and install updates for Omarchy shell plugins
+Exec=omarchy-launch-floating-terminal-with-presentation /home/shadowone/.local/bin/plugin-updates review
+Icon=system-software-update
+Terminal=false
+Categories=System;Settings;

@@ -1,0 +1,29 @@
+{
+  "name": "Ask Claude",
+  "version": "1.0.0",
+  "author": "ShadowOne",
+  "description": "Quick answers from Claude Sonnet in the Ask Claude panel (Super+A): ask how far away is the Moon",
+  "apiVersion": 1,
+  "icon": "󰙴",
+  "license": "MIT",
+  "commands": [
+    {
+      "id": "ask",
+      "prefix": "ask",
+      "title": "Ask Claude",
+      "summary": "A quick question to Claude Sonnet, answered in the Ask Claude panel",
+      "args": [
+        {
+          "name": "question",
+          "hint": "anything you want to know",
+          "optional": true,
+          "rest": true
+        }
+      ],
+      "examples": [
+        "ask how far away is the Moon",
+        "ask how do I list open ports on Linux"
+      ]
+    }
+  ]
+}
