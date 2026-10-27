@@ -16,6 +16,10 @@ portable	.config/hypr/omasettings.lua
 portable	.config/hypr/pointer-feel.lua
 portable	.config/hypr/hyprsunset.conf
 portable	.config/hypr/xdph.conf
+portable	.config/xkb
+portable	.local/share/lao-term
+portable	.local/share/fonts/LaoTerm-Regular.ttf
+portable	.local/share/fonts/LaoTerm-Bold.ttf
 portable	.config/alacritty/alacritty.toml
 portable	.config/foot/foot.ini
 portable	.config/ghostty/config

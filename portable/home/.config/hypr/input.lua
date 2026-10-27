@@ -5,9 +5,11 @@
 -- See https://wiki.hypr.land/Configuring/Basics/Variables/#input
 hl.config({
   input = {
-    -- Use multiple keyboard layouts and switch between them with Left Alt + Right Alt.
-    kb_layout = "us,la(stea)",
-    kb_options = "shift:both_capslock_cancel, grp:alts_toggle",
+    -- Use multiple keyboard layouts; Alt+Shift switches them (omalang_binds.lua).
+    -- No grp:alts_toggle: in Lao, Right Alt is AltGr (AltGr + 1..0 = ໑..໐, as on Windows).
+    -- "lao" = Lao (Windows) layout from ~/.config/xkb/symbols/lao (two-character keys via ~/.config/xkb/lao.XCompose).
+    kb_layout = "us,lao",
+    kb_options = "shift:both_capslock_cancel",
 
     -- Use a specific keyboard variant if needed (e.g. intl for international keyboards).
     -- kb_variant = "intl",

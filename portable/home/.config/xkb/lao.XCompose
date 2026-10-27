@@ -1,0 +1,12 @@
+# Lao (Windows) layout, ~/.config/xkb/symbols/lao.
+# Windows keys that type two code points at once. The layout emits a
+# private-use placeholder on these keys; these lines expand it.
+# Pulled in from ~/.XCompose with:  include "%H/.config/xkb/lao.XCompose"
+<U10EA00> : "ໍ່"   # Shift+=
+<U10EA01> : "ົ້"   # Shift+Q
+<U10EA02> : "ິ້"   # Shift+Y
+<U10EA03> : "ີ້"   # Shift+U
+<U10EA04> : "ຫຼ"   # Shift+]
+<U10EA05> : "ັ້"   # Shift+A
+<U10EA06> : "ຶ້"   # Shift+B
+<U10EA07> : "ື້"   # Shift+N

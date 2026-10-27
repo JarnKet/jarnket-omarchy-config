@@ -423,13 +423,18 @@ install_tree() { # install_tree <dir holding a home/ tree> label
   mapfile -d '' -t files < <(cd "$root" && find . -type f -printf '%P\0' | sort -z)
 
   # hyprland.lua requires the other hypr files, and Hyprland reloads on every
-  # write, so it goes in last.
-  local ordered=() last=()
+  # write, so it goes in last. The xkb layout that input.lua names goes in
+  # first, so no reload ever looks for a layout that isn't there yet.
+  local first=() ordered=() last=()
   for rel in "${files[@]}"; do
-    if [[ $rel == .config/hypr/hyprland.lua ]]; then last+=("$rel"); else ordered+=("$rel"); fi
+    case $rel in
+    .config/xkb/*) first+=("$rel") ;;
+    .config/hypr/hyprland.lua) last+=("$rel") ;;
+    *) ordered+=("$rel") ;;
+    esac
   done
 
-  for rel in "${ordered[@]}" "${last[@]}"; do
+  for rel in "${first[@]}" "${ordered[@]}" "${last[@]}"; do
     if [[ $rel == .config/mimeapps.list ]] && [[ ! -e /usr/share/applications/brave-origin.desktop ]]; then
       info "kept your default apps (mimeapps.list wants Brave Origin, which isn't installed)"
       continue
@@ -442,9 +447,31 @@ install_tree() { # install_tree <dir holding a home/ tree> label
   ok "$label: $changed file(s) changed, $((${#files[@]} - changed)) already up to date"
 }
 
+# The Lao layout's two-character keys (Shift+] = ຫຼ ...) are compose rules in
+# ~/.config/xkb/lao.XCompose. ~/.XCompose holds your own name and email, so it
+# isn't copied; it gets one include line instead.
+setup_lao_keyboard() {
+  local xcompose=$HOME/.XCompose line='include "%H/.config/xkb/lao.XCompose"'
+  [[ -f $REPO_DIR/portable/home/.config/xkb/lao.XCompose ]] || return 0
+  grep -qF "$line" "$xcompose" 2>/dev/null && return 0
+  info "~/.XCompose (+ include for the Lao keyboard)"
+  ((DRY_RUN)) && return 0
+  backup "$xcompose"
+  # Without a ~/.XCompose the locale's rules apply; keep them.
+  [[ -e $xcompose ]] || printf 'include "%%L"\n' >"$xcompose"
+  printf '\n# Lao (Windows) keyboard: keys that type two characters (see the file).\n%s\n' "$line" >>"$xcompose"
+  if in_session; then
+    omarchy-restart-xcompose >/dev/null 2>&1 ||
+      problem "couldn't restart fcitx5; Shift + ] = ຫຼ works after you log in again"
+  fi
+}
+
 step_config() {
   step "Config files"
   install_tree "$REPO_DIR/portable" "config"
+  setup_lao_keyboard
+  # New fonts (Lao Term for Kitty) are only seen after fc-cache.
+  run fc-cache "$HOME/.local/share/fonts" >/dev/null 2>&1 || true
 
   if [[ -n $MACHINE && -d $REPO_DIR/device/$MACHINE ]]; then
     if confirm "This is a $MACHINE, like mine. Use my monitor layout for it too?" yes; then

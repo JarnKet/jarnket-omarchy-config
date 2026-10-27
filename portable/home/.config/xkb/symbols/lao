@@ -1,0 +1,79 @@
+// Lao — exact copy of Microsoft's "Lao Standard Keyboard Layout"
+// (KBDLAO.DLL 10.0.29667, KLID 00000454), the layout Windows ships.
+//
+// Windows has 8 keys that type TWO code points at once (Shift+] = ຫຼ, ...).
+// One key can only produce one keysym in XKB, so those levels emit a
+// private-use placeholder (U+10EA00..U+10EA07) and ~/.config/xkb/lao.XCompose
+// (included from ~/.XCompose) expands it to the real pair. fcitx5, and every
+// compose-aware app, does the expansion.
+//
+//   Shift+=  ໍ່   U10EA00        Shift+A  ັ້   U10EA05
+//   Shift+Q  ົ້   U10EA01        Shift+B  ຶ້   U10EA06
+//   Shift+Y  ິ້   U10EA02        Shift+N  ື້   U10EA07
+//   Shift+U  ີ້   U10EA03
+//   Shift+]  ຫຼ   U10EA04
+//
+// AltGr + number row gives Lao digits ໑..໐, as AltGr does on Windows.
+// Shift+Space gives ZERO WIDTH SPACE (U+200B), the Lao word separator.
+
+default partial alphanumeric_keys
+xkb_symbols "basic" {
+    name[Group1] = "Lao (Windows)";
+
+    key <TLDE> {[ quotedbl,  apostrophe            ]};
+    key <AE01> {[ U0EA2,     1,          U0ED1     ]}; // ຢ 1 ໑
+    key <AE02> {[ U0E9F,     2,          U0ED2     ]}; // ຟ 2 ໒
+    key <AE03> {[ U0EC2,     3,          U0ED3     ]}; // ໂ 3 ໓
+    key <AE04> {[ U0E96,     4,          U0ED4     ]}; // ຖ 4 ໔
+    key <AE05> {[ U0EB8,     U0ECC,      U0ED5     ]}; // ຸ ໌ ໕
+    key <AE06> {[ U0EB9,     U0EBC,      U0ED6     ]}; // ູ ຼ ໖
+    key <AE07> {[ U0E84,     5,          U0ED7     ]}; // ຄ 5 ໗
+    key <AE08> {[ U0E95,     6,          U0ED8     ]}; // ຕ 6 ໘
+    key <AE09> {[ U0E88,     7,          U0ED9     ]}; // ຈ 7 ໙
+    key <AE10> {[ U0E82,     8,          U0ED0     ]}; // ຂ 8 ໐
+    key <AE11> {[ U0E8A,     9                     ]}; // ຊ 9
+    key <AE12> {[ U0ECD,     U10EA00               ]}; // ໍ ໍ່
+
+    key <AD01> {[ U0EBB,     U10EA01               ]}; // ົ ົ້
+    key <AD02> {[ U0EC4,     0                     ]}; // ໄ 0
+    key <AD03> {[ U0EB3,     asterisk              ]}; // ຳ *
+    key <AD04> {[ U0E9E,     underscore            ]}; // ພ _
+    key <AD05> {[ U0EB0,     plus                  ]}; // ະ +
+    key <AD06> {[ U0EB4,     U10EA02               ]}; // ິ ິ້
+    key <AD07> {[ U0EB5,     U10EA03               ]}; // ີ ີ້
+    key <AD08> {[ U0EAE,     U0EA3                 ]}; // ຮ ຣ
+    key <AD09> {[ U0E99,     U0EDC                 ]}; // ນ ໜ
+    key <AD10> {[ U0E8D,     U0EBD                 ]}; // ຍ ຽ
+    key <AD11> {[ U0E9A,     minus                 ]}; // ບ -
+    key <AD12> {[ U0EA5,     U10EA04               ]}; // ລ ຫຼ
+    key <BKSL> {[ slash,     backslash             ]};
+
+    key <AC01> {[ U0EB1,     U10EA05               ]}; // ັ ັ້
+    key <AC02> {[ U0EAB,     semicolon             ]}; // ຫ ;
+    key <AC03> {[ U0E81,     period                ]}; // ກ .
+    key <AC04> {[ U0E94,     comma                 ]}; // ດ ,
+    key <AC05> {[ U0EC0,     colon                 ]}; // ເ :
+    key <AC06> {[ U0EC9,     U0ECA                 ]}; // ້ ໊
+    key <AC07> {[ U0EC8,     U0ECB                 ]}; // ່ ໋
+    key <AC08> {[ U0EB2,     exclam                ]}; // າ !
+    key <AC09> {[ U0EAA,     question              ]}; // ສ ?
+    key <AC10> {[ U0EA7,     percent               ]}; // ວ %
+    key <AC11> {[ U0E87,     equal                 ]}; // ງ =
+
+    key <AB01> {[ U0E9C,     U20AD                 ]}; // ຜ ₭
+    key <AB02> {[ U0E9B,     parenleft             ]}; // ປ (
+    key <AB03> {[ U0EC1,     U0EAF                 ]}; // ແ ຯ
+    key <AB04> {[ U0EAD,     x                     ]}; // ອ x
+    key <AB05> {[ U0EB6,     U10EA06               ]}; // ຶ ຶ້
+    key <AB06> {[ U0EB7,     U10EA07               ]}; // ື ື້
+    key <AB07> {[ U0E97,     U0EC6                 ]}; // ທ ໆ
+    key <AB08> {[ U0EA1,     U0EDD                 ]}; // ມ ໝ
+    key <AB09> {[ U0EC3,     dollar                ]}; // ໃ $
+    key <AB10> {[ U0E9D,     parenright            ]}; // ຝ )
+
+    key <SPCE> {[ space,     U200B                 ]}; // Shift+Space = ZWSP
+    // Numpad dot: Delete with NumLock off, comma with NumLock on (as Windows).
+    key <KPDL> { type = "KEYPAD", [ KP_Delete, comma ] };
+
+    include "level3(ralt_switch)"
+};

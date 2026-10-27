@@ -76,10 +76,18 @@ stay installed.
 
 ## Good to know
 
-- **Keyboard:** two layouts, US and Lao (`us,la(stea)`). Switch with
-  Left Alt + Left Shift or both Alt keys. Change it in `~/.config/hypr/input.lua`.
+- **Keyboard:** two layouts, US and Lao (`us,lao`), switched with Alt + Shift.
+  The Lao one is the Windows Lao layout key for key
+  (`~/.config/xkb/symbols/lao`), including the keys that type two characters:
+  Shift + ] = ຫຼ, Shift + = = ໍ່, and Shift + Q, Y, U, A, B, N = the vowel
+  with ້. Those come from `~/.config/xkb/lao.XCompose`, which install.sh
+  includes from your `~/.XCompose`. In Lao, Right Alt is AltGr
+  (AltGr + 1…0 = ໑…໐) and Shift + Space types a zero-width space. Change it in
+  `~/.config/hypr/input.lua`.
 - **Terminal:** Kitty opens on Super + Return, with a caret cursor that fades
-  in and out and leaves a short trail when it jumps, and Lao in Noto Sans Lao.
+  in and out and leaves a short trail when it jumps. Lao uses Lao Term, Noto
+  Sans Lao refitted to the terminal cell so wide letters like ໝ aren't shrunk
+  (`~/.local/share/lao-term`, SIL OFL).
   **Super + `** drops a Kitty down from the top of the screen; the same key
   hides it. To go back to foot: `omarchy default terminal foot`.
 - **Prompt:** Oh My Posh instead of starship: folder, git status, language
