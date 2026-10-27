@@ -4,7 +4,6 @@ brave-origin-bin                # Brave Origin browser (also becomes the default
 visual-studio-code-bin          # VS Code
 intellij-idea-ultimate-edition  # IntelliJ IDEA Ultimate (AUR, large)
 claude-desktop                  # Claude desktop app
-ollama-vulkan                   # local AI on the GPU (pulls in ollama): Ask Claude works offline, Ollama panel
 kdeconnect                      # phone link; omapager shows phone notifications
 filezilla                       # FTP/SFTP client
 freerdp                         # remote desktop client (also used by omarchy windows vm)

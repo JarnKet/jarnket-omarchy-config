@@ -35,8 +35,8 @@ Run it again any time; it skips what's already in place.
 | Step | What happens |
 |------|--------------|
 | `packages` | Installs what the plugins and terminal need: `hyprmoncfg-bin`, `gnome-network-displays` (AUR), build tools for Pointer Feel, Kitty, Oh My Posh, atuin, yazi, and a few libraries ([list](manifests/packages.txt)) |
-| `apps` | Lets you pick from my apps: Brave Origin, VS Code, IntelliJ, Claude, Ollama, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
-| `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout and Ollama service too |
+| `apps` | Lets you pick from my apps: Brave Origin, VS Code, IntelliJ, Claude, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
+| `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
 | `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
 | `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
 | `theme` | Clones the ThinkPad theme plus 5 others, renders the ASCII wallpapers with **your** username, switches to it |
@@ -100,9 +100,7 @@ stay installed.
   Super + Space, `ask <question>` sends it straight away, and any typed text gets
   an **Ask Claude here** row. `ask-claude "question"` works in a terminal. Put a
   line or two about yourself (city, languages) in `~/.config/ask-claude/context.md`
-  for local answers. Offline, it answers with a local model instead if you
-  install Ollama (`ollama-vulkan` in the apps step) and pull one in the Ollama
-  panel (the robot icon).
+  for local answers.
 - **Plugin updates** are checked every 6 hours. When a plugin has new commits
   you get a notification and a puzzle icon in the middle of the bar; click
   either to go through the changes and pick what to install
@@ -134,7 +132,6 @@ stay installed.
 | [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
 | [Disk Keeper](extras/plugins/shadowone.disk-keeper) | Free space in the bar, a warning before the disk fills up, and a panel to clean caches, old packages, build folders and Docker leftovers (mine) |
 | [Ask Claude](extras/plugins/shadowone.ask-claude) | Quick questions to Claude Sonnet from the bar or Super + A, through the Claude Code CLI (mine) |
-| [Ollama](extras/plugins/shadowone.ollama) | Local models from the bar: start/stop Ollama, pull and test models, pick the one Ask Claude uses offline (mine) |
 | [Plugin Updates](extras/plugins/shadowone.plugin-updates) | A bar icon while plugin updates are waiting; click to review them (mine) |
 | [Clock](extras/plugins/shadowone.clock) | Omarchy's clock with your Google Calendar events and reminders; `omacal setup` explains the one-time Google setup (mine) |
 | [Battery](extras/plugins/shadowone.power) | Omarchy's battery panel plus an 80% charge limit switch and battery health (mine) |
@@ -187,7 +184,7 @@ manifests/
   apps.txt         my optional apps
   themes.txt       themes to clone
 extras/plugins/    plugins I wrote (shadowone.*): top bar, disk keeper, ask claude,
-                   ollama, plugin updates, clock, battery
+                   plugin updates, clock, battery
 ```
 
 Paths to my home folder (`/home/shadowone/...`) in the config files are

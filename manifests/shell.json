@@ -42,9 +42,6 @@
         },
         {
           "id": "shadowone.ask-claude"
-        },
-        {
-          "id": "shadowone.ollama"
         }
       ],
       "right": [

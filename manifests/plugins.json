@@ -249,14 +249,6 @@
       "local": true
     },
     {
-      "id": "shadowone.ollama",
-      "name": "Ollama",
-      "version": "1.0.1",
-      "source": null,
-      "revision": null,
-      "local": true
-    },
-    {
       "id": "shadowone.plugin-updates",
       "name": "Plugin Updates",
       "version": "1.0.0",
