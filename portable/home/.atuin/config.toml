@@ -1,0 +1,11 @@
+# Atuin: Ctrl+R searches shell history, kept locally in ~/.atuin/data (never sync that folder: it holds the history and its key).
+# Nothing leaves this machine unless you run `atuin register` or `atuin login`.
+
+# No GitHub check for new versions; pacman updates atuin.
+update_check = false
+
+# Open a 20-line search under the prompt instead of taking the whole terminal.
+inline_height = 20
+
+# Enter puts the command on the line so you can check it first; Enter again runs it.
+enter_accept = false

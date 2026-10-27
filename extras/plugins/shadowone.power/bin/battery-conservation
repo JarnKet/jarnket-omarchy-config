@@ -16,6 +16,10 @@ set -euo pipefail
 
 SERVICE=org.freedesktop.UPower
 IFACE=org.freedesktop.UPower.Device
+# The root service this CLI replaced. While it is installed it writes 75/80
+# straight to sysfs after every boot and wake, behind UPower's back.
+LEGACY_UNIT=/etc/systemd/system/battery-conservation.service
+LEGACY_REMOVE="sudo systemctl disable --now battery-conservation.service && sudo rm $LEGACY_UNIT /etc/battery-conservation.conf /usr/local/bin/battery-conservation && sudo systemctl daemon-reload"
 
 die() { echo "battery-conservation: $*" >&2; exit 1; }
 
@@ -46,12 +50,27 @@ load() {
   local values
   values=$(props ChargeThresholdSupported ChargeThresholdEnabled ChargeStartThreshold \
     ChargeEndThreshold Capacity EnergyFull EnergyFullDesign ChargeCycles Technology \
-    Vendor Model Percentage State)
+    Vendor Model Percentage State NativePath)
   {
     read -r SUPPORTED; read -r ENABLED; read -r START; read -r END
     read -r HEALTH; read -r FULL; read -r DESIGN; read -r CYCLES; read -r TECH
-    read -r VENDOR; read -r MODEL; read -r PERCENT; read -r STATE
+    read -r VENDOR; read -r MODEL; read -r PERCENT; read -r STATE; read -r NATIVE
   } <<<"$values"
+  read_sysfs
+}
+
+# What the battery actually enforces. UPower's ChargeThresholdEnabled only
+# says what UPower last did; anything else writing sysfs is not reflected
+# there, so the mode is decided from these values when they are readable.
+read_sysfs() {
+  local bat=/sys/class/power_supply/${NATIVE:-BAT0}
+  SYS_START=$(cat "$bat/charge_control_start_threshold" 2>/dev/null || true)
+  SYS_END=$(cat "$bat/charge_control_end_threshold" 2>/dev/null || true)
+  if [[ $SYS_END =~ ^[0-9]+$ ]]; then
+    (( SYS_END < 100 )) && LIMITED=true || LIMITED=false
+  else
+    LIMITED=$ENABLED
+  fi
 }
 
 state_name() {
@@ -81,12 +100,24 @@ set_limit() {
   if ! err=$(busctl call "$SERVICE" "$DEV" "$IFACE" EnableChargeThreshold b "$1" 2>&1); then
     die "UPower refused: ${err:-unknown error}"
   fi
+  # UPower writes sysfs before it answers, so the battery should follow now.
+  load
+  if [[ $LIMITED != "$1" ]]; then
+    die "the battery still reports ${SYS_START:-?}/${SYS_END:-?}%; something else sets the limit"
+  fi
 }
 
 cmd_shell() {
   [[ $SUPPORTED == true ]] && printf 'supported\tyes\n' || printf 'supported\tno\n'
-  [[ $ENABLED == true ]] && printf 'enabled\tyes\n' || printf 'enabled\tno\n'
-  printf 'start\t%s\nend\t%s\n' "$START" "$END"
+  [[ $LIMITED == true ]] && printf 'enabled\tyes\n' || printf 'enabled\tno\n'
+  [[ $ENABLED == true ]] && printf 'upower_enabled\tyes\n' || printf 'upower_enabled\tno\n'
+  # While a limit is in force show the one in force; otherwise what "on" sets.
+  if [[ $LIMITED == true ]]; then
+    printf 'start\t%s\nend\t%s\n' "$SYS_START" "$SYS_END"
+  else
+    printf 'start\t%s\nend\t%s\n' "$START" "$END"
+  fi
+  [[ -e $LEGACY_UNIT ]] && printf 'legacy\tyes\n'
   awk -v h="$HEALTH" -v f="$FULL" -v d="$DESIGN" 'BEGIN {
     if (h > 0) printf "health\t%.1f\n", h
     if (f > 0) printf "full_wh\t%.1f\n", f
@@ -103,20 +134,29 @@ cmd_shell() {
 cmd_status() {
   if [[ $SUPPORTED != true ]]; then
     echo "Conservation: not supported by this battery"
-  elif [[ $ENABLED == true ]]; then
-    if (( START > 0 )); then
-      echo "Conservation: on (stops at ${END}%, resumes below ${START}%)"
+  elif [[ $LIMITED == true ]]; then
+    if (( SYS_START > 0 )); then
+      echo "Conservation: on (stops at ${SYS_END}%, resumes below ${SYS_START}%)"
     else
-      echo "Conservation: on (stops at ${END}%)"
+      echo "Conservation: on (stops at ${SYS_END}%)"
     fi
   else
     echo "Conservation: off (charges to 100%)"
+  fi
+  if [[ $SUPPORTED == true && $LIMITED != "$ENABLED" ]]; then
+    echo "              UPower thinks it is $([[ $ENABLED == true ]] && echo on || echo off); run 'battery-conservation $([[ $LIMITED == true ]] && echo on || echo off)' to resync"
   fi
   printf 'Charge:       %.0f%% (%s)\n' "$PERCENT" "$(state_name "$STATE")"
   awk -v h="$HEALTH" -v f="$FULL" -v d="$DESIGN" -v c="$(condition "$HEALTH")" 'BEGIN {
     if (h > 0) printf "Health:       %.1f%% of design (%.1f / %.1f Wh) · %s\n", h, f, d, c
   }'
   (( CYCLES > 0 )) && echo "Cycles:       $CYCLES"
+  if [[ -e $LEGACY_UNIT ]]; then
+    echo
+    echo "Warning: the old battery-conservation.service is still installed. It turns"
+    echo "the 80% limit back on after every boot and wake. Remove it with:"
+    echo "  $LEGACY_REMOVE"
+  fi
   return 0
 }
 

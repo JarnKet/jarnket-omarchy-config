@@ -15,3 +15,9 @@ pkgconf                      # ilysorc.pointer-feel
 gcc                          # ilysorc.pointer-feel
 make                         # ilysorc.pointer-feel
 polkit                       # ilysorc.pointer-feel
+kitty                        # default terminal (xdg-terminals.list), drop-down on Super + `
+oh-my-posh-bin               # shell prompt in .bashrc, colored from the Omarchy theme (AUR)
+atuin                        # Ctrl+R history search in .bashrc
+yazi                         # terminal file manager, `y` in .bashrc
+7zip                         # yazi: archive previews
+resvg                        # yazi: SVG previews

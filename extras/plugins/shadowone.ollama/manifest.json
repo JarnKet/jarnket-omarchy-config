@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowone.ollama",
+  "name": "Ollama",
+  "version": "1.0.1",
+  "author": "ShadowOne",
+  "license": "MIT",
+  "description": "Manage the local Ollama LLM server: start and stop it, see models on disk and in memory (and how much runs on the GPU), download, test, unload and delete models, and pick Ask Claude's offline model.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Ollama",
+    "description": "A robot icon, bright while a model is in memory or downloading, that opens the Ollama manager.",
+    "category": "AI",
+    "allowMultiple": false,
+    "defaultSection": "left"
+  }
+}

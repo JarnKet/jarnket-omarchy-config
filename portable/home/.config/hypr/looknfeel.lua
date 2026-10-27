@@ -72,6 +72,33 @@ hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 2.36, bezier = "a
 hl.animation({ leaf = "workspaces", enabled = true, speed = 4.5, bezier = "easeInOutCubic", style = "slide" })
 -- <<< omamotion managed block <<<
 
+-- Glyph's motion (github.com/Nebelung-cloud/glyph-rice, hypr/hyprland/animations.lua), on top of
+-- the omamotion block above: windows and panels appear with a fast start and a long soft
+-- landing, leave quickly, and move or fade on Material's standard curve. Leaves Glyph left to
+-- inherit are set here too, because the omamotion block set them explicitly.
+-- Workspaces keep the swipe fix below (Glyph slides them vertically).
+hl.curve("emphasizedDecel", { type = "bezier", points = { { 0.05, 0.7 }, { 0.1, 1 } } })
+hl.curve("emphasizedAccel", { type = "bezier", points = { { 0.3, 0 }, { 0.8, 0.15 } } })
+hl.curve("standard", { type = "bezier", points = { { 0.2, 0 }, { 0, 1 } } })
+hl.animation({ leaf = "global", enabled = true, speed = 8, bezier = "default" })
+hl.animation({ leaf = "windows", enabled = true, speed = 8, bezier = "default", style = "" })
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 5, bezier = "emphasizedDecel", style = "" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 3, bezier = "emphasizedAccel", style = "" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 6, bezier = "standard" })
+hl.animation({ leaf = "layers", enabled = true, speed = 8, bezier = "default", style = "" })
+hl.animation({ leaf = "layersIn", enabled = true, speed = 5, bezier = "emphasizedDecel", style = "slide" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 4, bezier = "emphasizedAccel", style = "slide" })
+hl.animation({ leaf = "fade", enabled = true, speed = 6, bezier = "standard" })
+hl.animation({ leaf = "fadeIn", enabled = true, speed = 6, bezier = "standard" })
+hl.animation({ leaf = "fadeOut", enabled = true, speed = 6, bezier = "standard" })
+hl.animation({ leaf = "fadeSwitch", enabled = true, speed = 6, bezier = "standard" })
+hl.animation({ leaf = "fadeDim", enabled = true, speed = 6, bezier = "standard" })
+hl.animation({ leaf = "fadeLayers", enabled = true, speed = 5, bezier = "standard" })
+hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 5, bezier = "standard" })
+hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 5, bezier = "standard" })
+hl.animation({ leaf = "border", enabled = true, speed = 6, bezier = "standard" })
+hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 4, bezier = "emphasizedDecel", style = "slidefadevert 15%" })
+
 -- Smooth workspace swipe: when you lift your fingers mid-swipe, the slide
 -- finishes with an ease-out (fast start, soft landing) instead of
 -- easeInOutCubic, which stalls right after release before speeding up.

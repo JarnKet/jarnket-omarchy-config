@@ -1,7 +1,7 @@
 # ShadowOne's Omarchy setup
 
 My [Omarchy](https://omarchy.org) desktop, ready to install on another machine:
-Hyprland config, terminal settings, 33 shell plugins with my bar layout (a
+Hyprland config, terminal settings, 34 shell plugins with my bar layout (a
 bottom bar and a second Top Bar), the
 [ThinkPad theme](https://github.com/JarnKet/omarchy-thinkpad-theme) with its
 ASCII wallpapers, and the packages it all needs.
@@ -34,9 +34,9 @@ Run it again any time; it skips what's already in place.
 
 | Step | What happens |
 |------|--------------|
-| `packages` | Installs what the plugins need: `hyprmoncfg-bin`, `gnome-network-displays` (AUR), build tools for Pointer Feel, and a few libraries ([list](manifests/packages.txt)) |
-| `apps` | Lets you pick from my apps: Brave Origin, VS Code, IntelliJ, Claude, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
-| `config` | Hyprland (`~/.config/hypr`), Alacritty/Ghostty/Kitty/foot, lazygit, starship, Omarchy hooks. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
+| `packages` | Installs what the plugins and terminal need: `hyprmoncfg-bin`, `gnome-network-displays` (AUR), build tools for Pointer Feel, Kitty, Oh My Posh, atuin, yazi, and a few libraries ([list](manifests/packages.txt)) |
+| `apps` | Lets you pick from my apps: Brave Origin, VS Code, IntelliJ, Claude, Ollama, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
+| `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout and Ollama service too |
 | `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
 | `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
 | `theme` | Clones the ThinkPad theme plus 5 others, renders the ASCII wallpapers with **your** username, switches to it |
@@ -78,6 +78,19 @@ stay installed.
 
 - **Keyboard:** two layouts, US and Lao (`us,la(stea)`). Switch with
   Left Alt + Left Shift or both Alt keys. Change it in `~/.config/hypr/input.lua`.
+- **Terminal:** Kitty opens on Super + Return, with a caret cursor that fades
+  in and out and leaves a short trail when it jumps, and Lao in Noto Sans Lao.
+  **Super + `** drops a Kitty down from the top of the screen; the same key
+  hides it. To go back to foot: `omarchy default terminal foot`.
+- **Prompt:** Oh My Posh instead of starship: folder, git status, language
+  versions in projects, how long a command took, the exit code when it fails,
+  battery and time. Its colors follow the Omarchy theme, rendered from
+  `~/.config/omarchy/themed/oh-my-posh.omp.json.tpl` on every theme change.
+- **Ctrl + R** searches all your shell history with atuin (it stays on your
+  machine; the Up arrow is unchanged). **`y`** opens yazi, a terminal file
+  manager with image previews, and leaves you in the folder you quit from.
+- **Animations:** windows and panels open with a fast start and a soft landing
+  (curves from the Glyph rice, in `~/.config/hypr/looknfeel.lua`).
 - **Print Screen** copies a screenshot to the clipboard and doesn't save a file.
 - **Super + Alt + E** opens Panel Notes.
 - **Super + A** (or the sparkle in the bar, or the first row of Super + Space)
@@ -87,7 +100,9 @@ stay installed.
   Super + Space, `ask <question>` sends it straight away, and any typed text gets
   an **Ask Claude here** row. `ask-claude "question"` works in a terminal. Put a
   line or two about yourself (city, languages) in `~/.config/ask-claude/context.md`
-  for local answers.
+  for local answers. Offline, it answers with a local model instead if you
+  install Ollama (`ollama-vulkan` in the apps step) and pull one in the Ollama
+  panel (the robot icon).
 - **Plugin updates** are checked every 6 hours. When a plugin has new commits
   you get a notification and a puzzle icon in the middle of the bar; click
   either to go through the changes and pick what to install
@@ -109,7 +124,8 @@ stay installed.
   update, `--pinned` gets the versions this was tested with, or
   `omarchy plugin update` gets the fixes.
 - Not in this repo on purpose: SSH/GPG keys, browser profiles, passwords,
-  tokens, keyrings, my personal wallpaper.
+  tokens, keyrings, shell history (atuin's `~/.atuin/data`), Ask Claude's
+  `context.md`, my personal wallpaper.
 
 ## Plugins
 
@@ -118,9 +134,10 @@ stay installed.
 | [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
 | [Disk Keeper](extras/plugins/shadowone.disk-keeper) | Free space in the bar, a warning before the disk fills up, and a panel to clean caches, old packages, build folders and Docker leftovers (mine) |
 | [Ask Claude](extras/plugins/shadowone.ask-claude) | Quick questions to Claude Sonnet from the bar or Super + A, through the Claude Code CLI (mine) |
+| [Ollama](extras/plugins/shadowone.ollama) | Local models from the bar: start/stop Ollama, pull and test models, pick the one Ask Claude uses offline (mine) |
 | [Plugin Updates](extras/plugins/shadowone.plugin-updates) | A bar icon while plugin updates are waiting; click to review them (mine) |
 | [Clock](extras/plugins/shadowone.clock) | Omarchy's clock with your Google Calendar events and reminders; `omacal setup` explains the one-time Google setup (mine) |
-| [Battery](extras/plugins/shadowone.power) | Omarchy's battery panel plus an 80% charge limit switch, battery health and hibernate-after-sleep (mine) |
+| [Battery](extras/plugins/shadowone.power) | Omarchy's battery panel plus an 80% charge limit switch and battery health (mine) |
 | [Omapager](https://github.com/njpatel/omapager) | Notifications that stack and group (replaces the built-in ones) |
 | [Keystroke](https://github.com/evindor/keystroke) | Raycast-style command palette instead of the Omarchy menu |
 | [Exposé](https://github.com/kristofferR/omarchy-expose) | All windows at once; 3-finger swipe up/down |
@@ -170,7 +187,7 @@ manifests/
   apps.txt         my optional apps
   themes.txt       themes to clone
 extras/plugins/    plugins I wrote (shadowone.*): top bar, disk keeper, ask claude,
-                   plugin updates, clock, battery
+                   ollama, plugin updates, clock, battery
 ```
 
 Paths to my home folder (`/home/shadowone/...`) in the config files are

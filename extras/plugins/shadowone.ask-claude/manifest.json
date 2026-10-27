@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "shadowone.ask-claude",
   "name": "Ask Claude",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "ShadowOne",
   "license": "MIT",
-  "description": "Quick questions to Claude Sonnet from the bar or SUPER+A, answered through the signed-in Claude Code CLI.",
+  "description": "Quick questions to Claude Sonnet from the bar or SUPER+A, answered through the signed-in Claude Code CLI, or by a local Ollama model when offline.",
   "kinds": [
     "bar-widget"
   ],
@@ -14,7 +14,7 @@
   },
   "barWidget": {
     "displayName": "Ask Claude",
-    "description": "A sparkle button that opens a quick-ask panel: type a question, get a streamed answer, ask follow-ups.",
+    "description": "A sparkle button that opens a quick-ask panel: type a question, get a streamed answer, ask follow-ups. Switches to a local model offline.",
     "category": "AI",
     "allowMultiple": false,
     "defaultSection": "left"

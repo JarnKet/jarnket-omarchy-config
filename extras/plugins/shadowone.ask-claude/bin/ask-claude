@@ -1,21 +1,35 @@
 #!/usr/bin/env -S python3 -IB
-"""ask-claude: quick questions to Claude Sonnet through the signed-in Claude Code CLI.
+"""ask-claude: quick questions to Claude Sonnet, or to a local Ollama model offline.
 
   ask-claude "question"            stream the answer in the terminal
   ask-claude -c "follow-up"        continue the last conversation
+  ask-claude --local "question"    use the local model (--cloud: always Claude)
   ask-claude --json [--session ID] -- "question"
                                    JSON lines for the Ask Claude bar panel:
                                      {"t": "session", "id": ...}
+                                     {"t": "backend", "kind": "cloud"|"local", "model": ..., "label": ...}
+                                     {"t": "note", "d": ...}
                                      {"t": "text", "d": ...}
                                      {"t": "tool", "name": ..., "detail": ...}
-                                     {"t": "done", "id": ..., "ms": ..., "limits": {...}}
+                                     {"t": "done", "id": ..., "ms": ..., "limits": {...}, "stats": {...}}
                                      {"t": "error", "message": ...}
 
-It runs `claude -p` with your Claude subscription login (no API key), a short
+Cloud: `claude -p` with your Claude subscription login (no API key), a short
 system prompt instead of Claude Code's coding-agent prompt, no MCP servers, no
 hooks or plugins, and only the web search / web fetch tools. Conversations are
 ordinary Claude Code sessions kept under ~/.local/state/ask-claude, so
 `claude --resume <id>` there picks one up in the full CLI.
+
+Local: the Ollama server on localhost (the systemd user unit ollama.service,
+started on demand) with the model named in ~/.config/ask-claude/local-model.
+Local conversations are JSON files under ~/.local/state/ask-claude/local, and
+their ids start with "local-".
+
+Which one answers comes from ~/.config/ask-claude/backend: "auto" (default:
+Claude when the internet is reachable, the local model when it is not),
+"cloud" or "local". A follow-up stays with the backend that started the
+conversation, except that an offline follow-up to a Claude conversation moves
+to the local model.
 
 Anything in ~/.config/ask-claude/context.md (where you live, your languages,
 your machine) is added to the system prompt, so local questions get local
@@ -25,19 +39,34 @@ answers. That file stays on this machine.
 import argparse
 import json
 import os
+import re
 import shutil
 import signal
+import socket
 import subprocess
 import sys
+import threading
 import time
+import urllib.error
+import urllib.request
+import uuid
 
 MODEL = os.environ.get("ASK_CLAUDE_MODEL", "claude-sonnet-5-5")
+MODEL_LABEL = "Sonnet 5.5"
 EFFORT = os.environ.get("ASK_CLAUDE_EFFORT", "low")
 TOOLS = "WebSearch,WebFetch"
 HOME = os.path.expanduser("~")
 STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local/state"), "ask-claude")
-CONTEXT_FILE = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config"), "ask-claude", "context.md")
+CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config"), "ask-claude")
+CONTEXT_FILE = os.path.join(CONFIG_DIR, "context.md")
+BACKEND_FILE = os.path.join(CONFIG_DIR, "backend")
+LOCAL_MODEL_FILE = os.path.join(CONFIG_DIR, "local-model")
+LOCAL_DIR = os.path.join(STATE_DIR, "local")
 LAST_SESSION = os.path.join(STATE_DIR, "last-session")
+
+# Used when ~/.config/ask-claude/local-model is missing, first one installed wins.
+LOCAL_PREFERRED = ["gemma4:26b-a4b-it-qat", "gemma4:26b-a4b", "gemma4:e4b-it-qat", "gemma4:e4b"]
+LOCAL_HISTORY_TURNS = 12
 
 SYSTEM_PROMPT = """\
 You answer quick questions typed into an "Ask Claude" panel on the user's Linux \
@@ -53,6 +82,87 @@ are unsure of, and name your sources briefly. You cannot see the screen or run \
 anything on this computer; when an action is needed, give the exact command or steps.\
 """
 
+LOCAL_SYSTEM_PROMPT = """\
+You answer quick questions typed into an "Ask Claude" panel on the user's Linux \
+desktop (Omarchy: Arch Linux with Hyprland). You are {label}, running offline on \
+this laptop. It is now {now}.
+
+Lead with the answer. Keep it short unless the question needs depth: no preamble, \
+no restating the question, no closing offers. Use Markdown lightly: short lists, \
+`inline code`, and fenced code blocks for commands. Reply in the language the user \
+writes in; for Lao, write natural Lao in Lao script.
+
+You have no internet access. For news, prices, schedules or anything that may have \
+changed recently, say that you are offline and may be out of date. Never invent \
+facts, links or numbers; say when you are not sure. You cannot see the screen or \
+run anything on this computer; when an action is needed, give the exact command or steps.\
+"""
+
+
+class Offline(Exception):
+    """The cloud turn failed before any answer because the network is down."""
+
+
+def read_text(path, limit=4000):
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return handle.read(limit).strip()
+    except OSError:
+        return ""
+
+
+def with_context(prompt):
+    context = read_text(CONTEXT_FILE)
+    if context:
+        prompt += "\n\nAbout the user:\n" + context
+    return prompt
+
+
+def now_text():
+    return time.strftime("%A %d %B %Y, %H:%M %Z (UTC%z)")
+
+
+def model_label(name):
+    """gemma4:26b-a4b-it-qat -> Gemma 4 26B, qwen3.6:35b-a3b -> Qwen 3.6 35B."""
+    base, _, tag = name.partition(":")
+    base = base.split("/")[-1]
+    match = re.match(r"([A-Za-z-]+?)-?(\d[\d.]*)?$", base)
+    family = (match.group(1) if match else base).replace("-", " ").title()
+    version = match.group(2) if match and match.group(2) else ""
+    size = tag.split("-")[0].upper() if tag and tag != "latest" else ""
+    return " ".join(p for p in (family, version, size) if p)
+
+
+# ------------------------------------------------------------------ backend choice
+
+def backend_setting(override):
+    value = override or read_text(BACKEND_FILE, 32) or "auto"
+    return value if value in ("auto", "cloud", "local") else "auto"
+
+
+def online(timeout=2.0):
+    """True when api.anthropic.com answers a TCP connect. DNS can hang, so it runs in a thread."""
+    result = []
+
+    def probe():
+        try:
+            socket.create_connection(("api.anthropic.com", 443), timeout=timeout).close()
+            result.append(True)
+        except OSError:
+            result.append(False)
+
+    worker = threading.Thread(target=probe, daemon=True)
+    worker.start()
+    worker.join(timeout + 0.5)
+    return bool(result and result[0])
+
+
+def looks_offline(message):
+    return bool(re.search(r"connection error|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH|fetch failed"
+                          r"|getaddrinfo|network|socket hang up|timed? ?out", message or "", re.I))
+
+
+# ------------------------------------------------------------------ cloud (Claude Code)
 
 def claude_binary():
     found = shutil.which("claude")
@@ -60,18 +170,6 @@ def claude_binary():
         return found
     fallback = os.path.join(HOME, ".local/bin/claude")
     return fallback if os.path.exists(fallback) else "claude"
-
-
-def system_prompt():
-    prompt = SYSTEM_PROMPT.format(now=time.strftime("%A %d %B %Y, %H:%M %Z (UTC%z)"))
-    try:
-        with open(CONTEXT_FILE, encoding="utf-8") as handle:
-            context = handle.read(4000).strip()
-    except OSError:
-        context = ""
-    if context:
-        prompt += "\n\nAbout the user:\n" + context
-    return prompt
 
 
 def claude_command(session):
@@ -84,7 +182,7 @@ def claude_command(session):
         "--disable-slash-commands",
         "--tools", TOOLS,
         "--allowedTools", TOOLS,
-        "--system-prompt", system_prompt(),
+        "--system-prompt", with_context(SYSTEM_PROMPT.format(now=now_text())),
         "--output-format", "stream-json",
         "--include-partial-messages",
         "--verbose",
@@ -103,9 +201,8 @@ def tool_detail(name, data):
     return ""
 
 
-def run(question, session, emit):
-    """Run one turn. emit(event_dict) receives the simplified events."""
-    os.makedirs(STATE_DIR, exist_ok=True)
+def run_cloud(question, session, emit, may_fall_back):
+    """Run one Claude turn. Raises Offline when may_fall_back and the network failed before any text."""
     started = time.monotonic()
     try:
         child = subprocess.Popen(
@@ -132,6 +229,7 @@ def run(question, session, emit):
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
 
+    emit({"t": "backend", "kind": "cloud", "model": MODEL, "label": MODEL_LABEL})
     child.stdin.write(question)
     child.stdin.close()
 
@@ -186,6 +284,8 @@ def run(question, session, emit):
             message = str(result.get("result") or result.get("subtype") or "")
         if not message and stderr:
             message = stderr.splitlines()[-1]
+        if may_fall_back and not wrote_text and (looks_offline(message) or not online()):
+            raise Offline(message)
         emit({"t": "error", "message": message or "claude exited with status %d" % child.returncode})
         return 1
 
@@ -197,11 +297,221 @@ def run(question, session, emit):
     return 0
 
 
+# ------------------------------------------------------------------ local (Ollama)
+
+def ollama_base():
+    host = os.environ.get("OLLAMA_HOST", "").strip() or "127.0.0.1:11434"
+    if not host.startswith(("http://", "https://")):
+        host = "http://" + host
+    return host.rstrip("/")
+
+
+OLLAMA = ollama_base()
+
+
+def ollama(path, body=None, timeout=5):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(OLLAMA + path, data=data, headers={"Content-Type": "application/json"})
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+def ollama_json(path, body=None, timeout=5):
+    with ollama(path, body, timeout) as response:
+        return json.loads(response.read() or b"{}")
+
+
+def ollama_error(error):
+    if isinstance(error, urllib.error.HTTPError):
+        try:
+            return json.loads(error.read()).get("error") or str(error)
+        except (ValueError, AttributeError):
+            return str(error)
+    return str(getattr(error, "reason", error))
+
+
+def ensure_ollama(emit):
+    """Make sure the server answers; start the user unit if it is installed but stopped."""
+    try:
+        ollama_json("/api/version", timeout=2)
+        return True
+    except (urllib.error.URLError, OSError, ValueError):
+        pass
+    try:
+        known = subprocess.run(["systemctl", "--user", "cat", "ollama.service"],
+                               capture_output=True, timeout=5).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        known = False
+    if not known:
+        return False
+    emit({"t": "note", "d": "Starting Ollama…"})
+    subprocess.run(["systemctl", "--user", "start", "ollama.service"], capture_output=True, timeout=20)
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        try:
+            ollama_json("/api/version", timeout=2)
+            return True
+        except (urllib.error.URLError, OSError, ValueError):
+            time.sleep(0.4)
+    return False
+
+
+def installed_models():
+    try:
+        return [m.get("name") or m.get("model") for m in ollama_json("/api/tags").get("models") or []]
+    except (urllib.error.URLError, OSError, ValueError):
+        return []
+
+
+def pick_local_model(wanted, installed):
+    for name in [wanted, read_text(LOCAL_MODEL_FILE, 200)] + LOCAL_PREFERRED:
+        if name and name in installed:
+            return name
+    return installed[0] if installed else ""
+
+
+def local_path(session_id):
+    return os.path.join(LOCAL_DIR, re.sub(r"[^A-Za-z0-9_-]", "", session_id) + ".json")
+
+
+def load_local(session_id):
+    try:
+        with open(local_path(session_id), encoding="utf-8") as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_local(session_id, conversation):
+    os.makedirs(LOCAL_DIR, exist_ok=True)
+    path = local_path(session_id)
+    with open(path + ".tmp", "w", encoding="utf-8") as handle:
+        json.dump(conversation, handle, ensure_ascii=False)
+    os.replace(path + ".tmp", path)
+    with open(LAST_SESSION, "w") as handle:
+        handle.write(session_id + "\n")
+
+
+def run_local(question, session, emit, note=""):
+    started = time.monotonic()
+    if not ensure_ollama(emit):
+        emit({"t": "error", "message": "Ollama is not running. Start it from the Ollama panel, "
+                                       "or: systemctl --user start ollama"})
+        return 1
+    installed = installed_models()
+    session_id = session if session and session.startswith("local-") else "local-" + uuid.uuid4().hex[:12]
+    conversation = load_local(session_id) if session_id == session else {}
+    model = pick_local_model(conversation.get("model", ""), installed)
+    if not model:
+        emit({"t": "error", "message": "No local model is installed yet. Open the Ollama panel to download one."})
+        return 1
+    label = model_label(model)
+    messages = list(conversation.get("messages") or [])
+    conversation.update({"model": model, "created": conversation.get("created") or int(time.time())})
+
+    emit({"t": "session", "id": session_id})
+    emit({"t": "backend", "kind": "local", "model": model, "label": label})
+    if note:
+        emit({"t": "note", "d": note})
+
+    try:
+        details = ollama_json("/api/show", {"model": model}, timeout=10)
+        loaded = [m.get("name") for m in ollama_json("/api/ps").get("models") or []]
+    except (urllib.error.URLError, OSError, ValueError):
+        details, loaded = {}, []
+    if model not in loaded:
+        emit({"t": "note", "d": "Loading %s into memory…" % label})
+
+    system = with_context(LOCAL_SYSTEM_PROMPT.format(label=label, now=now_text()))
+    recent = messages[-2 * LOCAL_HISTORY_TURNS:]
+    body = {
+        "model": model,
+        "messages": [{"role": "system", "content": system}] + recent + [{"role": "user", "content": question}],
+        "stream": True,
+    }
+    if "thinking" in (details.get("capabilities") or []):
+        body["think"] = os.environ.get("ASK_CLAUDE_LOCAL_THINK") == "1"
+
+    answer = []
+    stats = {}
+
+    def keep(status):
+        messages.append({"role": "user", "content": question})
+        messages.append({"role": "assistant", "content": "".join(answer) or "(%s)" % status})
+        conversation["messages"] = messages
+        save_local(session_id, conversation)
+
+    def stop(signum, _frame):
+        if answer:
+            keep("stopped")
+        emit({"t": "stopped"})
+        sys.exit(130)
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+
+    thinking = False
+    try:
+        with ollama("/api/chat", body, timeout=900) as response:
+            for raw in response:
+                try:
+                    event = json.loads(raw)
+                except ValueError:
+                    continue
+                if event.get("error"):
+                    raise RuntimeError(event["error"])
+                message = event.get("message") or {}
+                if message.get("thinking") and not thinking and not answer:
+                    thinking = True
+                    emit({"t": "note", "d": "Thinking…"})
+                text = message.get("content") or ""
+                if text:
+                    answer.append(text)
+                    emit({"t": "text", "d": text})
+                if event.get("done"):
+                    stats = event
+    except (urllib.error.URLError, OSError, RuntimeError) as error:
+        if answer:
+            keep("cut off")
+        message = str(error) if isinstance(error, RuntimeError) else ollama_error(error)
+        emit({"t": "error", "message": "%s: %s" % (label, message)})
+        return 1
+
+    keep("empty")
+    elapsed = int((time.monotonic() - started) * 1000)
+    count, duration = stats.get("eval_count") or 0, stats.get("eval_duration") or 0
+    emit({"t": "done", "id": session_id, "ms": elapsed, "limits": {},
+          "stats": {"model": model, "label": label, "tokens": count,
+                    "tps": round(count / (duration / 1e9), 1) if count and duration else 0,
+                    "loadS": round((stats.get("load_duration") or 0) / 1e9, 1)}})
+    return 0
+
+
+# ------------------------------------------------------------------ main
+
+def run(question, session, emit, backend):
+    os.makedirs(STATE_DIR, exist_ok=True)
+    if session and session.startswith("local-"):
+        return run_local(question, session, emit)
+    if backend == "local":
+        return run_local(question, None, emit)
+    if backend == "auto" and not online():
+        note = "Offline: answering with the local model" + (" (new conversation)." if session else ".")
+        return run_local(question, None, emit, note)
+    try:
+        return run_cloud(question, session, emit, may_fall_back=backend == "auto")
+    except Offline:
+        return run_local(question, None, emit, "Claude is unreachable: answering with the local model.")
+
+
 def main():
-    parser = argparse.ArgumentParser(prog="ask-claude", description="Quick questions to Claude Sonnet.")
+    parser = argparse.ArgumentParser(prog="ask-claude", description="Quick questions to Claude Sonnet or a local model.")
     parser.add_argument("--json", action="store_true", help="emit JSON lines (for the bar panel)")
     parser.add_argument("--session", help="continue this session id")
     parser.add_argument("-c", "--continue", dest="cont", action="store_true", help="continue the last conversation")
+    parser.add_argument("--backend", choices=("auto", "cloud", "local"), help="override ~/.config/ask-claude/backend")
+    parser.add_argument("--local", dest="backend", action="store_const", const="local", help="same as --backend local")
+    parser.add_argument("--cloud", dest="backend", action="store_const", const="cloud", help="same as --backend cloud")
     parser.add_argument("question", nargs="*")
     args = parser.parse_args()
 
@@ -213,11 +523,7 @@ def main():
 
     session = args.session
     if args.cont and not session:
-        try:
-            with open(LAST_SESSION) as handle:
-                session = handle.read().strip() or None
-        except OSError:
-            session = None
+        session = read_text(LAST_SESSION, 200) or None
 
     if args.json:
         def emit(event):
@@ -235,12 +541,19 @@ def main():
             elif kind == "tool":
                 label = {"WebSearch": "searching", "WebFetch": "reading"}.get(event["name"], event["name"])
                 sys.stderr.write("%s› %s %s%s\n" % (dim, label, event.get("detail", ""), reset))
+            elif kind == "note":
+                sys.stderr.write("%s› %s%s\n" % (dim, event["d"], reset))
+            elif kind == "backend" and event.get("kind") == "local":
+                sys.stderr.write("%s› %s (local)%s\n" % (dim, event.get("label", ""), reset))
             elif kind == "done":
                 sys.stdout.write("\n")
+                tps = (event.get("stats") or {}).get("tps")
+                if tps:
+                    sys.stderr.write("%s› %s tokens/s%s\n" % (dim, tps, reset))
             elif kind == "error":
                 sys.stderr.write("ask-claude: %s\n" % event["message"])
 
-    return run(question, session, emit)
+    return run(question, session, emit, backend_setting(args.backend))
 
 
 if __name__ == "__main__":

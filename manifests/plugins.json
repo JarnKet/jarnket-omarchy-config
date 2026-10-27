@@ -5,7 +5,7 @@
       "name": "Radio Atlas",
       "version": "0.1.9",
       "source": "https://github.com/AksharP5/omarchy-radio-atlas.git",
-      "revision": "b81d9d21b1c7bef890d4bc8c8b22080f9b4047c8",
+      "revision": "cb604f717c4c3de673993e0b746c50609b701511",
       "local": false
     },
     {
@@ -45,7 +45,7 @@
       "name": "hyprmoncfg: Multi-Monitor Manager for Omarchy",
       "version": "2.10.1",
       "source": "https://github.com/crmne/omarchy-hyprmoncfg.git",
-      "revision": "e17d756b7ba8cee2470ef480318104b2876fe1b1",
+      "revision": "03177e1b48fcde97004130fdfac1f9156e6b43a6",
       "local": false
     },
     {
@@ -69,7 +69,7 @@
       "name": "Exposé",
       "version": "5.0.0",
       "source": "https://github.com/kristofferR/omarchy-expose.git",
-      "revision": "805adb947e634ff4d0c3924cbbe993beae9e3319",
+      "revision": "f283002259f5aba75da17b3f5dd4081bddc257f5",
       "local": false
     },
     {
@@ -125,7 +125,7 @@
       "name": "Plugin Manager",
       "version": "1.11.2",
       "source": "https://github.com/juancasanueva/omarchy-plugin-manager.git",
-      "revision": "06fd09f0997f003bea2b8cb86609982e16ae7c75",
+      "revision": "5f393f30e47483f1a97edfa1582deb98c9190e46",
       "local": false
     },
     {
@@ -227,7 +227,7 @@
     {
       "id": "shadowone.ask-claude",
       "name": "Ask Claude",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": null,
       "revision": null,
       "local": true
@@ -244,6 +244,14 @@
       "id": "shadowone.disk-keeper",
       "name": "Disk Keeper",
       "version": "1.0.0",
+      "source": null,
+      "revision": null,
+      "local": true
+    },
+    {
+      "id": "shadowone.ollama",
+      "name": "Ollama",
+      "version": "1.0.1",
       "source": null,
       "revision": null,
       "local": true

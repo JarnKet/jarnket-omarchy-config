@@ -57,3 +57,6 @@ o.bind("SUPER + ALT + T", "Touchpad lag capture", "$HOME/.local/bin/touchpad-lag
 
 -- Ask Claude quick-ask panel (shadowone.ask-claude bar plugin).
 o.bind("SUPER + A", "Ask Claude", "omarchy-shell shadowone.ask-claude toggle")
+
+-- Drop-down Kitty from the top edge; the same key hides it (~/.config/kitty/quick-access-terminal.conf).
+o.bind("SUPER + grave", "Drop-down terminal", "kitten quick-access-terminal")

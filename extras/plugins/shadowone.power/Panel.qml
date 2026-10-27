@@ -36,27 +36,8 @@ Panel {
   readonly property bool careVisible: care.supported
   readonly property bool careEnabled: careBusy ? careDesired : care.enabled
   readonly property bool healthKnown: care.health > 0
-  readonly property string careCli: pluginFile("bin/battery-conservation")
-
-  // Hibernation, from bin/hibernate-mode --shell. Changes run the root helper
-  // through pkexec, so each one asks for a fingerprint or password.
-  property var hib: Model.parseHibernate("")
-  // "on" | "off" | "delay" while the helper runs, else "".
-  property string hibBusy: ""
-  property string hibPendingDelay: ""
-  property string hibError: ""
-  property int hibGen: 0
-  property int hibReadGen: 0
-  property int delayIndex: 0
-  readonly property bool hibVisible: hib.loaded && (hib.supported || hib.enabled)
-  readonly property bool hibEnabled: hibBusy === "on" ? true : (hibBusy === "off" ? false : hib.enabled)
-  readonly property bool delayVisible: hibVisible && hibEnabled
-  readonly property var cursorRows: Model.cursorRows(careVisible, hibVisible, delayVisible)
-  readonly property string hibCli: pluginFile("bin/hibernate-mode")
-  readonly property string hibInstaller: pluginFile("root/install.sh")
-
-  function pluginFile(rel) {
-    var url = Qt.resolvedUrl(rel).toString()
+  readonly property string careCli: {
+    var url = Qt.resolvedUrl("bin/battery-conservation").toString()
     if (url.indexOf("file://") === 0) url = url.substring(7)
     try { return decodeURIComponent(url) } catch (e) { return url }
   }
@@ -183,47 +164,6 @@ Panel {
       careReadGen = careGen
       careProc.running = true
     }
-    if (!hibProc.running && !hibActionProc.running) {
-      hibReadGen = hibGen
-      hibProc.running = true
-    }
-  }
-
-  function updateHib(raw) {
-    if (hibReadGen !== hibGen) return
-    var next = Model.parseHibernate(raw)
-    if (!next.loaded) return
-    hib = next
-  }
-
-  function runHib(action, args, delay) {
-    if (hibBusy !== "") return
-    hibError = ""
-    hibPendingDelay = delay || ""
-    hibGen++
-    hibBusy = action
-    hibActionProc.command = [hibCli].concat(args)
-    hibActionProc.running = true
-  }
-
-  function toggleHibernation() {
-    if (!hibVisible || hibBusy !== "") return
-    if (hib.helper !== "ok") {
-      // One-time root setup in a terminal; the 5 s refresh picks it up.
-      Quickshell.execDetached(["omarchy-launch-floating-terminal-with-presentation", "sudo bash '" + hibInstaller + "'"])
-      return
-    }
-    if (hib.enabled) {
-      runHib("off", ["off"])
-    } else if (hib.supported && Model.hibernateHasRoom(hib)) {
-      var delay = Model.hibernateStartDelay(hib)
-      runHib("on", ["on", delay], delay)
-    }
-  }
-
-  function setDelay(delay) {
-    if (!hib.enabled || hibBusy !== "" || delay === hib.delay) return
-    runHib("delay", ["delay", delay], delay)
   }
 
   function updateCare(raw) {
@@ -259,8 +199,6 @@ Panel {
 
   function activateCursor() {
     if (cursorRow === "care" && careVisible) toggleCare()
-    else if (cursorRow === "hibernate" && hibVisible) toggleHibernation()
-    else if (cursorRow === "delay" && delayVisible) setDelay(Model.hibernateDelays()[delayIndex])
     else activateSelectedProfile()
   }
 
@@ -322,7 +260,6 @@ Panel {
       profileIndex = idx >= 0 ? idx : 0
       cursorActive = false
       cursorRow = "profile"
-      delayIndex = Math.max(0, Model.hibernateDelays().indexOf(Model.hibernateStartDelay(hib)))
     }
   }
 
@@ -375,29 +312,6 @@ Panel {
         root.careError = lines[lines.length - 1].replace(/^battery-conservation: /, "") || "Couldn't change the charge limit"
       }
       root.careBusy = false
-      root.refresh()
-    }
-  }
-
-  Process {
-    id: hibProc
-    command: [root.hibCli, "--shell"]
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.updateHib(text) }
-  }
-
-  // Same as the conservation switch: the requested state shows while the
-  // helper runs and is kept on success until the next read confirms it.
-  Process {
-    id: hibActionProc
-    stderr: StdioCollector { id: hibActionErr; waitForEnd: true }
-    onExited: function(exitCode) {
-      if (exitCode === 0) {
-        root.hib = Model.hibernateAfter(root.hib, root.hibBusy, root.hibPendingDelay)
-      } else {
-        var lines = String(hibActionErr.text || "").trim().split("\n")
-        root.hibError = lines[lines.length - 1].replace(/^hibernate-mode: /, "") || "Couldn't change hibernation"
-      }
-      root.hibBusy = ""
       root.refresh()
     }
   }
@@ -478,10 +392,8 @@ Panel {
       anchors.fill: parent
       onMoveRequested: function(dx, dy) {
         if (!root.cursorActive) { root.cursorActive = true; return }
-        if (dy !== 0 && root.cursorRows.length > 1) {
-          root.cursorRow = Model.nextCursorRow(root.cursorRow, dy, root.cursorRows)
-        } else if (dx !== 0 && root.cursorRow === "delay" && root.delayVisible) {
-          root.delayIndex = Model.clampIndex(root.delayIndex + dx, Model.hibernateDelays().length)
+        if (dy !== 0 && root.careVisible) {
+          root.cursorRow = Model.nextCursorRow(root.cursorRow, dy, root.careVisible)
         } else if (dx !== 0 || dy !== 0) {
           root.cursorRow = "profile"
           root.selectProfileByDelta(dx !== 0 ? dx : dy)
@@ -758,90 +670,6 @@ Panel {
               if (h) {
                 root.cursorActive = true
                 root.cursorRow = "care"
-              }
-            }
-          }
-        }
-
-        // ---------- Sleep: hibernation ----------
-        PanelSeparator {
-          visible: root.hibVisible
-          foreground: root.bar.foreground
-        }
-
-        Column {
-          visible: root.hibVisible
-          width: parent.width
-          spacing: Style.space(10)
-
-          PanelSectionHeader {
-            text: "SLEEP"
-            foreground: root.bar.foreground
-            fontFamily: root.bar.fontFamily
-          }
-
-          Toggle {
-            width: parent.width
-            label: "Hibernate after long sleep"
-            description: Model.hibernateDescription(root.hib, root.hibBusy, root.hibError)
-            foreground: root.bar.foreground
-            accent: Commons.Color.accent
-            fontFamily: root.bar.fontFamily
-            checked: root.hibEnabled
-            hasCursor: root.cursorActive && root.cursorRow === "hibernate"
-            onClicked: {
-              root.cursorRow = "hibernate"
-              root.toggleHibernation()
-            }
-            onHovered: function(h) {
-              if (h) {
-                root.cursorActive = true
-                root.cursorRow = "hibernate"
-              }
-            }
-          }
-
-          InfoLabel {
-            visible: root.delayVisible
-            text: "Hibernate after"
-          }
-
-          Row {
-            id: delayRow
-            visible: root.delayVisible
-            width: parent.width
-            spacing: Style.space(6)
-
-            readonly property var delays: Model.hibernateDelays()
-            readonly property real cellWidth: (width - spacing * (delays.length - 1)) / delays.length
-
-            Repeater {
-              model: delayRow.delays
-              Button {
-                required property var modelData
-                required property int index
-                width: delayRow.cellWidth
-                text: Model.delayLabel(modelData)
-                fontSize: Style.font.bodySmall
-                foreground: root.bar.foreground
-                fontFamily: root.bar.fontFamily
-                horizontalPadding: Style.spacing.controlPaddingX
-                verticalPadding: Style.spacing.controlPaddingY
-                bordered: true
-                active: (root.hibBusy === "delay" ? root.hibPendingDelay : root.hib.delay) === modelData
-                hasCursor: root.cursorActive && root.cursorRow === "delay" && root.delayIndex === index
-                onClicked: {
-                  root.cursorRow = "delay"
-                  root.delayIndex = index
-                  root.setDelay(modelData)
-                }
-                onHovered: function(h) {
-                  if (h) {
-                    root.cursorActive = true
-                    root.cursorRow = "delay"
-                    root.delayIndex = index
-                  }
-                }
               }
             }
           }

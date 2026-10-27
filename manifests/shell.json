@@ -31,6 +31,7 @@
       ],
       "left": [
         {
+          "icon": "trackpoint",
           "id": "evindor.keystroke"
         },
         {
@@ -41,6 +42,9 @@
         },
         {
           "id": "shadowone.ask-claude"
+        },
+        {
+          "id": "shadowone.ollama"
         }
       ],
       "right": [

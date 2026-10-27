@@ -1,0 +1,4 @@
+#!/bin/bash
+# Keep Zed's font in step with Omarchy's (no-op when omazed isn't installed).
+command -v omazed >/dev/null || exit 0
+omazed set-font "$1"

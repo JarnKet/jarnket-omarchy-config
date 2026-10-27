@@ -28,6 +28,13 @@ require("default.hypr.toggles")
 -- Add any other personal Hyprland configuration below.
 -- o.window("qemu", { workspace = "5" })
 
+-- Strata is the system file picker (strata --install-portal): float its
+-- Open/Save dialogs like the GTK portal dialog it replaced.
+o.window("io\\.github\\.lgse\\.Strata\\.FileChooser", { tag = "+floating-window" })
+
+-- Blur behind the see-through drop-down terminal (SUPER+`).
+hl.layer_rule({ match = { namespace = "kitty-quick-access" }, blur = true })
+
 -- Load settings written by OmaSettings (omasettings:managed).
 require("hypr.omasettings")
 
