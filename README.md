@@ -97,7 +97,10 @@ stay installed.
 - **Terminal:** Kitty opens on Super + Return, with a caret cursor that fades
   in and out and leaves a short trail when it jumps. Lao uses Lao Term, Noto
   Sans Lao refitted to the terminal cell so wide letters like ໝ aren't shrunk
-  (`~/.local/share/lao-term`, SIL OFL).
+  (`~/.local/share/lao-term`, SIL OFL). Lao Term is only for Kitty: in other
+  apps it pulls vowels and tone marks apart ("ລາ ວ"), so
+  `~/.config/fontconfig/conf.d/50-lao-term-kitty-only.conf` makes them fall
+  back to Noto Sans Lao.
   **Super + `** drops a Kitty down from the top of the screen; the same key
   hides it. To go back to foot: `omarchy default terminal foot`.
 - **Prompt:** Oh My Posh instead of starship: folder, git status, language

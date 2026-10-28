@@ -20,6 +20,7 @@ portable	.config/xkb
 portable	.local/share/lao-term
 portable	.local/share/fonts/LaoTerm-Regular.ttf
 portable	.local/share/fonts/LaoTerm-Bold.ttf
+portable	.config/fontconfig/conf.d/50-lao-term-kitty-only.conf
 portable	.config/alacritty/alacritty.toml
 portable	.config/foot/foot.ini
 portable	.config/ghostty/config
