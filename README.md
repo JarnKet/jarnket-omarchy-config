@@ -108,7 +108,9 @@ stay installed.
   Super + Space, `ask <question>` sends it straight away, and any typed text gets
   an **Ask Claude here** row. `ask-claude "question"` works in a terminal. Put a
   line or two about yourself (city, languages) in `~/.config/ask-claude/context.md`
-  for local answers.
+  for local answers. **Ctrl+H** in the panel searches your past Ask Claude
+  conversations (only those, not other Claude Code sessions); Enter reopens one
+  and follow-ups continue it. In a terminal: `ask-claude --history <words>`.
 - **Plugin updates** are checked every 6 hours. When a plugin has new commits
   you get a notification and a puzzle icon in the middle of the bar; click
   either to go through the changes and pick what to install
@@ -139,7 +141,7 @@ stay installed.
 |--------|--------------|
 | [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
 | [Disk Keeper](extras/plugins/shadowone.disk-keeper) | Free space in the bar, a warning before the disk fills up, and a panel to clean caches, old packages, build folders and Docker leftovers (mine) |
-| [Ask Claude](extras/plugins/shadowone.ask-claude) | Quick questions to Claude Sonnet from the bar or Super + A, through the Claude Code CLI (mine) |
+| [Ask Claude](extras/plugins/shadowone.ask-claude) | Quick questions to Claude Sonnet from the bar or Super + A, through the Claude Code CLI, with a searchable history (mine) |
 | [Plugin Updates](extras/plugins/shadowone.plugin-updates) | A bar icon while plugin updates are waiting; click to review them (mine) |
 | [Clock](extras/plugins/shadowone.clock) | Omarchy's clock with your Google Calendar events and reminders; `omacal setup` explains the one-time Google setup (mine) |
 | [Battery](extras/plugins/shadowone.power) | Omarchy's battery panel plus an 80% charge limit switch and battery health (mine) |

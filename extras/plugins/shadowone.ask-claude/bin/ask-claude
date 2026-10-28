@@ -10,12 +10,19 @@
                                      {"t": "tool", "name": ..., "detail": ...}
                                      {"t": "done", "id": ..., "ms": ..., "limits": {...}}
                                      {"t": "error", "message": ...}
+  ask-claude --history [words]     past conversations, newest first; with words, only
+                                   the ones whose questions or answers contain them all
+  ask-claude --show ID             one past conversation (an id prefix is enough)
+                                   (both take --json for the panel)
 
 It runs `claude -p` with your Claude subscription login (no API key), a short
 system prompt instead of Claude Code's coding-agent prompt, no MCP servers, no
 hooks or plugins, and only the web search / web fetch tools. Conversations are
 ordinary Claude Code sessions kept under ~/.local/state/ask-claude, so
-`claude --resume <id>` there picks one up in the full CLI.
+`claude --resume <id>` there picks one up in the full CLI. Because claude always
+runs in that folder, Claude Code files these sessions under their own project
+(~/.claude/projects/-home-<you>--local-state-ask-claude), and the history reads
+only that project: other Claude Code conversations never show up in it.
 
 Anything in ~/.config/ask-claude/context.md (where you live, your languages,
 your machine) is added to the system prompt, so local questions get local
@@ -25,6 +32,7 @@ answers. That file stays on this machine.
 import argparse
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -38,6 +46,17 @@ HOME = os.path.expanduser("~")
 STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local/state"), "ask-claude")
 CONTEXT_FILE = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config"), "ask-claude", "context.md")
 LAST_SESSION = os.path.join(STATE_DIR, "last-session")
+HISTORY_CACHE = os.path.join(STATE_DIR, "history-cache.json")
+CLAUDE_DIR = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.join(HOME, ".claude")
+HISTORY_LIMIT = 300
+HISTORY_FORMAT = 2  # bump when read_conversation changes, so cached entries are read again
+
+SESSION_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+# "user" lines in a session that nobody typed: slash commands and their output,
+# reminders and hook output (they appear once a chat is continued in Claude Code).
+NOT_TYPED = re.compile(r"^\s*<(command-|local-command|bash-|system-reminder|task-notification|user-prompt-submit-hook)")
+# Bold, code ticks, headings, quotes and bullets, dropped from search snippets.
+MARKDOWN_MARKS = re.compile(r"\*\*|`|^\s*(?:#+|>|[-*]) ", re.M)
 
 SYSTEM_PROMPT = """\
 You answer quick questions typed into an "Ask Claude" panel on the user's Linux \
@@ -197,13 +216,184 @@ def run(question, session, emit):
     return 0
 
 
+# ------------------------------------------------------------------ history
+
+def sessions_dir():
+    """Claude Code files a session under projects/<its cwd, every other character a '-'>."""
+    return os.path.join(CLAUDE_DIR, "projects", re.sub(r"[^A-Za-z0-9]", "-", STATE_DIR))
+
+
+def typed_text(content):
+    if isinstance(content, str):
+        return content
+    return "\n".join(block.get("text", "") for block in content or []
+                     if isinstance(block, dict) and block.get("type") == "text")
+
+
+def read_conversation(path):
+    """The questions and answers of one session file, in order."""
+    turns = []
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        for line in handle:
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(entry, dict) or entry.get("isSidechain") or entry.get("isMeta") \
+                    or entry.get("isCompactSummary"):
+                continue
+            message = entry.get("message") or {}
+            if entry.get("type") == "user":
+                text = typed_text(message.get("content")).strip()
+                if text and not NOT_TYPED.match(text):
+                    turns.append({"q": text, "a": ""})
+            elif entry.get("type") == "assistant" and turns:
+                for block in message.get("content") or []:
+                    if isinstance(block, dict) and block.get("type") == "text" and block.get("text", "").strip():
+                        turn = turns[-1]
+                        if entry.get("isApiErrorMessage"):
+                            turn["err"] = one_line(block["text"])
+                        else:
+                            turn["a"] += ("\n\n" if turn["a"] else "") + block["text"].strip("\n")
+    return turns
+
+
+def conversations():
+    """Every Ask Claude conversation, newest first. Files are parsed again only when they change."""
+    folder = sessions_dir()
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        names = []
+    try:
+        with open(HISTORY_CACHE, encoding="utf-8") as handle:
+            cache = json.load(handle)
+    except (OSError, ValueError):
+        cache = {}
+    fresh = {}
+    changed = False
+    for name in names:
+        session_id = name[:-6] if name.endswith(".jsonl") else ""
+        if not SESSION_ID.match(session_id):
+            continue
+        path = os.path.join(folder, name)
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        stamp = [info.st_mtime_ns, info.st_size, HISTORY_FORMAT]
+        entry = cache.get(session_id)
+        if not isinstance(entry, dict) or entry.get("stamp") != stamp:
+            try:
+                entry = {"stamp": stamp, "updated": info.st_mtime_ns // 1000000, "turns": read_conversation(path)}
+            except OSError:
+                continue
+            changed = True
+        fresh[session_id] = entry
+    if changed or len(fresh) != len(cache):
+        # The cache holds the same text as the sessions, so it gets the same 0600.
+        os.makedirs(STATE_DIR, exist_ok=True)
+        temp = HISTORY_CACHE + ".tmp"
+        with os.fdopen(os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as handle:
+            json.dump(fresh, handle, ensure_ascii=False)
+        os.replace(temp, HISTORY_CACHE)
+    items = [dict(entry, id=session_id) for session_id, entry in fresh.items() if entry["turns"]]
+    items.sort(key=lambda item: item["updated"], reverse=True)
+    return items
+
+
+def one_line(text):
+    return " ".join(str(text).split())
+
+
+def snippet(text, at, length):
+    start = max(0, at - 40)
+    if start:
+        # Begin at a word when there is one nearby (Lao has no spaces, so it may not).
+        space = text.find(" ", start, at)
+        start = space + 1 if 0 <= space < start + 15 else start
+    end = min(len(text), at + length + 80)
+    plain = MARKDOWN_MARKS.sub("", text[start:end])
+    return ("…" if start else "") + one_line(plain) + ("…" if end < len(text) else "")
+
+
+def search(query):
+    """Summaries of the conversations containing every word of the query (all of them without one)."""
+    terms = query.lower().split()
+    found = []
+    for item in conversations():
+        turns = item["turns"]
+        texts = [t["q"] for t in turns] + [t["a"] for t in turns]
+        lowered = [text.lower() for text in texts]
+        if terms and not all(any(term in text for text in lowered) for term in terms):
+            continue
+        hint = ""
+        # The first question is the title, so a hit anywhere else makes the better snippet.
+        for index in (list(range(1, len(texts))) + [0]) if terms else []:
+            at = lowered[index].find(terms[0])
+            if at >= 0:
+                if index > 0 or at > 70:
+                    hint = snippet(texts[index], at, len(terms[0]))
+                break
+        found.append({"id": item["id"], "title": one_line(turns[0]["q"])[:200], "updated": item["updated"],
+                      "count": len(turns), "snippet": hint})
+        if len(found) >= HISTORY_LIMIT:
+            break
+    return found
+
+
+def find_conversation(prefix):
+    prefix = prefix.strip().lower()
+    matches = [item for item in conversations() if prefix and item["id"].startswith(prefix)]
+    return matches[0] if len(matches) == 1 else None
+
+
+def history_command(query, as_json):
+    found = search(query)
+    if as_json:
+        print(json.dumps(found, ensure_ascii=False))
+        return 0
+    if not found:
+        print("No conversations%s." % (" with %r" % query if query else ""))
+        return 1
+    for item in found:
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(item["updated"] / 1000))
+        print("%s  %s  %2d  %s" % (item["id"][:8], when, item["count"], item["title"][:90]))
+        if item["snippet"]:
+            print("%s%s" % (" " * 32, item["snippet"]))
+    return 0
+
+
+def show_command(prefix, as_json):
+    item = find_conversation(prefix)
+    if as_json:
+        print(json.dumps({"id": item["id"], "updated": item["updated"], "turns": item["turns"]}
+                         if item else {"error": "No single conversation starts with %s." % prefix},
+                         ensure_ascii=False))
+        return 0 if item else 1
+    if not item:
+        print("ask-claude: no single conversation starts with %s" % prefix, file=sys.stderr)
+        return 1
+    for turn in item["turns"]:
+        print("› %s\n\n%s\n" % (turn["q"], turn["a"] or ("✕ " + turn["err"] if turn.get("err") else "")))
+    print("Continue it: ask-claude --session %s \"…\"" % item["id"])
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(prog="ask-claude", description="Quick questions to Claude Sonnet.")
     parser.add_argument("--json", action="store_true", help="emit JSON lines (for the bar panel)")
     parser.add_argument("--session", help="continue this session id")
     parser.add_argument("-c", "--continue", dest="cont", action="store_true", help="continue the last conversation")
+    parser.add_argument("--history", action="store_true", help="list past conversations; words after it search them")
+    parser.add_argument("--show", metavar="ID", help="print one past conversation")
     parser.add_argument("question", nargs="*")
     args = parser.parse_args()
+
+    if args.history:
+        return history_command(" ".join(args.question), args.json)
+    if args.show:
+        return show_command(args.show, args.json)
 
     question = " ".join(args.question).strip()
     if not question and not sys.stdin.isatty():
