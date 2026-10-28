@@ -1,0 +1,16 @@
+{ "workbench.colorTheme": "Vercel (Dark)",
+"update.mode": "none",
+"security.workspace.trust.untrustedFiles": "open",
+"workbench.iconTheme": "symbols",
+"git.enableSmartCommit": true,
+"svelte.enable-ts-plugin": true,
+"claudeCode.preferredLocation": "panel",
+"files.autoSave": "afterDelay",
+"editor.smoothScrolling": true,
+"editor.inertialScroll": true,
+"editor.mouseWheelScrollSensitivity": 0.55,
+"workbench.list.smoothScrolling": true,
+"terminal.integrated.smoothScrolling": true,
+"editor.cursorSmoothCaretAnimation": "on",
+"terminal.integrated.initialHint": false
+}

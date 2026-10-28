@@ -8,6 +8,16 @@ ASCII wallpapers, and the packages it all needs.
 
 ![ThinkPad theme](https://raw.githubusercontent.com/JarnKet/omarchy-thinkpad-theme/main/preview.png)
 
+## How this was made
+
+The ideas and decisions in this setup are mine: how the desktop looks, how the
+mouse, touchpad and scrolling should feel, and which plugins and apps stay. The
+code was written by Claude (Anthropic's AI) in Claude Code, from what I asked
+for: the config files, scripts, my `shadowone.*` plugins and the changes to
+other plugins. I tried every change on my own machine, kept only what felt
+right, and take responsibility for what's here. Plugins by other people are
+their work and link to their repos below.
+
 ## Install
 
 You need a working Omarchy 4 install (this was captured on 4.0.4), an internet
@@ -36,7 +46,7 @@ Run it again any time; it skips what's already in place.
 |------|--------------|
 | `packages` | Installs what the plugins and terminal need: `hyprmoncfg-bin`, `gnome-network-displays` (AUR), build tools for Pointer Feel, Kitty, Oh My Posh, atuin, yazi, and a few libraries ([list](manifests/packages.txt)) |
 | `apps` | Lets you pick from my apps: Brave Origin, VS Code, IntelliJ, Claude, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
-| `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
+| `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, VS Code settings, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
 | `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
 | `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
 | `theme` | Clones the ThinkPad theme plus 5 others, renders the ASCII wallpapers with **your** username, switches to it |
@@ -99,6 +109,14 @@ stay installed.
   manager with image previews, and leaves you in the folder you quit from.
 - **Animations:** windows and panels open with a fast start and a soft landing
   (curves from the Glyph rice, in `~/.config/hypr/looknfeel.lua`).
+- **Touchpad scrolling:** on Linux each app does its own glide after you lift
+  your fingers, so it's tuned per app. Brave, VS Code and Obsidian scroll at
+  0.6 (other apps 0.4, terminals 1.5) in `~/.config/hypr/input.lua`. Kitty's
+  `momentum_scroll 0.975` glides about as long as Brave, and `repaint_delay 5`
+  keeps it smooth on 120 Hz+ screens. VS Code's editor gets its own glide from
+  `editor.inertialScroll`, with `editor.mouseWheelScrollSensitivity 0.55` so it
+  doesn't run ahead of your fingers (Hyprland gives the mouse wheel that speed
+  back). VS Code's file lists have no glide; it has no setting for that.
 - **Print Screen** copies a screenshot to the clipboard and doesn't save a file.
 - **Super + Alt + E** opens Panel Notes.
 - **Super + A** (or the sparkle in the bar, or the first row of Super + Space)

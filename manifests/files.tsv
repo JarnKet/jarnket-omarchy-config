@@ -32,6 +32,7 @@ portable	.atuin/config.toml
 portable	.config/lazygit/config.yml
 portable	.config/starship.toml
 portable	.config/mimeapps.list
+portable	.config/Code/User/settings.json
 portable	.config/omarchy/extensions
 portable	.config/omarchy/hooks
 portable	.config/omarchy/hardwarchy.json
