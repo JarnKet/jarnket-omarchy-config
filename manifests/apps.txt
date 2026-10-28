@@ -2,7 +2,6 @@
 
 brave-origin-bin                # Brave Origin browser (also becomes the default browser)
 visual-studio-code-bin          # VS Code
-intellij-idea-ultimate-edition  # IntelliJ IDEA Ultimate (AUR, large)
 claude-desktop                  # Claude desktop app
 kdeconnect                      # phone link; omapager shows phone notifications
 filezilla                       # FTP/SFTP client

@@ -45,7 +45,7 @@ Run it again any time; it skips what's already in place.
 | Step | What happens |
 |------|--------------|
 | `packages` | Installs what the plugins and terminal need: `hyprmoncfg-bin`, `gnome-network-displays` (AUR), build tools for Pointer Feel, Kitty, Oh My Posh, atuin, yazi, and a few libraries ([list](manifests/packages.txt)) |
-| `apps` | Lets you pick from my apps: Brave Origin, VS Code, IntelliJ, Claude, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
+| `apps` | Lets you pick from my apps: Brave Origin, VS Code, Claude, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
 | `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, VS Code settings, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
 | `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
 | `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
