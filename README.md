@@ -113,6 +113,23 @@ stay installed.
   manager with image previews, and leaves you in the folder you quit from.
 - **Animations:** windows and panels open with a fast start and a soft landing
   (curves from the Glyph rice, in `~/.config/hypr/looknfeel.lua`).
+- **Windows look like macOS:**
+  - 12 px squircle corners and a soft shadow that falls a little below each
+    window, darker under the focused one.
+  - The same faint 1 px hairline on every window instead of a colored focus
+    border, whatever the theme.
+  - Rounding, shadow size and gaps live in the Omaland block of
+    `~/.config/hypr/looknfeel.lua`, so Omaland can still tune them. Omarchy's
+    menus and popups follow the rounding.
+- **Traffic-light title bars:** red closes, yellow tucks the window into the
+  scratchpad (Super + S brings it back), green maximizes. Double-click the bar
+  to maximize. Apps that draw their own title bar or tabs (Brave, VS Code…)
+  get none; the list is at the top of `~/.config/hypr/titlebars.lua`.
+  - The bars come from the hyprbars plugin, built for your exact Hyprland with
+    `hyprbars-build` and loaded at login by `hyprbars-load`.
+  - Run `hyprbars-build` once after installing.
+  - A post-update hook rebuilds it after each `omarchy update`. Until a
+    matching build exists, windows just have no bar.
 - **Touchpad scrolling:** on Linux each app does its own glide after you lift
   your fingers, so it's tuned per app. Brave, VS Code and Obsidian scroll at
   0.6 (other apps 0.4, terminals 1.5) in `~/.config/hypr/input.lua`. Kitty's

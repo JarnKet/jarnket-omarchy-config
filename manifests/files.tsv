@@ -16,6 +16,7 @@ portable	.config/hypr/omasettings.lua
 portable	.config/hypr/pointer-feel.lua
 portable	.config/hypr/hyprsunset.conf
 portable	.config/hypr/xdph.conf
+portable	.config/hypr/titlebars.lua
 portable	.config/xkb
 portable	.local/share/lao-term
 portable	.local/share/fonts/LaoTerm-Regular.ttf
@@ -41,6 +42,8 @@ portable	.config/omarchy/audio-control.json
 portable	.config/omarchy/keystroke.json
 portable	.local/share/keystroke/extensions/ask-claude
 portable	.local/bin/plugin-updates
+portable	.local/bin/hyprbars-build
+portable	.local/bin/hyprbars-load
 portable	.local/share/applications/plugin-updates.desktop
 portable	.config/systemd/user/plugin-updates.service
 portable	.config/systemd/user/plugin-updates.timer

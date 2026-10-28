@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Build hyprbars (macOS-style title bars) for the Hyprland whose headers are
+# installed, from the hyprland-plugins commit that hyprpm.toml pins to it.
+# Installs ~/.local/lib/hyprland/plugins/hyprbars.so with a .commit stamp naming
+# the Hyprland commit it was built for; hyprbars-load only loads a match.
+#
+# Usage: hyprbars-build [--force]
+
+set -euo pipefail
+
+src=${XDG_CACHE_HOME:-$HOME/.cache}/hyprbars-build/hyprland-plugins
+dest=$HOME/.local/lib/hyprland/plugins/hyprbars.so
+headers=/usr/include/hyprland/src/version.h
+
+commit=$(sed -n 's/^#define GIT_COMMIT_HASH *"\([0-9a-f]*\)".*/\1/p' "$headers")
+[[ -n $commit ]] || { echo "No Hyprland headers at $headers" >&2; exit 1; }
+
+if [[ ${1:-} != --force && -f $dest && $(cat "$dest.commit" 2>/dev/null) == "$commit" ]]; then
+  echo "hyprbars is already built for Hyprland ${commit:0:7}"
+  exit 0
+fi
+
+if [[ -d $src/.git ]]; then
+  git -C "$src" fetch --quiet origin
+  git -C "$src" checkout --quiet origin/HEAD -- hyprpm.toml 2>/dev/null ||
+    git -C "$src" checkout --quiet FETCH_HEAD -- hyprpm.toml
+else
+  mkdir -p "$(dirname "$src")"
+  git clone --quiet --filter=blob:none https://github.com/hyprwm/hyprland-plugins "$src"
+fi
+
+# commit_pins rows are ["<hyprland commit>", "<plugins commit>"].
+pin=$(git -C "$src" show origin/HEAD:hyprpm.toml | grep -o "\[\"$commit\", *\"[0-9a-f]*\"\]" | grep -o '"[0-9a-f]*"\]' | tr -d '"]')
+if [[ -z $pin ]]; then
+  echo "hyprland-plugins has no pin for Hyprland ${commit:0:7} yet; try again after it catches up." >&2
+  exit 1
+fi
+
+git -C "$src" checkout --quiet --detach "$pin"
+make -C "$src/hyprbars" clean >/dev/null 2>&1 || true
+make -C "$src/hyprbars" all >/dev/null
+
+mkdir -p "$(dirname "$dest")"
+install -m 755 "$src/hyprbars/hyprbars.so" "$dest.new"
+mv -f "$dest.new" "$dest"
+echo "$commit" >"$dest.commit"
+echo "Built hyprbars ${pin:0:7} for Hyprland ${commit:0:7}: $dest"

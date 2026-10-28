@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# An update can bring a new Hyprland, which needs its own hyprbars build (the
+# macOS-style title bars). Build it now so it's ready at the next login.
+
+if [[ -x $HOME/.local/bin/hyprbars-build ]]; then
+  echo "Rebuilding the title bar plugin (hyprbars) for the new Hyprland..."
+  "$HOME/.local/bin/hyprbars-build" || echo "hyprbars-build failed; title bars stay off until it succeeds."
+fi

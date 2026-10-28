@@ -111,10 +111,48 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 3.5, bezier = "swipe
 hl.config({
   decoration = {
     border_part_of_window = false,
+    rounding = 12,
+    rounding_power = 4,
+
+    shadow = {
+      enabled = true,
+      range = 28,
+      render_power = 3,
+    },
   },
 
   general = {
-    border_size = 0,
+    border_size = 1,
+    gaps_in = 6,
+    gaps_out = 12,
   },
 })
 -- <<< omaland managed block <<<
+
+-- macOS look: what Omaland can't set. Shadows fall a little below the window,
+-- darker under the focused one, and every window gets the same faint hairline
+-- instead of a colored focus border, whatever the theme. Rounding, shadow size
+-- and the border width live in the Omaland block above.
+hl.config({
+  decoration = {
+    shadow = {
+      color = "rgba(000000a6)",
+      color_inactive = "rgba(00000059)",
+      offset = "0 6",
+    },
+  },
+
+  general = {
+    col = {
+      active_border = "rgba(ffffff14)",
+      inactive_border = "rgba(ffffff14)",
+    },
+  },
+
+  group = {
+    col = {
+      border_active = "rgba(ffffff14)",
+      border_inactive = "rgba(ffffff14)",
+    },
+  },
+})

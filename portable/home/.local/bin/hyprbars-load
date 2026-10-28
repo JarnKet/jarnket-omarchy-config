@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Load hyprbars (macOS-style title bars) into the running Hyprland, then reload
+# the config so ~/.config/hypr/titlebars.lua applies. Only loads a build made
+# for this exact Hyprland (hyprbars-build writes the stamp); otherwise it says
+# what to do and leaves the windows bar-less. It never builds on its own.
+
+set -uo pipefail
+
+so=$HOME/.local/lib/hyprland/plugins/hyprbars.so
+running=$(hyprctl version -j | jq -r .commit)
+headers=$(sed -n 's/^#define GIT_COMMIT_HASH *"\([0-9a-f]*\)".*/\1/p' /usr/include/hyprland/src/version.h 2>/dev/null)
+
+hyprctl plugin list 2>/dev/null | grep -q '^Plugin hyprbars ' && exit 0
+
+if [[ $(cat "$so.commit" 2>/dev/null) != "$running" ]]; then
+  if [[ $headers == "$running" ]]; then
+    notify-send -a "Title bars" "Title bars need a build" "Run hyprbars-build in a terminal, then hyprbars-load."
+  else
+    notify-send -a "Title bars" "Title bars are off until you log in again" "Hyprland was updated; the new build waits for the new Hyprland."
+  fi
+  exit 0
+fi
+
+hyprctl plugin load "$so" >/dev/null && hyprctl reload config-only >/dev/null
