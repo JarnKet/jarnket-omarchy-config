@@ -124,7 +124,6 @@ hl.config({
   general = {
     border_size = 1,
     gaps_in = 6,
-    gaps_out = 12,
   },
 })
 -- <<< omaland managed block <<<
@@ -143,6 +142,11 @@ hl.config({
   },
 
   general = {
+    -- The bars are see-through, so their own padding already reads as space:
+    -- 4 above and below looks like the 12 at the sides. (Omaland's Outer gaps
+    -- slider takes one number, so this lives here.)
+    gaps_out = { top = 4, right = 12, bottom = 4, left = 12 },
+
     col = {
       active_border = "rgba(ffffff14)",
       inactive_border = "rgba(ffffff14)",

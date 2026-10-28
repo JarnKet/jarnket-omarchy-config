@@ -118,9 +118,13 @@ stay installed.
     window, darker under the focused one.
   - The same faint 1 px hairline on every window instead of a colored focus
     border, whatever the theme.
-  - Rounding, shadow size and gaps live in the Omaland block of
-    `~/.config/hypr/looknfeel.lua`, so Omaland can still tune them. Omarchy's
-    menus and popups follow the rounding.
+  - Rounding, shadow size and the gap between windows live in the Omaland
+    block of `~/.config/hypr/looknfeel.lua`, so Omaland can still tune them.
+    Omarchy's menus and popups follow the rounding.
+  - The outer gap is 4 px above and below and 12 px at the sides. The bars are
+    see-through, so their own padding already reads as space; this way it
+    looks even all round. It's set in the block after Omaland's, because
+    Omaland's slider takes one number.
 - **Traffic-light title bars:** red closes, yellow tucks the window into the
   scratchpad (Super + S brings it back), green maximizes. Double-click the bar
   to maximize. Apps that draw their own title bar or tabs (Brave, VS Code…)
