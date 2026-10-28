@@ -47,12 +47,12 @@ if hl.plugin.hyprbars then
     },
   })
 
-  -- Close, minimize (to the scratchpad; SUPER+S brings it back) and zoom.
+  -- Close, minimize (Super + Alt + M brings it back, see window-minimize) and zoom.
   local function button(color, icon, action)
     hl.plugin.hyprbars.add_button({ bg_color = color, fg_color = "rgba(00000099)", size = 12, icon = icon, action = action })
   end
   button("rgb(ff5f57)", "×", [[hyprctl dispatch 'hl.dsp.window.close()']])
-  button("rgb(febc2e)", "−", [[hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:scratchpad", follow = false })']])
+  button("rgb(febc2e)", "−", os.getenv("HOME") .. "/.local/bin/window-minimize")
   button("rgb(28c840)", "+", [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })']])
 
   for _, class in ipairs(own_title_bar) do

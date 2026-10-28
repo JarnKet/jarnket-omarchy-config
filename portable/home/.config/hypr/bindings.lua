@@ -60,3 +60,8 @@ o.bind("SUPER + A", "Ask Claude", "omarchy-shell shadowone.ask-claude toggle")
 
 -- Drop-down Kitty from the top edge; the same key hides it (~/.config/kitty/quick-access-terminal.conf).
 o.bind("SUPER + grave", "Drop-down terminal", "kitten quick-access-terminal")
+
+-- Minimize like macOS: Super + M hides the focused window (as the yellow
+-- title-bar button does), Super + Alt + M brings the last one back.
+o.bind("SUPER + M", "Minimize window", "$HOME/.local/bin/window-minimize")
+o.bind("SUPER + ALT + M", "Restore minimized window", "$HOME/.local/bin/window-restore")

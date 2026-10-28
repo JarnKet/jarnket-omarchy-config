@@ -125,10 +125,13 @@ stay installed.
     see-through, so their own padding already reads as space; this way it
     looks even all round. It's set in the block after Omaland's, because
     Omaland's slider takes one number.
-- **Traffic-light title bars:** red closes, yellow tucks the window into the
-  scratchpad (Super + S brings it back), green maximizes. Double-click the bar
+- **Traffic-light title bars:** red closes, yellow minimizes, green maximizes. Double-click the bar
   to maximize. Apps that draw their own title bar or tabs (Brave, VS Code…)
   get none; the list is at the top of `~/.config/hypr/titlebars.lua`.
+- **Minimize like macOS:** the yellow button or **Super + M** hides the focused
+  window and remembers its workspace; **Super + Alt + M** puts the last one back
+  there and focuses it (again for the one before). Scripts: `window-minimize`,
+  `window-restore` in `~/.local/bin`.
   - The bars come from the hyprbars plugin, built for your exact Hyprland with
     `hyprbars-build` and loaded at login by `hyprbars-load`.
   - Run `hyprbars-build` once after installing.

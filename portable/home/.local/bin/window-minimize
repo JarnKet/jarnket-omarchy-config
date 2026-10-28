@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Minimize the focused window, macOS-style: it's tucked into a hidden special
+# workspace and its place is remembered, so window-restore (Super + Alt + M)
+# puts it back where it was. Used by the yellow title-bar button and Super + M.
+
+set -uo pipefail
+
+state=${XDG_STATE_HOME:-$HOME/.local/state}/window-minimize
+mkdir -p "$state"
+
+win=$(hyprctl activewindow -j)
+address=$(jq -r '.address // empty' <<<"$win")
+workspace=$(jq -r '.workspace.name // empty' <<<"$win")
+title=$(jq -r '.title // .class // "Window"' <<<"$win")
+
+[[ -n $address && $workspace != special:* ]] || exit 0
+
+printf '%s\t%s\n' "$address" "$workspace" >>"$state/stack"
+hyprctl dispatch "hl.dsp.window.move({ window = \"address:$address\", workspace = \"special:minimized\", follow = false })" >/dev/null
+notify-send -a "Minimized" -t 2500 "Minimized: ${title:0:60}" "Super + Alt + M brings it back"

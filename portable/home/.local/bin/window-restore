@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Bring back the most recently minimized window (see window-minimize) to the
+# workspace it came from, and focus it. Run it again for the one before.
+
+set -uo pipefail
+
+stack=${XDG_STATE_HOME:-$HOME/.local/state}/window-minimize/stack
+[[ -s $stack ]] || { notify-send -a "Minimized" -t 2000 "No minimized windows"; exit 0; }
+
+# Addresses of windows still sitting in the minimized workspace.
+hidden=$(hyprctl clients -j | jq -r '.[] | select(.workspace.name == "special:minimized") | .address')
+
+# Walk the stack from the newest entry; drop entries whose window is gone.
+mapfile -t entries <"$stack"
+for ((i = ${#entries[@]} - 1; i >= 0; i--)); do
+  IFS=$'\t' read -r address workspace <<<"${entries[i]}"
+  unset 'entries[i]'
+  if grep -qxF "$address" <<<"$hidden"; then
+    printf '%s\n' "${entries[@]}" | sed '/^$/d' >"$stack"
+    hyprctl dispatch "hl.dsp.window.move({ window = \"address:$address\", workspace = \"$workspace\" })" >/dev/null
+    hyprctl dispatch "hl.dsp.focus({ window = \"address:$address\" })" >/dev/null
+    exit 0
+  fi
+done
+
+: >"$stack"
+notify-send -a "Minimized" -t 2000 "No minimized windows"
