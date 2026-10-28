@@ -52,5 +52,6 @@ portable	.config/systemd/user/plugin-updates.timer
 
 device	.config/hypr/monitors.lua
 device	.config/hypr/hyprmoncfg-monitors.lua
+device	.config/hypr/shaders/edp-vibrance.glsl
 
 personal	.config/omarchy/branding/screensaver.txt

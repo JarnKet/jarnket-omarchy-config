@@ -3,8 +3,19 @@
 hl.monitor({
   output = "desc:Lenovo Group Limited 0x403D",
   mode = "1920x1200@60.00",
-  position = "1574x1240",
+  position = "1544x1240",
   scale = 1.6,
+  vrr = 0,
+  cm = "edid",
+  sdr_min_luminance = 0.2,
+  sdr_max_luminance = 80,
+})
+
+hl.monitor({
+  output = "desc:Microstep MSI MAG 275F CE2M114800047",
+  mode = "1920x1080@180.00",
+  position = "1197x160",
+  scale = 1,
   vrr = 0,
   sdr_min_luminance = 0.2,
   sdr_max_luminance = 80,
