@@ -116,7 +116,7 @@ hl.config({
 
     shadow = {
       enabled = true,
-      range = 28,
+      range = 16,
       render_power = 3,
     },
   },
@@ -135,9 +135,9 @@ hl.config({
 hl.config({
   decoration = {
     shadow = {
-      color = "rgba(000000a6)",
-      color_inactive = "rgba(00000059)",
-      offset = "0 6",
+      color = "rgba(00000066)",
+      color_inactive = "rgba(00000033)",
+      offset = "0 3",
     },
   },
 
