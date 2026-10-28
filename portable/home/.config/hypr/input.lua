@@ -48,8 +48,11 @@ hl.config({
 })
 
 --App-specific touchpad scroll speeds.
-o.window("(Alacritty|kitty|foot)", { scroll_touchpad = 1.5 })
+o.window("(Alacritty|kitty|foot|org.omarchy.claude-history)", { scroll_touchpad = 1.5 })
 o.window("com.mitchellh.ghostty", { scroll_touchpad = 0.2 })
+-- Brave (and its web apps), VS Code, Obsidian: content follows the fingers
+-- further and the fling glides longer (Chromium's glide scales with this).
+o.window("(brave-.*|code|Code|obsidian)", { scroll_touchpad = 0.6 })
 
 --Enable touchpad gestures for changing workspaces.
 --See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Gestures/
