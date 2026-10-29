@@ -115,16 +115,16 @@ stay installed.
   manager with image previews, and leaves you in the folder you quit from.
 - **Animations:** windows and panels open with a fast start and a soft landing
   (curves from the Glyph rice, in `~/.config/hypr/looknfeel.lua`).
-- **Windows look like macOS:**
+- **Soft windows:**
   - 12 px squircle corners and a soft shadow that falls a little below each
     window, darker under the focused one. Corners can differ per theme: the
     `corners` table in `~/.config/hypr/looknfeel.lua` keeps ThinkPad and
     Blueprint square, and a theme-set hook makes the shell's menus follow.
   - The same faint 1 px hairline on every window instead of a colored focus
     border, whatever the theme.
-  - Light themes (like Blueprint) get a dark hairline, lighter shadows and gray
-    unfocused title-bar buttons; `~/.config/hypr/theme_mode.lua` reads the
-    current theme's mode, and a theme switch reloads Hyprland.
+  - Light themes (like Blueprint) get a dark hairline and lighter shadows;
+    `~/.config/hypr/theme_mode.lua` reads the current theme's mode and name,
+    and a theme switch reloads Hyprland.
   - Rounding, shadow size and the gap between windows live in the Omaland
     block of `~/.config/hypr/looknfeel.lua`, so Omaland can still tune them.
     Omarchy's menus and popups follow the rounding.
@@ -132,10 +132,19 @@ stay installed.
     see-through, so their own padding already reads as space; this way it
     looks even all round. It's set in the block after Omaland's, because
     Omaland's slider takes one number.
-- **Traffic-light title bars:** red closes, yellow minimizes, green maximizes. Double-click the bar
-  to maximize. Apps that draw their own title bar or tabs (Brave, VS Code…)
-  get none; the list is at the top of `~/.config/hypr/titlebars.lua`.
-- **Minimize like macOS:** the yellow button or **Super + M** hides the focused
+- **Title bars styled per theme** (the `styles` table in
+  `~/.config/hypr/titlebars.lua`); buttons are minimize, maximize, close from
+  left to right on the right side, and the title fades on unfocused windows:
+  - **ThinkPad:** black, the title in bold mono on the left, two charcoal dots
+    and one TrackPoint-red dot that only the focused window shows.
+  - **Blueprint:** white, the title in blueprint-blue mono, the buttons as
+    circled callouts ⊖ ⊕ ⊗ like on a drawing.
+  - **Min Dark and any other theme:** VS Code's own window controls in gray,
+    the title centred, in the theme's colors.
+
+  Double-click a bar to maximize. Apps that draw their own title bar or tabs
+  (Brave, VS Code…) get none; the list is at the top of the same file.
+- **Minimize:** the − button or **Super + M** hides the focused
   window and remembers its workspace; **Super + Alt + M** puts the last one back
   there and focuses it (again for the one before). Scripts: `window-minimize`,
   `window-restore` in `~/.local/bin`.
