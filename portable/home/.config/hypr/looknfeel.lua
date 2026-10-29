@@ -133,9 +133,20 @@ hl.config({
 -- instead of a colored focus border, whatever the theme. Rounding, shadow size
 -- and the border width live in the Omaland block above.
 -- Light themes get a dark hairline and lighter shadows (see theme_mode.lua).
-local _, theme_mode = require("hypr.theme_mode").read()
+local _, theme_mode, theme_name = require("hypr.theme_mode").read()
 local light = theme_mode == "light"
 local hairline = light and "rgba(0000001f)" or "rgba(ffffff14)"
+
+-- Corners per theme. A theme listed here gets that radius; any other theme
+-- keeps the rounding in the Omaland block above. ThinkPad and Blueprint are
+-- drafted with square corners, Min Dark stays rounded.
+local corners = {
+  thinkpad = 0,
+  blueprint = 0,
+}
+if corners[theme_name] then
+  hl.config({ decoration = { rounding = corners[theme_name] } })
+end
 
 hl.config({
   decoration = {

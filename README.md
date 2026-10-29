@@ -117,7 +117,9 @@ stay installed.
   (curves from the Glyph rice, in `~/.config/hypr/looknfeel.lua`).
 - **Windows look like macOS:**
   - 12 px squircle corners and a soft shadow that falls a little below each
-    window, darker under the focused one.
+    window, darker under the focused one. Corners can differ per theme: the
+    `corners` table in `~/.config/hypr/looknfeel.lua` keeps ThinkPad and
+    Blueprint square, and a theme-set hook makes the shell's menus follow.
   - The same faint 1 px hairline on every window instead of a colored focus
     border, whatever the theme.
   - Light themes (like Blueprint) get a dark hairline, lighter shadows and gray

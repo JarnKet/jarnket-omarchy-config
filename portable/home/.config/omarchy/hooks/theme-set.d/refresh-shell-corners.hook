@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Window corners are chosen per theme in ~/.config/hypr/looknfeel.lua, and
+# Omarchy reloads Hyprland only after it has handed the new theme to the shell,
+# so the shell's menus and popups would keep the old theme's corners. Hand the
+# theme over once more now that Hyprland has the new value.
+
+theme=$HOME/.local/state/omarchy/current/theme
+colors=$(base64 -w 0 "$theme/colors.toml" 2>/dev/null)
+shell=$([[ -f $theme/shell.toml ]] && base64 -w 0 "$theme/shell.toml")
+timeout 2 omarchy-shell shell applyTheme "$colors" "$shell" >/dev/null 2>&1 || true
