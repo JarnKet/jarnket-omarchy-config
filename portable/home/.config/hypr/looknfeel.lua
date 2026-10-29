@@ -132,11 +132,16 @@ hl.config({
 -- darker under the focused one, and every window gets the same faint hairline
 -- instead of a colored focus border, whatever the theme. Rounding, shadow size
 -- and the border width live in the Omaland block above.
+-- Light themes get a dark hairline and lighter shadows (see theme_mode.lua).
+local _, theme_mode = require("hypr.theme_mode").read()
+local light = theme_mode == "light"
+local hairline = light and "rgba(0000001f)" or "rgba(ffffff14)"
+
 hl.config({
   decoration = {
     shadow = {
-      color = "rgba(00000066)",
-      color_inactive = "rgba(00000033)",
+      color = light and "rgba(0000002e)" or "rgba(00000066)",
+      color_inactive = light and "rgba(00000018)" or "rgba(00000033)",
       offset = "0 3",
     },
   },
@@ -148,15 +153,15 @@ hl.config({
     gaps_out = { top = 6, right = 12, bottom = 6, left = 12 },
 
     col = {
-      active_border = "rgba(ffffff14)",
-      inactive_border = "rgba(ffffff14)",
+      active_border = hairline,
+      inactive_border = hairline,
     },
   },
 
   group = {
     col = {
-      border_active = "rgba(ffffff14)",
-      border_inactive = "rgba(ffffff14)",
+      border_active = hairline,
+      border_inactive = hairline,
     },
   },
 })

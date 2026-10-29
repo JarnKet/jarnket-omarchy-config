@@ -16,14 +16,7 @@ local own_title_bar = {
 
 if hl.plugin.hyprbars then
   -- Follow the current Omarchy theme; Omarchy reloads Hyprland on theme change.
-  local colors = {}
-  local file = io.open(os.getenv("HOME") .. "/.local/state/omarchy/current/theme/colors.toml")
-  if file then
-    for key, hex in file:read("a"):gmatch('([%w_]+)%s*=%s*"#(%x%x%x%x%x%x)"') do
-      colors[key] = hex
-    end
-    file:close()
-  end
+  local colors, mode = require("hypr.theme_mode").read()
 
   hl.config({
     plugin = {
@@ -41,7 +34,7 @@ if hl.plugin.hyprbars then
         bar_part_of_window = true,
         bar_precedence_over_border = true,
         icon_on_hover = true,
-        inactive_button_color = "rgba(ffffff26)",
+        inactive_button_color = mode == "light" and "rgba(0000001f)" or "rgba(ffffff26)",
         on_double_click = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })']],
       },
     },

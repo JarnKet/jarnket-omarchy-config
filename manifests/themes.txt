@@ -2,6 +2,7 @@
 https://github.com/atif-1402/omarchy-latchdark-theme.git
 https://github.com/bjarneo/omarchy-ash-theme
 https://github.com/HANCORE-linux/omarchy-harbordark-theme.git
+https://github.com/JarnKet/omarchy-blueprint-theme.git
 https://github.com/JarnKet/omarchy-min-dark-theme.git
 https://github.com/JarnKet/omarchy-thinkpad-theme.git
 https://github.com/TyRichards/omarchy-felix-theme

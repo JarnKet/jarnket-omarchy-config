@@ -5,7 +5,9 @@ Hyprland config, terminal settings, 34 shell plugins with my bar layout (a
 bottom bar and a second Top Bar), the
 [ThinkPad theme](https://github.com/JarnKet/omarchy-thinkpad-theme) with its
 ASCII wallpapers, my [Min Dark theme](https://github.com/JarnKet/omarchy-min-dark-theme)
-(VS Code's Min Dark for the whole desktop), and the packages it all needs.
+(VS Code's Min Dark for the whole desktop), my light
+[Blueprint theme](https://github.com/JarnKet/omarchy-blueprint-theme) for coding
+in sunlight, and the packages it all needs.
 
 ![ThinkPad theme](https://raw.githubusercontent.com/JarnKet/omarchy-thinkpad-theme/main/preview.png)
 
@@ -50,7 +52,7 @@ Run it again any time; it skips what's already in place.
 | `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, VS Code settings, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
 | `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
 | `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
-| `theme` | Clones the ThinkPad and Min Dark themes plus 5 others, renders the ASCII wallpapers with **your** username, switches to it |
+| `theme` | Clones the ThinkPad, Min Dark and Blueprint themes plus 5 others, renders the ASCII wallpapers with **your** username, switches to it |
 | `services` | Turns on `hyprmoncfgd`, which switches monitor profiles when you plug screens in |
 
 Before it changes a file it copies the old one to
@@ -118,6 +120,9 @@ stay installed.
     window, darker under the focused one.
   - The same faint 1 px hairline on every window instead of a colored focus
     border, whatever the theme.
+  - Light themes (like Blueprint) get a dark hairline, lighter shadows and gray
+    unfocused title-bar buttons; `~/.config/hypr/theme_mode.lua` reads the
+    current theme's mode, and a theme switch reloads Hyprland.
   - Rounding, shadow size and the gap between windows live in the Omaland
     block of `~/.config/hypr/looknfeel.lua`, so Omaland can still tune them.
     Omarchy's menus and popups follow the rounding.

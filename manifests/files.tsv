@@ -17,6 +17,7 @@ portable	.config/hypr/pointer-feel.lua
 portable	.config/hypr/hyprsunset.conf
 portable	.config/hypr/xdph.conf
 portable	.config/hypr/titlebars.lua
+portable	.config/hypr/theme_mode.lua
 portable	.config/xkb
 portable	.local/share/lao-term
 portable	.local/share/fonts/LaoTerm-Regular.ttf
