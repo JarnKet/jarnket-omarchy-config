@@ -33,6 +33,10 @@ require("default.hypr.toggles")
 -- Open/Save dialogs like the GTK portal dialog it replaced.
 o.window("io\\.github\\.lgse\\.Strata\\.FileChooser", { tag = "+floating-window" })
 
+-- Herdr (herdr-app) opens an opaque window and has no transparency setting of
+-- its own, so set it here: active, then inactive.
+o.window("herdr-app", { tag = "-default-opacity", opacity = "0.92 0.86" })
+
 -- Blur behind the see-through drop-down terminal (SUPER+`).
 hl.layer_rule({ match = { namespace = "kitty-quick-access" }, blur = true })
 
