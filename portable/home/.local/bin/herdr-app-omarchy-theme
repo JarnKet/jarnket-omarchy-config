@@ -1,22 +1,32 @@
 #!/usr/bin/env python3
-"""Write the current Omarchy theme as a Herdr app theme.
+"""Write the current Omarchy theme as a Herdr app theme and switch to it.
 
 Terminal colors come from the theme's generated ghostty.conf, so Herdr's
 terminals match the Omarchy terminals exactly; the window chrome (sidebar,
-canvas, borders, focus accent) comes from colors.toml. Writes
-~/.config/herdr-app/themes/omarchy.json, which settings.json names as
-"theme": "omarchy"; the app reloads it live.
+canvas, borders, focus accent) comes from colors.toml.
+
+The theme goes to ~/.config/herdr-app/themes/omarchy-<theme>-<hash>.json and
+settings.json's "theme" is pointed at it. A new name every time the colors
+change is what makes the open window repaint: herdr-app re-reads a theme file
+only when settings change (settings::set compares the settings, which hold
+the theme's name, not its colors), so rewriting one file in place is ignored
+until a restart. Older omarchy-* files are removed. A theme the person picked
+in Herdr itself (any name not starting with "omarchy") is left alone.
 
 Run by the Omarchy theme-set hook (~/.config/omarchy/hooks/theme-set.d/),
 or by hand after editing a theme.
 """
+import glob
+import hashlib
 import json
 import os
 import re
 import tomllib
 
-THEME = os.path.expanduser("~/.local/state/omarchy/current/theme")
-OUT = os.path.expanduser("~/.config/herdr-app/themes/omarchy.json")
+STATE = os.path.expanduser("~/.local/state/omarchy/current")
+THEME = os.path.join(STATE, "theme")
+HOME = os.path.expanduser("~/.config/herdr-app")
+SETTINGS = os.path.join(HOME, "settings.json")
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
@@ -30,6 +40,13 @@ def ghostty(path):
         elif key:
             conf[key] = value
     return conf, [ansi[i] for i in range(16)]
+
+
+def write_atomic(path, text):
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(text)
+    os.replace(tmp, path)
 
 
 conf, ansi = ghostty(os.path.join(THEME, "ghostty.conf"))
@@ -66,11 +83,25 @@ chrome = {
 }
 theme["colors"] = {k: v for k, v in chrome.items() if v}
 
-os.makedirs(os.path.dirname(OUT), exist_ok=True)
-tmp = OUT + ".tmp"
-with open(tmp, "w", encoding="utf-8") as f:
-    json.dump(theme, f, indent=2)
-    f.write("\n")
-os.replace(tmp, OUT)
-print(f"{OUT}: {os.path.basename(os.path.realpath(THEME))} "
-      f"({open(os.path.join(os.path.dirname(THEME), 'theme.name')).read().strip()})")
+text = json.dumps(theme, indent=2) + "\n"
+slug = re.sub(r"[^a-z0-9-]+", "-", open(os.path.join(STATE, "theme.name")).read().strip().lower())
+name = f"omarchy-{slug}-{hashlib.sha1(text.encode()).hexdigest()[:6]}"
+os.makedirs(os.path.join(HOME, "themes"), exist_ok=True)
+write_atomic(os.path.join(HOME, "themes", f"{name}.json"), text)
+
+try:
+    with open(SETTINGS, encoding="utf-8") as f:
+        settings = json.load(f)
+except FileNotFoundError:
+    settings = {}
+current = settings.get("theme")
+if current is None or (isinstance(current, str) and current.startswith("omarchy")):
+    if current != name:
+        settings["theme"] = name
+        write_atomic(SETTINGS, json.dumps(settings, indent=2) + "\n")
+    for old in glob.glob(os.path.join(HOME, "themes", "omarchy*.json")):
+        if os.path.basename(old) != f"{name}.json":
+            os.remove(old)
+    print(f"herdr-app theme: {name}")
+else:
+    print(f"herdr-app theme: wrote {name}; left settings on {current!r}")
