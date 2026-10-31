@@ -10,11 +10,18 @@ their cell and trailing vowels (ະ າ ຳ ຽ ໆ ຯ) at the left, so they hu
 consonant instead of leaving a gap. Mark anchors move with their base, and
 kerning is switched off.
 
-usage: make-lao-term.py SRC.ttf OUT.ttf STYLE      (STYLE = Regular | Bold)
+Printable ASCII is copied in from LATIN.ttf (the terminal font). GPUI apps
+(Herdr UI, Zed) drop any font they load by name that has no "m", so without
+it Lao Term reads as "not installed" there. Kitty's symbol_map only takes the
+Lao range from this font, so the Latin glyphs never draw in kitty.
+
+usage: make-lao-term.py SRC.ttf OUT.ttf STYLE LATIN.ttf   (STYLE = Regular | Bold)
 
   cd ~/.local/share/fonts
-  make-lao-term.py /usr/share/fonts/noto/NotoSansLao-Regular.ttf LaoTerm-Regular.ttf Regular
-  make-lao-term.py /usr/share/fonts/noto/NotoSansLao-Bold.ttf LaoTerm-Bold.ttf Bold
+  make-lao-term.py /usr/share/fonts/noto/NotoSansLao-Regular.ttf LaoTerm-Regular.ttf Regular \
+      /usr/share/fonts/TTF/JetBrainsMonoNerdFont-Regular.ttf
+  make-lao-term.py /usr/share/fonts/noto/NotoSansLao-Bold.ttf LaoTerm-Bold.ttf Bold \
+      /usr/share/fonts/TTF/JetBrainsMonoNerdFont-Bold.ttf
   fc-cache
 
 License: SIL OFL 1.1, see OFL.txt next to this script.
@@ -31,7 +38,7 @@ FAMILY = "Lao Term"
 LEADING = set(range(0x0EC0, 0x0EC5))                      # ເ ແ ໂ ໃ ໄ
 TRAILING = {0x0EB0, 0x0EB2, 0x0EB3, 0x0EBD, 0x0EC6, 0x0EAF}  # ະ າ ຳ ຽ ໆ ຯ
 
-src_path, out_path, style = sys.argv[1:4]
+src_path, out_path, style, latin_path = sys.argv[1:5]
 src = TTFont(src_path)
 font = TTFont(src_path)
 glyf, hmtx = font["glyf"], font["hmtx"]
@@ -99,6 +106,29 @@ for fr in gpos.FeatureList.FeatureRecord:  # monospace: no kerning
         fr.Feature.LookupListIndex = []
         fr.Feature.LookupCount = 0
 
+# Printable ASCII from the terminal font, at its own 600-unit advance.
+latin = TTFont(latin_path)
+latin_glyphs, latin_cmap = latin.getGlyphSet(), latin.getBestCmap()
+assert latin["head"].unitsPerEm == font["head"].unitsPerEm
+have = font.getBestCmap()
+added = {}
+for cp in range(0x21, 0x7F):
+    if cp in have or cp not in latin_cmap:
+        continue
+    name = "latin.uni%04X" % cp
+    rec = DecomposingRecordingPen(latin_glyphs)
+    latin_glyphs[latin_cmap[cp]].draw(rec)
+    pen = TTGlyphPen(None)
+    rec.replay(pen)
+    g = pen.glyph()
+    glyf[name] = g  # appends to the glyph order
+    g.recalcBounds(glyf)
+    hmtx[name] = (latin["hmtx"][latin_cmap[cp]][0], getattr(g, "xMin", 0))
+    added[cp] = name
+for table in font["cmap"].tables:
+    if table.isUnicode():
+        table.cmap.update(added)
+
 # Hinting no longer matches the outlines; drop it everywhere.
 for tag in ("fpgm", "prep", "cvt ", "hdmx", "LTSH", "VDMX"):
     if tag in font:
@@ -123,4 +153,4 @@ for nid, text in ((1, FAMILY), (2, style), (3, ps + ";local"), (4, f"{FAMILY} {s
     names.setName(text, nid, 1, 0, 0)
 names.setName("Noto Sans Lao refitted to a 0.6 em terminal cell (local build).", 10, 3, 1, 0x409)
 font.save(out_path)
-print(f"{out_path}: {len(moves)} glyphs refitted")
+print(f"{out_path}: {len(moves)} glyphs refitted, {len(added)} ASCII glyphs added")
