@@ -1,0 +1,8 @@
+[Unit]
+Description=Wallpaper slideshow: change the background if it's been up long enough
+Documentation=file://%h/.local/bin/wallpaper-slideshow
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/wallpaper-slideshow tick
+Nice=10

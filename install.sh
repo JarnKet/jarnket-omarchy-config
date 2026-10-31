@@ -43,7 +43,7 @@ Steps, in order:
   plugins   clone the shell plugins and run their setup scripts
   bar       bar layout and widget settings (shell.json)
   theme     ThinkPad theme, its ASCII wallpapers, extra themes
-  services  user services: hyprmoncfgd, plugin update checks
+  services  user services: hyprmoncfgd, plugin update checks, wallpaper slideshow
 
 Options:
   -y, --yes          don't ask; take the defaults (installs no optional apps)
@@ -691,6 +691,19 @@ step_services() {
       ok "plugin-updates.timer on (a notification when plugins have updates)"
     else
       problem "couldn't start plugin-updates.timer"
+    fi
+  fi
+
+  # The wallpaper slideshow, if its settings say it's on.
+  if [[ -f $HOME/.config/systemd/user/wallpaper-slideshow.timer ]] &&
+    grep -qx 'enabled=1' "$HOME/.config/wallpaper-slideshow.conf" 2>/dev/null; then
+    if systemctl --user is-enabled -q wallpaper-slideshow.timer 2>/dev/null; then
+      ok "wallpaper-slideshow.timer already on"
+    elif run systemctl --user enable --now wallpaper-slideshow.timer >/dev/null 2>&1; then
+      record services-enabled wallpaper-slideshow.timer
+      ok "wallpaper-slideshow.timer on (a new background every 15 minutes)"
+    else
+      problem "couldn't start wallpaper-slideshow.timer"
     fi
   fi
 }

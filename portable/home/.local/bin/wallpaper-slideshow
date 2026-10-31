@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# wallpaper-slideshow: change the desktop background every few minutes, like
+# Windows' slideshow, among the current theme's backgrounds (and any you
+# added for it in ~/.config/omarchy/backgrounds/<theme>/). Switch themes and
+# it carries on with the new theme's set.
+#
+#   wallpaper-slideshow on [minutes]          turn it on (default every 15 minutes)
+#   wallpaper-slideshow off                   turn it off
+#   wallpaper-slideshow toggle                on if off, off if on, with a notification
+#   wallpaper-slideshow status                on or off, how often, in what order
+#   wallpaper-slideshow every <minutes>       change how often
+#   wallpaper-slideshow order shuffle|in-order
+#   wallpaper-slideshow next                  change now
+#   wallpaper-slideshow tick                  what wallpaper-slideshow.timer runs every minute
+#
+# The wait counts from when the background last changed, read off the
+# background link's own timestamp, so picking a background or a theme
+# yourself starts it over. Nothing changes while the screen is locked.
+
+set -euo pipefail
+
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}/wallpaper-slideshow.conf
+STATE=$HOME/.local/state/omarchy/current
+LINK=$STATE/background
+TIMER=wallpaper-slideshow.timer
+
+enabled=0 minutes=15 order=shuffle
+if [[ -f $CONFIG ]]; then
+  while IFS='=' read -r key value; do
+    case $key in
+    enabled) enabled=$value ;;
+    minutes) minutes=$value ;;
+    order) order=$value ;;
+    esac
+  done <"$CONFIG"
+fi
+
+save() {
+  mkdir -p "$(dirname "$CONFIG")"
+  printf '# Set with wallpaper-slideshow on|off|every|order.\nenabled=%s\nminutes=%s\norder=%s\n' \
+    "$enabled" "$minutes" "$order" >"$CONFIG"
+}
+
+usage() {
+  sed -n '7,14p' "$0" | sed 's/^# //' >&2
+  exit 2
+}
+
+set_minutes() {
+  [[ $1 =~ ^[0-9]+$ ]] && (($1 >= 1 && $1 <= 1440)) || {
+    echo "minutes: a whole number from 1 to 1440" >&2
+    exit 2
+  }
+  minutes=$1
+}
+
+# The same backgrounds, in the same order, as `omarchy theme bg next`.
+backgrounds() {
+  local theme
+  theme=$(cat "$STATE/theme.name" 2>/dev/null || true)
+  find -L "$HOME/.config/omarchy/backgrounds/$theme/" "$STATE/theme/backgrounds/" -maxdepth 1 -type f \
+    \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.bmp' -o -iname '*.webp' \) \
+    -print0 2>/dev/null | sort -z
+}
+
+advance() {
+  if [[ $order == in-order ]]; then
+    omarchy theme bg next
+    return
+  fi
+  local current all=() others=() f
+  current=$(readlink -f "$LINK" 2>/dev/null || true)
+  mapfile -d '' -t all < <(backgrounds)
+  for f in "${all[@]}"; do
+    [[ $(readlink -f "$f") != "$current" ]] && others+=("$f")
+  done
+  ((${#others[@]})) || return 0
+  omarchy theme bg set "${others[RANDOM % ${#others[@]}]}"
+}
+
+describe() {
+  local count theme
+  count=$(backgrounds | tr -cd '\0' | wc -c)
+  theme=$(cat "$STATE/theme.name" 2>/dev/null || echo "?")
+  if [[ $enabled == 1 ]]; then
+    echo "on: every $minutes min, $([[ $order == in-order ]] && echo "in order" || echo shuffled), among $count backgrounds of $theme"
+  else
+    echo "off ($count backgrounds in $theme; wallpaper-slideshow on to start)"
+  fi
+}
+
+notify() {
+  if [[ $enabled == 1 ]]; then
+    omarchy notification send -g 󰸉 "Wallpaper slideshow on" \
+      "Every $minutes minutes, $([[ $order == in-order ]] && echo "in order" || echo shuffled)" -t 3000 || true
+  else
+    omarchy notification send -g 󰸉 "Wallpaper slideshow off" -t 3000 || true
+  fi
+}
+
+tick() {
+  [[ $enabled == 1 ]] || return 0
+  # Locked, or no shell to draw it: leave it for later.
+  [[ $(omarchy-shell lock isLocked 2>/dev/null) == false ]] || return 0
+  local changed
+  changed=$(stat -c %Y "$LINK" 2>/dev/null || echo 0)
+  (($(date +%s) - changed >= minutes * 60 - 20)) || return 0
+  advance
+}
+
+case ${1:-status} in
+on)
+  [[ -n ${2:-} ]] && set_minutes "$2"
+  enabled=1
+  save
+  systemctl --user enable --now "$TIMER" >/dev/null 2>&1 || echo "couldn't start $TIMER" >&2
+  notify
+  describe
+  ;;
+off)
+  enabled=0
+  save
+  systemctl --user disable --now "$TIMER" >/dev/null 2>&1 || true
+  notify
+  describe
+  ;;
+toggle)
+  if [[ $enabled == 1 ]]; then exec "$0" off; else exec "$0" on; fi
+  ;;
+status) describe ;;
+every)
+  set_minutes "${2:-}"
+  save
+  describe
+  ;;
+order)
+  case ${2:-} in
+  shuffle | in-order) order=$2 ;;
+  *) usage ;;
+  esac
+  save
+  describe
+  ;;
+next) advance ;;
+tick) tick ;;
+*) usage ;;
+esac

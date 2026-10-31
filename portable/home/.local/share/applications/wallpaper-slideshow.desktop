@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Wallpaper Slideshow
+Comment=Turn the wallpaper slideshow on or off (every 15 minutes, shuffled)
+Exec=sh -c '"$HOME/.local/bin/wallpaper-slideshow" toggle'
+Icon=preferences-desktop-wallpaper
+Terminal=false
+Categories=Settings;DesktopSettings;

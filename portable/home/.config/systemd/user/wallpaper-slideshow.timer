@@ -1,0 +1,9 @@
+[Unit]
+Description=Wallpaper slideshow: look every minute whether it's time for the next background
+
+[Timer]
+OnCalendar=minutely
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

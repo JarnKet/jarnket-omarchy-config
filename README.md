@@ -53,7 +53,7 @@ Run it again any time; it skips what's already in place.
 | `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
 | `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
 | `theme` | Clones the ThinkPad, Min Dark and Blueprint themes plus 5 others and switches to ThinkPad (it ships its 13 ASCII wallpapers) |
-| `services` | Turns on `hyprmoncfgd`, which switches monitor profiles when you plug screens in |
+| `services` | Turns on `hyprmoncfgd`, which switches monitor profiles when you plug screens in, the plugin update check and the wallpaper slideshow |
 
 Before it changes a file it copies the old one to
 `~/.local/state/jarnket-omarchy-config/backups/<time>/`.
@@ -177,6 +177,13 @@ stay installed.
   you get a notification and a puzzle icon in the middle of the bar; click
   either to go through the changes and pick what to install
   (`plugin-updates review`). Nothing updates on its own.
+- **Wallpaper slideshow:** every theme's backgrounds take turns, a new one
+  every 15 minutes in shuffled order, like the Windows slideshow; switch
+  themes and it moves on to that theme's set. Picking a background yourself
+  restarts the wait, and nothing changes while the screen is locked. Turn it
+  on or off from the launcher (**Wallpaper Slideshow**) or with
+  `wallpaper-slideshow on|off`; `wallpaper-slideshow every 30` and
+  `wallpaper-slideshow order in-order` change it.
 - **Notifications:** the bell next to the battery. Left-click for Do Not
   Disturb, right-click for recent notifications and history.
 - **Two bars:** the Omarchy bar at the bottom, and the Top Bar (my plugin) for
