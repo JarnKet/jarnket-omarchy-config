@@ -31,8 +31,11 @@
       ],
       "left": [
         {
-          "icon": "trackpoint",
-          "id": "evindor.keystroke"
+          "icon": "omarchy",
+          "id": "evindor.keystroke",
+          "themeIcons": {
+            "thinkpad": "trackpoint"
+          }
         },
         {
           "id": "jankeesvw.workspace-name"

@@ -181,6 +181,10 @@ stay installed.
   Disturb, right-click for recent notifications and history.
 - **Two bars:** the Omarchy bar at the bottom, and the Top Bar (my plugin) for
   extra widgets. Drag widgets between them, or use `omarchy-topbar list`.
+- **Launcher icon:** the menu button at the left of the bar is the TrackPoint
+  red dot under the ThinkPad theme and the Omarchy logo under every other
+  theme (`themeIcons` in Keystroke's entry in `shell.json`). It needs my local
+  patch to Keystroke's `BarWidget.qml`; without it you get the stock logo.
 - **Hardware plugins** only do something if you have the hardware: fingerprint
   (Biometric HUD), webcam, Miracast (Wireless Display Cast), printers.
 - **Pointer Feel** builds two small Hyprland modules on your machine. If the
