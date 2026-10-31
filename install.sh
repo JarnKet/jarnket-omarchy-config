@@ -635,26 +635,7 @@ step_theme() {
     clone_theme "$url" || true
   done < <(read_list "$REPO_DIR/manifests/themes.txt")
 
-  local tools=$THEMES_DIR/$THEME_NAME/tools
-  local bg_dir=$HOME/.config/omarchy/backgrounds/$THEME_NAME
-  if [[ -n $(find "$bg_dir" -maxdepth 1 -type f 2>/dev/null | head -n 1) ]]; then
-    ok "wallpapers already in ${bg_dir/#"$HOME"/\~}"
-  elif [[ -f $tools/make-ascii-wallpaper.py ]] || ((DRY_RUN)); then
-    local args out
-    for args in "--world 1-ascii-world.png" " 2-ascii-thinkpad.png"; do
-      out=$bg_dir/${args##* }
-      [[ -f $out ]] && continue
-      info "rendering wallpaper ${out##*/} (a few seconds)"
-      if ((!DRY_RUN)); then
-        mkdir -p "$bg_dir"
-        backup "$out"
-        # shellcheck disable=SC2086 # unquoted on purpose: the flag, or nothing
-        python3 -I "$tools/make-ascii-wallpaper.py" ${args% *} "$out" >/dev/null ||
-          problem "couldn't render ${out##*/} (needs python-numpy and python-pillow)"
-      fi
-    done
-  fi
-
+  # The ThinkPad theme ships its wallpapers, so there's nothing to render.
   if ! in_session; then
     manual "Log in to the desktop, then run: omarchy theme set $THEME_NAME"
   elif [[ "$(current_theme)" == "$THEME_NAME" ]]; then

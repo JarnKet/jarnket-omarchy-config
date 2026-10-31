@@ -52,7 +52,7 @@ Run it again any time; it skips what's already in place.
 | `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, VS Code settings, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
 | `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
 | `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
-| `theme` | Clones the ThinkPad, Min Dark and Blueprint themes plus 5 others, renders the ASCII wallpapers with **your** username, switches to it |
+| `theme` | Clones the ThinkPad, Min Dark and Blueprint themes plus 5 others and switches to ThinkPad (it ships its 13 ASCII wallpapers) |
 | `services` | Turns on `hyprmoncfgd`, which switches monitor profiles when you plug screens in |
 
 Before it changes a file it copies the old one to
