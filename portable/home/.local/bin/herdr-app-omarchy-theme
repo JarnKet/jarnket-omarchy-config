@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Write the current Omarchy theme as a Herdr app theme.
+
+Terminal colors come from the theme's generated ghostty.conf, so Herdr's
+terminals match the Omarchy terminals exactly; the window chrome (sidebar,
+canvas, borders, focus accent) comes from colors.toml. Writes
+~/.config/herdr-app/themes/omarchy.json, which settings.json names as
+"theme": "omarchy"; the app reloads it live.
+
+Run by the Omarchy theme-set hook (~/.config/omarchy/hooks/theme-set.d/),
+or by hand after editing a theme.
+"""
+import json
+import os
+import re
+import tomllib
+
+THEME = os.path.expanduser("~/.local/state/omarchy/current/theme")
+OUT = os.path.expanduser("~/.config/herdr-app/themes/omarchy.json")
+HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def ghostty(path):
+    conf, ansi = {}, {}
+    for line in open(path, encoding="utf-8"):
+        key, _, value = (part.strip() for part in line.partition("="))
+        if key == "palette":
+            index, _, color = value.partition("=")
+            ansi[int(index)] = color.strip()
+        elif key:
+            conf[key] = value
+    return conf, [ansi[i] for i in range(16)]
+
+
+conf, ansi = ghostty(os.path.join(THEME, "ghostty.conf"))
+try:
+    with open(os.path.join(THEME, "colors.toml"), "rb") as f:
+        colors = tomllib.load(f)
+except FileNotFoundError:
+    colors = {}
+
+
+def pick(*keys):
+    for key in keys:
+        value = colors.get(key)
+        if isinstance(value, str) and HEX.match(value):
+            return value.lower()
+    return None
+
+
+theme = {
+    "background": conf["background"],
+    "foreground": conf["foreground"],
+    "selection": conf.get("selection-background", pick("selection") or ansi[8]),
+    "cursor": conf.get("cursor-color", conf["foreground"]),
+    "ansi": ansi,
+}
+# Chrome roles Herdr would otherwise derive from the terminal colors.
+chrome = {
+    "chrome": pick("dark_background", "background"),
+    "canvas": pick("dark_background", "background"),
+    "border": pick("lighter_background", "selection"),
+    "accent": pick("accent", "blue"),
+    "accent_foreground": pick("dark_background", "background"),
+    "muted": pick("muted", "light_foreground"),
+}
+theme["colors"] = {k: v for k, v in chrome.items() if v}
+
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
+tmp = OUT + ".tmp"
+with open(tmp, "w", encoding="utf-8") as f:
+    json.dump(theme, f, indent=2)
+    f.write("\n")
+os.replace(tmp, OUT)
+print(f"{OUT}: {os.path.basename(os.path.realpath(THEME))} "
+      f"({open(os.path.join(os.path.dirname(THEME), 'theme.name')).read().strip()})")

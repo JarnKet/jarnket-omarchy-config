@@ -47,6 +47,7 @@ portable	.local/bin/hyprbars-build
 portable	.local/bin/hyprbars-load
 portable	.local/bin/window-minimize
 portable	.local/bin/window-restore
+portable	.local/bin/herdr-app-omarchy-theme
 portable	.local/share/applications/plugin-updates.desktop
 portable	.config/systemd/user/plugin-updates.service
 portable	.config/systemd/user/plugin-updates.timer
