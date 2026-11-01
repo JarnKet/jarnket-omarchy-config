@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Two kinds of app that `omarchy update` would otherwise leave on an old
+# version:
+#
+# - AUR apps that the Omarchy repo now ships too (wordcraft-bin and
+#   gridcraft-bin since late October 2026). pacman takes the repo copy, which
+#   can trail the real release by days, and yay skips any package a repo owns.
+#   Build the AUR copy when it is newer; once the repo catches up, pacman
+#   takes over again by itself.
+# - OpenIDEA, whose AUR package trails its GitHub releases. openidea-update
+#   packages the official release straight from GitHub.
+
+craft_apps=(wordcraft-bin deckcraft-bin gridcraft-bin pdfcraft-bin)
+
+# Only the ones installed and owned by a repo; the AUR step after this hook
+# already takes care of the rest.
+repo_owned=()
+for pkg in "${craft_apps[@]}"; do
+  pacman -Q "$pkg" &>/dev/null && pacman -Si "$pkg" &>/dev/null && repo_owned+=("$pkg")
+done
+
+has_openidea=false
+pacman -Q openidea-bin &>/dev/null && [[ -x $HOME/.local/bin/openidea-update ]] && has_openidea=true
+
+(( ${#repo_owned[@]} )) || $has_openidea || exit 0
+
+echo -e "\e[32m\nUpdate apps that are newer than the Omarchy repo and AUR\e[0m"
+status=0
+
+if (( ${#repo_owned[@]} )); then
+  query=$(printf '&arg[]=%s' "${repo_owned[@]}")
+  if info=$(curl -fsS --connect-timeout 15 --retry 2 -A omarchy-update \
+    "https://aur.archlinux.org/rpc/v5/info?${query#&}"); then
+    newer=()
+    for pkg in "${repo_owned[@]}"; do
+      have=$(pacman -Q "$pkg" | cut -d' ' -f2)
+      aur=$(jq -r --arg n "$pkg" '.results[] | select(.Name == $n) | .Version' <<<"$info")
+      if [[ -n $aur ]] && (( $(vercmp "$aur" "$have") > 0 )); then
+        echo "$pkg $have -> $aur (the Omarchy repo has $(pacman -Si "$pkg" | awk '/^Version/ { print $3 }'))"
+        newer+=("aur/$pkg")
+      else
+        echo "$pkg $have is up to date."
+      fi
+    done
+    if (( ${#newer[@]} )); then
+      yay -S --noconfirm --cleanafter "${newer[@]}" || status=1
+    fi
+  else
+    echo "Couldn't reach the AUR; ${repo_owned[*]} stay as they are."
+    status=1
+  fi
+fi
+
+if $has_openidea; then
+  "$HOME/.local/bin/openidea-update" || status=1
+fi
+
+echo
+exit $status

@@ -204,6 +204,12 @@ stay installed.
 - Plugins install at their newest versions. If one breaks after an Omarchy
   update, `--pinned` gets the versions this was tested with, or
   `omarchy plugin update` gets the fixes.
+- **The \*craft office apps** (wordcraft, deckcraft, gridcraft, pdfcraft)
+  come from the AUR as `-bin` packages. The Omarchy repo now ships wordcraft
+  and gridcraft too, but often a version behind, and yay skips anything a repo
+  owns. A post-update hook builds the AUR copy whenever it is newer, so
+  `omarchy update` keeps all four current. It also runs `openidea-update` if
+  you have that script.
 - Not in this repo on purpose: SSH/GPG keys, browser profiles, passwords,
   tokens, keyrings, shell history (atuin's `~/.atuin/data`), Ask Claude's
   `context.md`, my personal wallpaper.
