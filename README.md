@@ -210,6 +210,12 @@ stay installed.
   owns. A post-update hook builds the AUR copy whenever it is newer, so
   `omarchy update` keeps all four current. It also runs `openidea-update` if
   you have that script.
+- **Brave Origin is on the accessibility bus**, so desktop-automation tools
+  such as `agent-desktop` can read and click its pages. Hyprland doesn't turn
+  the bus on for browsers, so a small `brave-origin` wrapper in `~/.local/bin`
+  adds the two settings it needs, and a copy of Brave's desktop entry points
+  at it. Electron apps such as VS Code are left alone, since the same settings
+  would slow them down. Delete both files to undo it.
 - Not in this repo on purpose: SSH/GPG keys, browser profiles, passwords,
   tokens, keyrings, shell history (atuin's `~/.atuin/data`), Ask Claude's
   `context.md`, my personal wallpaper.

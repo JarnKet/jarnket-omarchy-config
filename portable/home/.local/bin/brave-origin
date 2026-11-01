@@ -1,0 +1,10 @@
+#!/bin/bash
+# Brave Origin on the accessibility bus, so agent-desktop can read and operate
+# its pages. Hyprland runs no settings daemon to switch the bus on
+# (org.a11y.Status IsEnabled stays false), so Chromium only joins it with
+# ACCESSIBILITY_ENABLED=1, and only exposes page content with
+# --force-renderer-accessibility. Only Brave gets these: Electron apps (VS Code,
+# Claude) would turn on their own accessibility trees too and slow down.
+# ~/.local/share/applications/brave-origin.desktop points here, which covers the
+# launcher, links and Omarchy web apps.
+ACCESSIBILITY_ENABLED=1 exec /usr/bin/brave-origin --force-renderer-accessibility "$@"

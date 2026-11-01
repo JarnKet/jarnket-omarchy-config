@@ -56,6 +56,8 @@ portable	.local/share/applications/wallpaper-slideshow.desktop
 portable	.config/systemd/user/wallpaper-slideshow.service
 portable	.config/systemd/user/wallpaper-slideshow.timer
 portable	.config/wallpaper-slideshow.conf
+portable	.local/bin/brave-origin
+portable	.local/share/applications/brave-origin.desktop
 
 device	.config/hypr/monitors.lua
 device	.config/hypr/hyprmoncfg-monitors.lua
