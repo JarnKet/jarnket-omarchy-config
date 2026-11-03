@@ -121,14 +121,6 @@
       "local": false
     },
     {
-      "id": "io.github.juancasanueva.plugin-manager",
-      "name": "Plugin Manager",
-      "version": "1.11.2",
-      "source": "https://github.com/juancasanueva/omarchy-plugin-manager.git",
-      "revision": "5f393f30e47483f1a97edfa1582deb98c9190e46",
-      "local": false
-    },
-    {
       "id": "io.github.kristoferlund.webcam",
       "name": "Webcam Controls",
       "version": "0.2.0",
@@ -198,6 +190,14 @@
       "version": "1.1.1",
       "source": "https://github.com/njpatel/omapager.git",
       "revision": "c389e73516828d18f26e8efec2127c0c3dc3cb97",
+      "local": false
+    },
+    {
+      "id": "omaplug",
+      "name": "Plugin Manager",
+      "version": "1.7.0",
+      "source": "https://github.com/fross100/omaplug.git",
+      "revision": "ebfec41a28b50bc1ddf352d72d5e1718dfd331cc",
       "local": false
     },
     {
@@ -309,7 +309,7 @@
       "name": "Advanced Bluetooth Audio",
       "version": "0.7.1",
       "source": "https://github.com/ssupt/omarchy-bluetooth-audio.git",
-      "revision": "7cbf8b96d981931fce50a61047eb9bb731f9cfbe",
+      "revision": "8d0c9b78bde6e2ee4b6ec1a5fa88ff72bcf66e5e",
       "local": false
     },
     {

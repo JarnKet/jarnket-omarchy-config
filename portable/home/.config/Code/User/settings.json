@@ -12,5 +12,6 @@
 "workbench.list.smoothScrolling": true,
 "terminal.integrated.smoothScrolling": true,
 "editor.cursorSmoothCaretAnimation": "on",
-"terminal.integrated.initialHint": false
+"terminal.integrated.initialHint": false,
+"diffEditor.ignoreTrimWhitespace": false
 }
