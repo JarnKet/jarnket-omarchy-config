@@ -294,7 +294,10 @@
       "id": "davedes.omadoctor"
     },
     {
-      "id": "io.github.sirjul1337.lock-explorer"
+      "id": "io.github.sirjul1337.lock-explorer",
+      "tourSeen": true,
+      "openAs": "panel",
+      "design": "split"
     }
   ],
   "version": 1
