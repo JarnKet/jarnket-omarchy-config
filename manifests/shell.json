@@ -234,12 +234,14 @@
   "cloneSourceRestores": [
     "ssupt.audio-control",
     "evindor.keystroke",
-    "dumidu.orbital-lock"
+    "dumidu.orbital-lock",
+    "io.github.sirjul1337.lock-explorer"
   ],
   "disabledPlugins": [
     "omarchy.audio",
     "omarchy.menu",
-    "omarchy.notifications"
+    "omarchy.notifications",
+    "omarchy.lock"
   ],
   "idle": {
     "lock": 1800,
@@ -290,6 +292,9 @@
     },
     {
       "id": "davedes.omadoctor"
+    },
+    {
+      "id": "io.github.sirjul1337.lock-explorer"
     }
   ],
   "version": 1

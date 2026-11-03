@@ -145,6 +145,14 @@
       "local": false
     },
     {
+      "id": "io.github.sirjul1337.lock-explorer",
+      "name": "Lock Screen Explorer",
+      "version": "2.0.12",
+      "source": "https://github.com/SirJul1337/omarchy-lock-explorer.git",
+      "revision": "2eea8816bae146ec4bed1894b71bb9b2350b063d",
+      "local": false
+    },
+    {
       "id": "io.github.twiking.omasettings",
       "name": "OmaSettings",
       "version": "1.4.0",

@@ -259,6 +259,7 @@ stay installed.
 | [Wireless Display Cast](https://github.com/shadyuop/omarchy-wireless-display-cast) | Cast to a Miracast screen |
 | [Reboot into](https://github.com/07dcolem/omarchy-target-boot) | Reboot straight into Windows or another OS |
 | [Biometric HUD](https://github.com/GruperTal/omarchy-biometric-hud) | Windows Hello-style tile for fingerprint/face unlock |
+| [Lock Screen Explorer](https://github.com/SirJul1337/omarchy-lock-explorer) | Lock screen designs with a preview picker and a designer (replaces the built-in lock screen) |
 | [Flare](https://github.com/melonamin/omarchy-flare) | Click highlights for demos and recordings |
 | [Plugin Manager](https://github.com/juancasanueva/omarchy-plugin-manager) | Browse, install, update and remove plugins from the bar |
 | [OmaDoctor](https://github.com/Davedes83/OmaDoctor) | Health check of the system: services, disk, audio, display |
