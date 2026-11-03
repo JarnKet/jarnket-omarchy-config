@@ -30,6 +30,7 @@ portable	.config/kitty/kitty.conf
 portable	.config/kitty/quick-access-terminal.conf
 portable	.config/xdg-terminals.list
 portable	.bashrc
+portable	.config/newt/colors
 portable	.config/omarchy/themed
 portable	.atuin/config.toml
 portable	.config/lazygit/config.yml

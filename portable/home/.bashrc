@@ -13,6 +13,10 @@ source "$OMARCHY_PATH/default/bash/rc"
 # Make an alias for invoking commands you use constantly
 # alias p='python'
 
+# nmtui and other newt programs: use the terminal's colors, not newt's blue and gray.
+export NEWT_COLORS_FILE="$HOME/.config/newt/colors"
+export NMT_NEWT_COLORS_FILE="$HOME/.config/newt/colors"
+
 # Hyprland isn't in Chromium's desktop-environment allowlist, so Electron falls back
 # to the plaintext "basic" password store and won't persist the Claude sign-in.
 alias claude-desktop='/usr/bin/claude-desktop --password-store=gnome-libsecret'
