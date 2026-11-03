@@ -43,9 +43,9 @@
     {
       "id": "crmne.hyprmoncfg",
       "name": "hyprmoncfg: Multi-Monitor Manager for Omarchy",
-      "version": "2.10.1",
+      "version": "2.12.0",
       "source": "https://github.com/crmne/omarchy-hyprmoncfg.git",
-      "revision": "03177e1b48fcde97004130fdfac1f9156e6b43a6",
+      "revision": "50ed83cf34b7c301f0c0972a8539948591e1c5e5",
       "local": false
     },
     {
@@ -163,9 +163,9 @@
     {
       "id": "io.github.tymurbogach.hardwarchy",
       "name": "Hardwarchy",
-      "version": "2.3.3",
+      "version": "2.3.4",
       "source": "https://github.com/tymurbogach/hardwarchy.git",
-      "revision": "9151a1dc1fe49382993ece1dc4b4a4827b1d697b",
+      "revision": "16a52e5a1ea8603f96d5257d09f05d7b9379753d",
       "local": false
     },
     {

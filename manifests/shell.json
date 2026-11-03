@@ -229,7 +229,7 @@
       ]
     },
     "position": "bottom",
-    "transparent": true
+    "transparent": false
   },
   "cloneSourceRestores": [
     "ssupt.audio-control",
