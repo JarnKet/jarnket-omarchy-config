@@ -1,0 +1,10 @@
+[Unit]
+Description=Memory Keeper: stop idle Claude sessions, ease memory pressure
+Documentation=file://%h/.config/omarchy/plugins/shadowone.memory-keeper/README.md
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/memkeeper tick
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=3min

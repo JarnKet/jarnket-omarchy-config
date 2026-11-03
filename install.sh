@@ -565,10 +565,10 @@ step_plugins() {
     added=$((added + 1))
   done
 
-  # Command-line tools of my plugins: omarchy-topbar, diskkeeper and ask-claude.
+  # Command-line tools of my plugins: omarchy-topbar, diskkeeper, memkeeper and ask-claude.
   local tool name
   for tool in "$PLUGINS_DIR/shadowone.top-bar/omarchy-topbar" "$PLUGINS_DIR/shadowone.disk-keeper/bin/diskkeeper" \
-    "$PLUGINS_DIR/shadowone.ask-claude/bin/ask-claude"; do
+    "$PLUGINS_DIR/shadowone.memory-keeper/bin/memkeeper" "$PLUGINS_DIR/shadowone.ask-claude/bin/ask-claude"; do
     name=$(basename "$tool")
     if [[ -x $tool || $DRY_RUN == 1 ]] && [[ "$(readlink "$HOME/.local/bin/$name" 2>/dev/null)" != "$tool" ]]; then
       backup "$HOME/.local/bin/$name"
@@ -691,6 +691,19 @@ step_services() {
       ok "plugin-updates.timer on (a notification when plugins have updates)"
     else
       problem "couldn't start plugin-updates.timer"
+    fi
+  fi
+
+  # Stops Claude Code sessions left idle and eases memory pressure every 5 min while awake.
+  if [[ -f $HOME/.config/systemd/user/memory-keeper.timer ]]; then
+    systemctl --user daemon-reload >/dev/null 2>&1 || true
+    if systemctl --user is-enabled -q memory-keeper.timer 2>/dev/null; then
+      ok "memory-keeper.timer already on"
+    elif run systemctl --user enable --now memory-keeper.timer >/dev/null 2>&1; then
+      record services-enabled memory-keeper.timer
+      ok "memory-keeper.timer on (stops idle Claude sessions; turn it off in its panel)"
+    else
+      problem "couldn't start memory-keeper.timer"
     fi
   fi
 

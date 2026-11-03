@@ -51,6 +51,8 @@ portable	.local/bin/herdr-app-omarchy-theme
 portable	.local/share/applications/plugin-updates.desktop
 portable	.config/systemd/user/plugin-updates.service
 portable	.config/systemd/user/plugin-updates.timer
+portable	.config/systemd/user/memory-keeper.service
+portable	.config/systemd/user/memory-keeper.timer
 portable	.local/bin/wallpaper-slideshow
 portable	.local/share/applications/wallpaper-slideshow.desktop
 portable	.config/systemd/user/wallpaper-slideshow.service

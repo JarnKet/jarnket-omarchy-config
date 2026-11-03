@@ -1,7 +1,7 @@
 # ShadowOne's Omarchy setup
 
 My [Omarchy](https://omarchy.org) desktop, ready to install on another machine:
-Hyprland config, terminal settings, 34 shell plugins with my bar layout (a
+Hyprland config, terminal settings, 35 shell plugins with my bar layout (a
 bottom bar and a second Top Bar), the
 [ThinkPad theme](https://github.com/JarnKet/omarchy-thinkpad-theme) with its
 ASCII wallpapers, my [Min Dark theme](https://github.com/JarnKet/omarchy-min-dark-theme)
@@ -201,6 +201,10 @@ stay installed.
   found, then clean. Its System items (old packages, journal, snapshots) need a
   root helper, installed once with
   `sudo bash ~/.config/omarchy/plugins/shadowone.disk-keeper/root/install.sh`.
+- **Memory Keeper** does act on its own: every 5 minutes while awake it stops Claude
+  Code sessions left idle for 12 hours (sooner when memory is short; sleep doesn't
+  count). Busy, waiting and on-screen sessions, and ones running something, are left
+  alone. Resume them from its panel, or turn this off there.
 - Plugins install at their newest versions. If one breaks after an Omarchy
   update, `--pinned` gets the versions this was tested with, or
   `omarchy plugin update` gets the fixes.
@@ -226,6 +230,7 @@ stay installed.
 |--------|--------------|
 | [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
 | [Disk Keeper](extras/plugins/shadowone.disk-keeper) | Free space in the bar, a warning before the disk fills up, and a panel to clean caches, old packages, build folders and Docker leftovers (mine) |
+| [Memory Keeper](extras/plugins/shadowone.memory-keeper) | Available memory in the bar; stops Claude Code sessions left idle and resumes them with a click, frees cold cache under pressure, shows what holds memory (mine) |
 | [Ask Claude](extras/plugins/shadowone.ask-claude) | Quick questions to Claude Sonnet from the bar or Super + A, through the Claude Code CLI, with a searchable history (mine) |
 | [Plugin Updates](extras/plugins/shadowone.plugin-updates) | A bar icon while plugin updates are waiting; click to review them (mine) |
 | [Clock](extras/plugins/shadowone.clock) | Omarchy's clock with your Google Calendar events and reminders; `omacal setup` explains the one-time Google setup (mine) |

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowone.memory-keeper",
+  "name": "Memory Keeper",
+  "version": "1.0.0",
+  "author": "ShadowOne",
+  "license": "MIT",
+  "description": "For laptops that only ever sleep: stops Claude Code sessions left idle (resume them with a click), frees cold cache under real memory pressure, and shows what is holding your memory.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Memory Keeper",
+    "description": "Shows available memory and opens a panel with Claude sessions, what uses memory, and leftovers.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "barLabel": "available"
+    },
+    "schema": [
+      {
+        "key": "barLabel",
+        "type": "enum",
+        "label": "Text beside the icon",
+        "options": ["available", "percent", "none"],
+        "defaultValue": "available",
+        "description": "Available memory (13G), percent in use (56%), or icon only."
+      }
+    ]
+  }
+}

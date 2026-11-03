@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Memory Keeper every 5 minutes while the laptop is awake
+
+[Timer]
+OnStartupSec=5min
+OnUnitActiveSec=5min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

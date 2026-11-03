@@ -257,6 +257,14 @@
       "local": true
     },
     {
+      "id": "shadowone.memory-keeper",
+      "name": "Memory Keeper",
+      "version": "1.0.0",
+      "source": null,
+      "revision": null,
+      "local": true
+    },
+    {
       "id": "shadowone.plugin-updates",
       "name": "Plugin Updates",
       "version": "1.0.0",
