@@ -33,6 +33,10 @@ require("default.hypr.toggles")
 -- Open/Save dialogs like the GTK portal dialog it replaced.
 o.window("io\\.github\\.lgse\\.Strata\\.FileChooser", { tag = "+floating-window" })
 
+-- Password picker (rbw-picker): float it and keep it out of screen shares, as
+-- Omarchy does for the Bitwarden app.
+o.window("org\\.omarchy\\.rbw-picker", { no_screen_share = true, tag = "+floating-window" })
+
 -- Herdr (herdr-app) opens an opaque window and has no transparency setting of
 -- its own, so set it here: active, then inactive.
 o.window("herdr-app", { tag = "-default-opacity", opacity = "0.92 0.86" })

@@ -1,0 +1,127 @@
+#!/bin/bash
+# Search a Bitwarden vault with fzf and copy from it, through rbw.
+#
+#   Enter   copy the password
+#   Ctrl-U  copy the username
+#   Ctrl-T  copy the 2FA code
+#   Ctrl-R  sync with the server
+#   Esc     close
+#
+# Copies are marked sensitive so Omarchy's clipboard history skips them, and the
+# clipboard empties after RBW_PICKER_CLEAR_AFTER seconds (default 30).
+#
+# The first run asks for the account email, then rbw asks for the master password
+# (and an API key the first time, which the official server requires).
+# EU accounts also need: rbw config set base_url https://vault.bitwarden.eu
+
+set -uo pipefail
+
+CLEAR_AFTER=${RBW_PICKER_CLEAR_AFTER:-30}
+
+fail() {
+  printf '\n%s\n\nPress any key to close.' "$*" >&2
+  read -rsn1
+  exit 1
+}
+
+notify() {
+  notify-send -a Bitwarden "$@"
+}
+
+list_rows() {
+  # Hidden id, name, user and folder columns, then one aligned column to show.
+  # column measures on-screen width, so Lao names with combining vowels line up.
+  local rows
+  rows=$(rbw list --fields id,name,user,folder | sort -t $'\t' -k2,2f)
+  [[ -n $rows ]] || return 0
+  paste <(printf '%s\n' "$rows") <(cut -f2- <<<"$rows" | column -t -s $'\t' -o '  ')
+}
+
+set_up_account() {
+  rbw config show 2>/dev/null | jq -e '.email' >/dev/null 2>&1 && return 0
+
+  echo "Set up Bitwarden on this machine."
+  echo "No account yet? Create one first at https://vault.bitwarden.com"
+  echo
+  local email
+  email=$(gum input --prompt "Account email: " --placeholder "you@example.com") || exit 0
+  [[ -n $email ]] || exit 0
+
+  rbw config set email "$email" || fail "Could not save the email."
+  # Ask for the master password inside this window rather than in a separate dialog.
+  rbw config set pinentry pinentry-curses || fail "Could not set the password prompt."
+}
+
+unlock_vault() {
+  rbw unlocked >/dev/null 2>&1 && return 0
+
+  # `rbw unlock` also logs in when needed. The prompts draw on this terminal
+  # directly, so capturing stderr here leaves them on screen.
+  local err
+  err=$(rbw unlock 2>&1 >/dev/null) && return 0
+
+  if grep -q 'rbw register' <<<"$err"; then
+    clear
+    echo "Bitwarden wants this device registered once, using your personal API key."
+    echo "Find it at https://vault.bitwarden.com under"
+    echo "Settings > Security > Keys > View API Key."
+    echo
+    read -rsn1 -p "Press any key to enter client_id and client_secret."
+    rbw register || fail "Registering this device failed."
+    err=$(rbw unlock 2>&1 >/dev/null) && return 0
+  fi
+
+  fail "$err"
+}
+
+# Reads the value from stdin. wl-copy stays alive only while it owns the
+# clipboard, so ending it after the timeout empties the clipboard, and copying
+# something else in the meantime is left alone.
+copy_secret() {
+  setsid -f timeout "$CLEAR_AFTER" wl-copy --foreground --sensitive >/dev/null 2>&1
+}
+
+if [[ ${1:-} == --list ]]; then
+  list_rows
+  exit
+fi
+
+set_up_account
+unlock_vault
+
+self=$(realpath "$0")
+selection=$(list_rows | fzf \
+  --delimiter=$'\t' --with-nth=5 \
+  --layout=reverse --info=inline-right --tiebreak=begin \
+  --prompt='Bitwarden > ' \
+  --header='Enter password · Ctrl-U username · Ctrl-T 2FA code · Ctrl-R sync' \
+  --expect=ctrl-u,ctrl-t \
+  --bind "ctrl-r:execute-silent(rbw sync)+reload(${self@Q} --list)") || exit 0
+
+key=${selection%%$'\n'*}
+row=${selection#*$'\n'}
+id=$(cut -f1 <<<"$row")
+name=$(cut -f2 <<<"$row")
+
+case $key in
+ctrl-u)
+  what="Username"
+  value=$(cut -f3 <<<"$row")
+  ;;
+ctrl-t)
+  what="2FA code"
+  value=$(rbw code "$id" 2>/dev/null)
+  ;;
+*)
+  what="Password"
+  value=$(rbw get "$id" 2>/dev/null)
+  ;;
+esac
+
+if [[ -z $value ]]; then
+  notify -u critical "$name" "No ${what,} stored for this entry."
+  exit 1
+fi
+
+printf '%s' "$value" | copy_secret
+notify "$what copied: $name" "Clears in $CLEAR_AFTER seconds."

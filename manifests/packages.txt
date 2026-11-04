@@ -21,3 +21,4 @@ atuin                        # Ctrl+R history search in .bashrc
 yazi                         # terminal file manager, `y` in .bashrc
 7zip                         # yazi: archive previews
 resvg                        # yazi: SVG previews
+rbw                          # rbw-picker: Bitwarden CLI

@@ -163,6 +163,11 @@ stay installed.
   back). VS Code's file lists have no glide; it has no setting for that.
 - **Print Screen** copies a screenshot to the clipboard and doesn't save a file.
 - **Super + Alt + E** opens Panel Notes.
+- **Super + Shift + /** opens a Bitwarden picker (`rbw-picker`, built on `rbw`):
+  search the vault, then Enter copies the password, Ctrl-U the username and
+  Ctrl-T the 2FA code. Copies stay out of the clipboard history and clear after
+  30 seconds, and the window stays out of screen shares. The first run asks for
+  your account email.
 - **Super + A** (or the sparkle in the bar, or the first row of Super + Space)
   opens Ask Claude: type a question, the answer streams in from Claude Sonnet,
   follow-ups keep the conversation. It goes through the Claude Code CLI and your

@@ -65,3 +65,7 @@ o.bind("SUPER + grave", "Drop-down terminal", "kitten quick-access-terminal")
 -- title-bar button does), Super + Alt + M brings the last one back.
 o.bind("SUPER + M", "Minimize window", "$HOME/.local/bin/window-minimize")
 o.bind("SUPER + ALT + M", "Restore minimized window", "$HOME/.local/bin/window-restore")
+
+-- Bitwarden picker through rbw. Was: Omarchy's 1Password launcher, which isn't installed here.
+hl.unbind("SUPER + SHIFT + SLASH")
+o.bind("SUPER + SHIFT + SLASH", "Passwords", "omarchy-launch-tui --app-id=org.omarchy.rbw-picker rbw-picker")
