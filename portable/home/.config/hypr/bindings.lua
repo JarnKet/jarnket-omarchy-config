@@ -32,12 +32,6 @@
 pcall(require, "hypr.omalang_binds")
 -- omalang:binds end
 
--- Use Strata instead of Nautilus for Omarchy's file-manager shortcuts.
-hl.unbind("SUPER + SHIFT + F")
-hl.unbind("SUPER + ALT + SHIFT + F")
-o.bind("SUPER + SHIFT + F", "File manager", { launch = "strata" })
-o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)", "uwsm-app -- strata \"$(omarchy-cmd-terminal-cwd)\"")
-
 -- Panel Notes shortcut
 o.bind("SUPER + ALT + E", "Panel Notes", "omarchy-shell panel-notes toggle")
 
@@ -69,3 +63,14 @@ o.bind("SUPER + ALT + M", "Restore minimized window", "$HOME/.local/bin/window-r
 -- Bitwarden picker through rbw. Was: Omarchy's 1Password launcher, which isn't installed here.
 hl.unbind("SUPER + SHIFT + SLASH")
 o.bind("SUPER + SHIFT + SLASH", "Passwords", "omarchy-launch-tui --app-id=org.omarchy.rbw-picker rbw-picker")
+
+-- flea --default: begin. Written by `flea --default`; `flea --default off` removes the block whole.
+hl.unbind("SUPER + SHIFT + F")
+o.bind("SUPER + SHIFT + F", "File manager", { launch = 'flea --gui' })
+hl.unbind("SUPER + ALT + SHIFT + F")
+o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)", { launch = 'flea --gui "$(omarchy-cmd-terminal-cwd)"' })
+-- flea --default: end.
+
+-- flea --picker: begin. Written by `flea --picker`; `flea --picker off` removes the block whole.
+o.window("com.thisisgm.flea.picker", { tag = "+floating-window" })
+-- flea --picker: end.

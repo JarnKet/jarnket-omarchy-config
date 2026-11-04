@@ -29,10 +29,6 @@ require("default.hypr.toggles")
 -- Add any other personal Hyprland configuration below.
 -- o.window("qemu", { workspace = "5" })
 
--- Strata is the system file picker (strata --install-portal): float its
--- Open/Save dialogs like the GTK portal dialog it replaced.
-o.window("io\\.github\\.lgse\\.Strata\\.FileChooser", { tag = "+floating-window" })
-
 -- Password picker (rbw-picker): float it and keep it out of screen shares, as
 -- Omarchy does for the Bitwarden app.
 o.window("org\\.omarchy\\.rbw-picker", { no_screen_share = true, tag = "+floating-window" })

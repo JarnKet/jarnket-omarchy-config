@@ -14,6 +14,7 @@ local own_title_bar = {
   "^com\\.microsoft\\.VSCode$", "^code(-oss)?$",
   "^Claude$",
   "^io\\.github\\.lgse\\.Strata",
+  "^com\\.thisisgm\\.flea",
   "^openidea", "^jetbrains-",
 }
 
