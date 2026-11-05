@@ -33,19 +33,11 @@
       "local": false
     },
     {
-      "id": "bredda.localsend",
-      "name": "LocalSend",
-      "version": "2.0.4",
-      "source": "https://github.com/cryptobredda/omarchy-localsend.git",
-      "revision": "52ddbdda6da02261b3f356374d1893a7f2e3b015",
-      "local": false
-    },
-    {
       "id": "crmne.hyprmoncfg",
       "name": "hyprmoncfg: Multi-Monitor Manager for Omarchy",
-      "version": "2.12.0",
+      "version": "2.14.1",
       "source": "https://github.com/crmne/omarchy-hyprmoncfg.git",
-      "revision": "50ed83cf34b7c301f0c0972a8539948591e1c5e5",
+      "revision": "e2facf13d02d83f1b1d0295b2a771fca7bb19b5f",
       "local": false
     },
     {
@@ -275,7 +267,7 @@
     {
       "id": "shadowone.power",
       "name": "Battery",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "source": null,
       "revision": null,
       "local": true

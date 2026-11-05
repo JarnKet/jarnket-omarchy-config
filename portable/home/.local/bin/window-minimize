@@ -1,20 +1,30 @@
 #!/bin/bash
 
-# Minimize the focused window, macOS-style: it's tucked into a hidden special
-# workspace and its place is remembered, so window-restore (Super + Alt + M)
-# puts it back where it was. Used by the yellow title-bar button and Super + M.
+# Minimize a window: the focused one, or the address the title-bar button passes.
+# On a floating workspace it goes to Omarchy's dock, which brings it back. On a
+# tiled one it's tucked into a hidden special workspace and its place is
+# remembered, so window-restore (Super + Alt + M) puts it back where it was.
 
 set -uo pipefail
 
 state=${XDG_STATE_HOME:-$HOME/.local/state}/window-minimize
 mkdir -p "$state"
 
-win=$(hyprctl activewindow -j)
+if [[ -n ${1:-} ]]; then
+  win=$(hyprctl clients -j | jq --arg address "$1" 'first(.[] | select(.address == $address))')
+else
+  win=$(hyprctl activewindow -j)
+fi
 address=$(jq -r '.address // empty' <<<"$win")
 workspace=$(jq -r '.workspace.name // empty' <<<"$win")
+workspace_id=$(jq -r '.workspace.id // empty' <<<"$win")
 title=$(jq -r '.title // .class // "Window"' <<<"$win")
 
 [[ -n $address && $workspace != special:* ]] || exit 0
+
+if [[ $(omarchy-hyprland-workspace-layout-current "$workspace_id") == "floating" ]]; then
+  exec omarchy-hyprland-window-minimize "$address"
+fi
 
 printf '%s\t%s\n' "$address" "$workspace" >>"$state/stack"
 hyprctl dispatch "hl.dsp.window.move({ window = \"address:$address\", workspace = \"special:minimized\", follow = false })" >/dev/null

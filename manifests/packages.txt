@@ -8,7 +8,7 @@ qt6-multimedia               # io.github.kristoferlund.webcam
 v4l-utils                    # io.github.kristoferlund.webcam
 efibootmgr                   # io.github.07dcolem.target-boot: reboot into another OS
 udisks2                      # wian47.removable-drives
-python-pillow                # njpatel.omapager, theme wallpapers
+python-pillow                # theme wallpapers
 python-numpy                 # theme wallpapers
 cmake                        # ilysorc.pointer-feel builds Hyprland modules
 pkgconf                      # ilysorc.pointer-feel
@@ -23,3 +23,4 @@ yazi                         # terminal file manager, `y` in .bashrc
 7zip                         # yazi: archive previews
 resvg                        # yazi: SVG previews
 rbw                          # rbw-picker: Bitwarden CLI
+omarchy-hyprland-titlebars   # title bars on every window (hypr/titlebars.lua)

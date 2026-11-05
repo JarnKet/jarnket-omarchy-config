@@ -51,7 +51,7 @@ Run it again any time; it skips what's already in place.
 | `apps` | Lets you pick from my apps: Brave Origin, VS Code, Claude, KDE Connect and more ([list](manifests/apps.txt)). Picks none unless you choose |
 | `config` | Hyprland (`~/.config/hypr`), Kitty as the default terminal (plus Alacritty/Ghostty/foot settings), `~/.bashrc` with the Oh My Posh prompt, atuin and yazi, lazygit, VS Code settings, Omarchy hooks and theme templates. On a ThinkPad T14s Gen 6 it offers my monitor layout too |
 | `plugins` | Clones every plugin in [plugins.json](manifests/plugins.json) and runs the setup the few need (beam, Panel Notes, Pointer Feel) |
-| `bar` | Installs my `shell.json`: bar layout, widget settings, omapager instead of the built-in notifications |
+| `bar` | Installs my `shell.json`: bar layout and widget settings |
 | `theme` | Clones the ThinkPad, Min Dark and Blueprint themes plus 5 others and switches to ThinkPad (it ships its 13 ASCII wallpapers) |
 | `services` | Turns on `hyprmoncfgd`, which switches monitor profiles when you plug screens in, the plugin update check and the wallpaper slideshow |
 
@@ -148,11 +148,11 @@ stay installed.
   window and remembers its workspace; **Super + Alt + M** puts the last one back
   there and focuses it (again for the one before). Scripts: `window-minimize`,
   `window-restore` in `~/.local/bin`.
-  - The bars come from the hyprbars plugin, built for your exact Hyprland with
-    `hyprbars-build` and loaded at login by `hyprbars-load`.
-  - Run `hyprbars-build` once after installing.
-  - A post-update hook rebuilds it after each `omarchy update`. Until a
-    matching build exists, windows just have no bar.
+  - On a floating workspace it goes to Omarchy's dock instead, which brings it back.
+  - The bars come from `omarchy-hyprland-titlebars`, the plugin Omarchy 4.5 ships
+    for its floating workspaces, so there's nothing to build. `titlebars.lua` keeps
+    this look on every window and ignores the styling Omarchy gives that plugin
+    when a workspace floats.
 - **Touchpad scrolling:** on Linux each app does its own glide after you lift
   your fingers, so it's tuned per app. Brave, VS Code and Obsidian scroll at
   0.6 (other apps 0.4, terminals 1.5) in `~/.config/hypr/input.lua`. Kitty's
@@ -240,12 +240,11 @@ stay installed.
 | [Plugin Updates](extras/plugins/shadowone.plugin-updates) | A bar icon while plugin updates are waiting; click to review them (mine) |
 | [Clock](extras/plugins/shadowone.clock) | Omarchy's clock with your Google Calendar events and reminders; `omacal setup` explains the one-time Google setup (mine) |
 | [Battery](extras/plugins/shadowone.power) | Omarchy's battery panel plus an 80% charge limit switch and battery health (mine) |
-| [Omapager](https://github.com/njpatel/omapager) | Notifications that stack and group (replaces the built-in ones) |
 | [Keystroke](https://github.com/evindor/keystroke) | Raycast-style command palette instead of the Omarchy menu |
 | [Exposé](https://github.com/kristofferR/omarchy-expose) | All windows at once; 3-finger swipe up/down |
 | [Mirador](https://github.com/sanjyay/Mirador) | Overview of workspaces and their windows |
 | [Omarchy Zones](https://github.com/shivam-g10/omarchy-zones) | FancyZones-style window zones (Super + Shift + drag) |
-| [Workspace name](https://github.com/jankeesvw/omarchy-workspace-name) | Name and icon of the current workspace |
+| [Workspace name](https://github.com/jankeesvw/omarchy-workspace-name) | Name and icon of the current workspace. With more than one monitor, apply [the patch](extras/patches/jankeesvw.workspace-name-Panel.qml.omarchy45.diff) for Omarchy 4.5's per-monitor workspaces and layout icon (`git apply` in the plugin folder) |
 | [Bar Folder](https://github.com/arikisonfire/omarchy-bar-folder) | Folds bar icons into one folder |
 | [Hardwarchy](https://github.com/tymurbogach/hardwarchy) | CPU, GPU, memory, network, disk, fan in the bar |
 | [Linecast](https://github.com/ashuttl/omarchy-linecast) | Weather, sun, moon and tides |

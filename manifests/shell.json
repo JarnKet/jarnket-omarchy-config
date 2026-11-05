@@ -1,23 +1,53 @@
 {
   "bar": {
-    "centerAnchor": "shadowone.clock",
     "layout": {
       "center": [
-        {
-          "id": "omarchy.indicators",
-          "items": [
-            "Dictation",
-            "ScreenRecording",
-            "Reminder",
-            "NightLight",
-            "StayAwake"
-          ]
-        },
         {
           "format": "ddd d MMM HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
           "id": "shadowone.clock",
           "verticalFormat": "HH\n—\nmm"
+        }
+      ],
+      "centerBegin": [
+        {
+          "id": "omarchy.indicators",
+          "items": [
+            "PasswordlessSudo",
+            "RemoteSession",
+            "ScreenRecording",
+            "Reminder",
+            "NightLight",
+            "StayAwake",
+            "Dnd"
+          ]
+        }
+      ],
+      "centerEnd": [
+        {
+          "cities": [
+            {
+              "name": "Bangkok",
+              "zone": "Asia/Bangkok"
+            },
+            {
+              "name": "Los Angeles",
+              "zone": "America/Los_Angeles"
+            },
+            {
+              "name": "New York",
+              "zone": "America/New_York"
+            },
+            {
+              "name": "London",
+              "zone": "Europe/London"
+            },
+            {
+              "name": "Dubai",
+              "zone": "Asia/Dubai"
+            }
+          ],
+          "id": "omarchy.elsewhen"
         },
         {
           "id": "omarchy.keyboard-layout"
@@ -45,20 +75,20 @@
         },
         {
           "id": "shadowone.ask-claude"
-        }
-      ],
-      "right": [
-        {
-          "id": "wian47.removable-drives"
-        },
-        {
-          "id": "omarchy.tray"
         },
         {
           "id": "shadowone.memory-keeper"
         },
         {
           "id": "shadowone.disk-keeper"
+        }
+      ],
+      "right": [
+        {
+          "id": "omarchy.tray"
+        },
+        {
+          "id": "wian47.removable-drives"
         },
         {
           "id": "roymelgarv.omarchy-downloads"
@@ -98,11 +128,6 @@
         {
           "id": "shadowone.top-bar",
           "layout": {
-            "left": [
-              {
-                "id": "io.github.tymurbogach.hardwarchy"
-              }
-            ],
             "center": [
               {
                 "alwaysShow": true,
@@ -115,11 +140,16 @@
                 ]
               }
             ],
+            "left": [
+              {
+                "id": "io.github.tymurbogach.hardwarchy"
+              }
+            ],
             "right": [
               {
-                "id": "io.github.juancasanueva.plugin-manager",
+                "allowUnverifiedInstalls": true,
                 "allowUnverifiedUpdates": true,
-                "allowUnverifiedInstalls": true
+                "id": "io.github.juancasanueva.plugin-manager"
               },
               {
                 "id": "davedes.omadoctor"
@@ -226,8 +256,10 @@
         },
         {
           "alwaysShow": true,
-          "edgeSpacing": 38,
-          "id": "njpatel.omapager"
+          "id": "omarchy.indicators",
+          "items": [
+            "Dnd"
+          ]
         }
       ]
     },
@@ -243,9 +275,20 @@
   "disabledPlugins": [
     "omarchy.audio",
     "omarchy.menu",
-    "omarchy.notifications",
-    "omarchy.lock"
+    "omarchy.lock",
+    "njpatel.omapager"
   ],
+  "dock": {
+    "pinned": [
+      "kitty",
+      "brave-origin",
+      "com.thisisgm.flea",
+      "com.microsoft.VSCode",
+      "herdr-app",
+      "com.anthropic.Claude",
+      "OpenIDEA"
+    ]
+  },
   "idle": {
     "lock": 1800,
     "screensaver": 1770
@@ -297,10 +340,10 @@
       "id": "davedes.omadoctor"
     },
     {
+      "design": "split",
       "id": "io.github.sirjul1337.lock-explorer",
-      "tourSeen": true,
       "openAs": "panel",
-      "design": "split"
+      "tourSeen": true
     }
   ],
   "version": 1

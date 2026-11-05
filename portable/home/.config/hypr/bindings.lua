@@ -50,14 +50,18 @@ o.bind("SUPER + ALT + C", "Claude history", "omarchy-launch-tui claude-history")
 o.bind("SUPER + ALT + T", "Touchpad lag capture", "$HOME/.local/bin/touchpad-lag-capture")
 
 -- Ask Claude quick-ask panel (shadowone.ask-claude bar plugin).
-o.bind("SUPER + A", "Ask Claude", "omarchy-shell shadowone.ask-claude toggle")
+o.rebind("SUPER + A", "Ask Claude", "omarchy-shell shadowone.ask-claude toggle")
 
 -- Drop-down Kitty from the top edge; the same key hides it (~/.config/kitty/quick-access-terminal.conf).
-o.bind("SUPER + grave", "Drop-down terminal", "kitten quick-access-terminal")
+o.rebind("SUPER + grave", "Drop-down terminal", "kitten quick-access-terminal")
 
--- Minimize like macOS: Super + M hides the focused window (as the yellow
--- title-bar button does), Super + Alt + M brings the last one back.
-o.bind("SUPER + M", "Minimize window", "$HOME/.local/bin/window-minimize")
+-- Omarchy's Quake console (it wanted Super + `). Its first open starts the default agent.
+o.bind("SUPER + ALT + grave", "Toggle Quake console", hl.dsp.workspace.toggle_special("qconsole"))
+
+-- Super + M hides the focused window, as the title-bar button does. On a
+-- floating workspace it goes to Omarchy's dock; on a tiled one Super + Alt + M
+-- brings the last one back.
+o.rebind("SUPER + M", "Minimize window", "$HOME/.local/bin/window-minimize")
 o.bind("SUPER + ALT + M", "Restore minimized window", "$HOME/.local/bin/window-restore")
 
 -- Bitwarden picker through rbw. Was: Omarchy's 1Password launcher, which isn't installed here.
@@ -74,3 +78,14 @@ o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)", { launch = 'flea --gui "
 -- flea --picker: begin. Written by `flea --picker`; `flea --picker off` removes the block whole.
 o.window("com.thisisgm.flea.picker", { tag = "+floating-window" })
 -- flea --picker: end.
+
+-- Right Alt stays AltGr for typing Lao. Omarchy holds it for push-to-talk dictation,
+-- and binds resolve against the first layout (us), so it would fire while typing Lao.
+hl.unbind("ALT + Alt_R")
+
+-- Dictation keys from before Alt + Space and Right Alt became the defaults.
+-- Remove these lines to give the keys back to applications.
+if o.dictation_installed and o.dictation_installed() then
+  o.bind("SUPER + CTRL + X", "Toggle dictation", "omarchy-dictation toggle")
+  o.bind_hold("F9", "Start dictation (push-to-talk)", "omarchy-dictation start", "Stop dictation (push-to-talk)", "omarchy-dictation stop")
+end

@@ -606,7 +606,7 @@ step_bar() {
   else
     backup "$SHELL_JSON"
     install -D -m 644 "$src" "$SHELL_JSON"
-    ok "installed shell.json (bottom bar + Top Bar, omapager for notifications)"
+    ok "installed shell.json (bottom bar + Top Bar)"
   fi
   RESTART_SHELL=1
 }

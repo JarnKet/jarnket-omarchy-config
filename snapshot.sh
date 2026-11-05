@@ -55,6 +55,9 @@ snapshot_files() {
     esac
     copy_into "$root" "$rel"
   done <"$MANIFESTS/files.tsv"
+  # The repo is public: monitor profiles name screens by make, model and serial.
+  local monitors=$REPO_DIR/device/$slug/home/.config/hypr/hyprmoncfg-monitors.lua
+  [[ -f $monitors ]] && sed -i -E 's/(desc:[^"]*) [A-Z0-9]{8,}"/\1"/' "$monitors"
   echo "Config files: portable/, personal/, device/$slug/"
 }
 

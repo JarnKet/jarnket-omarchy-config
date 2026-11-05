@@ -1,7 +1,7 @@
--- Title bars with a look of their own for each theme, drawn by the hyprbars
--- plugin, which ~/.local/bin/hyprbars-build compiles for the installed
--- Hyprland and ~/.local/bin/hyprbars-load loads at login. Until it's loaded,
--- nothing below runs.
+-- Title bars with a look of their own for each theme, drawn by the plugin
+-- Omarchy ships for its floating workspaces (omarchy-hyprland-titlebars, a
+-- hyprbars fork kept in step with Hyprland by its package). It reloads the
+-- config once it's in, and that's the pass where the block below runs.
 --
 -- hyprbars draws each button as a filled circle with an optional glyph on
 -- it; a transparent fill leaves just the glyph. The title's font, size,
@@ -18,6 +18,13 @@ local own_title_bar = {
   "^openidea", "^jetbrains-",
 }
 
+local titlebars_plugin = "/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
+local plugin_file = io.open(titlebars_plugin, "r")
+if plugin_file then
+  plugin_file:close()
+  hl.plugin.load(titlebars_plugin)
+end
+
 if hl.plugin.hyprbars then
   -- Follow the current Omarchy theme; Omarchy reloads Hyprland on theme change.
   local colors, _, theme = require("hypr.theme_mode").read()
@@ -26,9 +33,10 @@ if hl.plugin.hyprbars then
   end
   local clear = "rgba(00000000)"
 
-  local close = [[hyprctl dispatch 'hl.dsp.window.close()']]
-  local minimize = os.getenv("HOME") .. "/.local/bin/window-minimize" -- Super + Alt + M restores
-  local maximize = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })']]
+  -- The plugin puts the clicked window's address in place of %WINDOW%.
+  local close = [[hyprctl dispatch 'hl.dsp.window.close({ window = "address:%WINDOW%" })']]
+  local minimize = os.getenv("HOME") .. "/.local/bin/window-minimize %WINDOW%"
+  local maximize = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle", window = "address:%WINDOW%" })']]
 
   -- VS Code's own window controls (codicons from the Nerd Font) in quiet
   -- gray glyphs on the right, the title centred. Min Dark is a VS Code
@@ -115,6 +123,9 @@ if hl.plugin.hyprbars then
 
   local style = styles[theme] or editor()
 
+  -- Off by default in this fork. No workspace tag: bars on every window, tiled ones too.
+  style.bar.enabled = true
+  style.bar.workspace_tag = ""
   style.bar.bar_part_of_window = true
   style.bar.bar_precedence_over_border = true
   style.bar.on_double_click = maximize
@@ -133,4 +144,16 @@ if hl.plugin.hyprbars then
   end
   -- Omarchy's floating pickers and dialogs stay bare too.
   o.window({ tag = "floating-window" }, { ["hyprbars:no_bar"] = true })
+
+  -- Omarchy styles this same plugin when a workspace floats, later in this
+  -- config load or on Super + L: its own colors and three more buttons, and
+  -- bars on floating windows only. Keep the look above by ignoring those calls.
+  hl.plugin.hyprbars.add_button = function() end
+  local set_config = hl.config
+  hl.config = function(settings)
+    if settings.plugin then
+      settings.plugin.hyprbars = nil
+    end
+    return set_config(settings)
+  end
 end

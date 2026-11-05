@@ -76,7 +76,7 @@ Panel {
 
   function modeLabel() {
     var device = UPower.displayDevice
-    return Model.modeLabel(device, root.discharging, upowerStates())
+    return Model.modeLabel(device, root.discharging, upowerStates(), Commons.I18n.t)
   }
 
   function profileIcon(name) {
@@ -116,26 +116,26 @@ Panel {
   // Cute agent-flavored phrases shown in the hero status line, rotated on a
   // timer so the panel feels alive when current is flowing (either direction).
   readonly property var chargingPhrases: [
-    "Pumping power",
-    "Injecting electrons",
-    "Pouring juice",
-    "Amassing watts",
-    "Hoarding joules",
-    "Sucking volts",
-    "Topping reserves",
-    "Soaking amps",
-    "Inhaling kilowatts"
+    Commons.I18n.t("power.chargingPhrase1"),
+    Commons.I18n.t("power.chargingPhrase2"),
+    Commons.I18n.t("power.chargingPhrase3"),
+    Commons.I18n.t("power.chargingPhrase4"),
+    Commons.I18n.t("power.chargingPhrase5"),
+    Commons.I18n.t("power.chargingPhrase6"),
+    Commons.I18n.t("power.chargingPhrase7"),
+    Commons.I18n.t("power.chargingPhrase8"),
+    Commons.I18n.t("power.chargingPhrase9")
   ]
   readonly property var onBatteryPhrases: [
-    "Slurping power",
-    "Spending joules",
-    "Draining watts",
-    "Burning electrons",
-    "Sipping juice",
-    "Spending coulombs",
-    "Bleeding amps",
-    "Guzzling volts",
-    "Munching reserves"
+    Commons.I18n.t("power.dischargingPhrase1"),
+    Commons.I18n.t("power.dischargingPhrase2"),
+    Commons.I18n.t("power.dischargingPhrase3"),
+    Commons.I18n.t("power.dischargingPhrase4"),
+    Commons.I18n.t("power.dischargingPhrase5"),
+    Commons.I18n.t("power.dischargingPhrase6"),
+    Commons.I18n.t("power.dischargingPhrase7"),
+    Commons.I18n.t("power.dischargingPhrase8"),
+    Commons.I18n.t("power.dischargingPhrase9")
   ]
   property int phraseIndex: 0
 
@@ -148,8 +148,14 @@ Panel {
   }
   readonly property bool rotatingPhrases: activePhrases.length > 0
 
+  // The battery script's readings in the current language's digits; the
+  // time field already comes translated, so it is shown as it arrives.
+  function reading(raw) {
+    return Model.localizeReading(raw, Commons.I18n.formatNumber)
+  }
+
   readonly property string heroStatusText: {
-    if (fullyCharged) return "Fully charged"
+    if (fullyCharged) return Commons.I18n.t("power.fullyCharged")
     if (rotatingPhrases) return activePhrases[phraseIndex % activePhrases.length]
     return modeLabel()
   }
@@ -236,7 +242,7 @@ Panel {
     if (root.bar && root.bar.shell) root.bar.shell.updateEntryInline(root.moduleName, root.settings)
   }
 
-  IpcHandler {
+  ShellIpc {
     target: "omarchy.power"
 
     function open() { root.open() }
@@ -251,7 +257,10 @@ Panel {
   onOpenedChanged: {
     if (opened) {
       if (!batteryPresent) {
-        close()
+        // Deferred: closing here writes the very property whose change
+        // is being notified, which QML reports as a binding loop for
+        // Panel.opened on every open attempt without a battery.
+        Qt.callLater(function() { root.close() })
         return
       }
 
@@ -333,8 +342,8 @@ Panel {
   SequentialAnimation {
     id: phraseSwap
     PropertyAnimation {
-      target: heroStatus; property: "opacity"
-      to: 0.0; duration: 180; easing.type: Easing.OutQuad
+      target: panel.loadedContent ? panel.loadedContent.heroStatus : null; property: "opacity"
+      to: 0.0; duration: Style.duration(150); easing.type: Easing.OutCubic
     }
     ScriptAction {
       script: {
@@ -343,8 +352,8 @@ Panel {
       }
     }
     PropertyAnimation {
-      target: heroStatus; property: "opacity"
-      to: 1.0; duration: 260; easing.type: Easing.InQuad
+      target: panel.loadedContent ? panel.loadedContent.heroStatus : null; property: "opacity"
+      to: 1.0; duration: Style.duration(200); easing.type: Easing.OutCubic
     }
   }
 
@@ -356,7 +365,7 @@ Panel {
     function onRotatingPhrasesChanged() {
       if (!root.rotatingPhrases) {
         phraseSwap.stop()
-        heroStatus.opacity = 1.0
+        if (panel.loadedContent) panel.loadedContent.heroStatus.opacity = 1.0
       }
     }
   }
@@ -365,9 +374,8 @@ Panel {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.showPercentage && !vertical
-      ? Math.round(root.batteryFraction * 100) + "% " + root.batteryIcon()
-      : root.batteryIcon()
+    text: root.batteryIcon()
+    labelText: root.showPercentage && !vertical ? Commons.I18n.formatNumber(Math.round(root.batteryFraction * 100)) + "%" : ""
     slotSize: Style.bar.iconSlot * (root.showPercentage && !vertical ? 2 : 1)
     tooltipText: ""
     onPressed: function(b) {
@@ -383,13 +391,15 @@ Panel {
     owner: root
     bar: root.bar
     open: root.opened && root.batteryPresent
-    focusTarget: keyCatcher
+    focusTarget: panel.loadedContent
     contentWidth: panel.fittedContentWidth(Style.space(380))
-    contentHeight: panel.fittedContentHeight(column.implicitHeight)
+    contentHeight: panel.fittedContentHeight(panel.loadedContentHeight)
 
-    PanelKeyCatcher {
+    content: PanelKeyCatcher {
       id: keyCatcher
+      property alias heroStatus: heroStatus
       anchors.fill: parent
+      implicitHeight: column.implicitHeight
       onMoveRequested: function(dx, dy) {
         if (!root.cursorActive) { root.cursorActive = true; return }
         if (dy !== 0 && root.careVisible) {
@@ -425,7 +435,7 @@ Panel {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
 
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { ColorAnimation { duration: Style.duration(200) } }
           }
 
           Column {
@@ -438,7 +448,8 @@ Panel {
             spacing: Style.space(2)
 
             Text {
-              text: "Battery"
+              text: Commons.I18n.t("power.battery")
+              textFormat: Text.PlainText
               color: root.bar.foreground
               font.family: root.bar.fontFamily
               font.pixelSize: Style.font.title
@@ -464,7 +475,7 @@ Panel {
           Text {
             id: heroPercent
             textFormat: Text.PlainText
-            text: root.batteryInfo.percentage || "—"
+            text: root.reading(root.batteryInfo.percentage) || "—"
             color: root.bar.foreground
             font.family: root.bar.fontFamily
             font.pixelSize: Style.font.displayLarge
@@ -472,7 +483,7 @@ Panel {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
 
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { ColorAnimation { duration: Style.duration(200) } }
           }
         }
 
@@ -497,16 +508,16 @@ Panel {
             color: root.batteryFillColor
             width: Math.max(barTrack.height, barTrack.width * root.batteryFraction)
 
-            Behavior on width { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
-            Behavior on color { ColorAnimation { duration: 220 } }
+            Behavior on width { NumberAnimation { duration: Style.duration(320); easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: Style.duration(220) } }
 
             // Subtle pulse while charging — visible signal that energy is flowing in.
             SequentialAnimation on opacity {
-              running: root.charging && !root.fullyCharged && root.opened
+              running: root.charging && !root.fullyCharged && root.opened && !Style.reduceMotion
               loops: Animation.Infinite
               alwaysRunToEnd: true
-              NumberAnimation { from: 1.0; to: 0.55; duration: 950; easing.type: Easing.InOutSine }
-              NumberAnimation { from: 0.55; to: 1.0; duration: 950; easing.type: Easing.InOutSine }
+              NumberAnimation { from: 1.0; to: 0.55; duration: Style.duration(950); easing.type: Easing.InOutSine }
+              NumberAnimation { from: 0.55; to: 1.0; duration: Style.duration(950); easing.type: Easing.InOutSine }
             }
           }
 
@@ -539,8 +550,8 @@ Panel {
             width: (parent.width - parent.spacing) / 2
             spacing: Style.spacing.labelGap
             InfoPair {
-              label: root.chargeThresholdActive ? "Charge limit" : (root.discharging ? "Time left" : "Time to full")
-              value: root.chargeThresholdActive ? (root.batteryInfo.threshold || "-") : (root.batteryFlowIdle ? "-" : (root.batteryInfo.time || "—"))
+              label: root.chargeThresholdActive ? Commons.I18n.t("power.chargeLimit") : (root.discharging ? Commons.I18n.t("power.timeLeft") : Commons.I18n.t("power.timeToFull"))
+              value: root.chargeThresholdActive ? (root.reading(root.batteryInfo.threshold) || "-") : (root.batteryFlowIdle ? "-" : (root.batteryInfo.time || "—"))
             }
           }
 
@@ -548,8 +559,8 @@ Panel {
             width: (parent.width - parent.spacing) / 2
             spacing: Style.spacing.labelGap
             InfoPair {
-              label: root.chargeThresholdActive ? "Battery state" : (root.discharging ? "Discharging" : "Charging")
-              value: root.chargeThresholdActive ? "Holding" : (root.batteryFull ? "-" : (root.batteryInfo.rate || ""))
+              label: root.chargeThresholdActive ? Commons.I18n.t("power.batteryState") : (root.discharging ? Commons.I18n.t("power.discharging") : Commons.I18n.t("power.charging"))
+              value: root.chargeThresholdActive ? Commons.I18n.t("power.holding") : (root.batteryFull ? "-" : root.reading(root.batteryInfo.rate))
             }
           }
         }
@@ -685,7 +696,7 @@ Panel {
           spacing: Style.space(10)
 
           PanelSectionHeader {
-            text: "POWER PROFILE"
+            text: Commons.I18n.t("power.powerProfile")
             foreground: root.bar.foreground
             fontFamily: root.bar.fontFamily
           }
@@ -707,7 +718,7 @@ Panel {
                 width: profileRow.cellWidth
                 iconText: root.profileIcon(String(modelData))
                 iconSize: Style.font.title
-                text: String(modelData).charAt(0).toUpperCase() + String(modelData).slice(1)
+                text: Model.profileLabel(modelData, Commons.I18n.t)
                 fontSize: Style.font.bodySmall
                 foreground: root.bar.foreground
                 fontFamily: root.bar.fontFamily

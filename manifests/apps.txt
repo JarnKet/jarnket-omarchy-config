@@ -3,7 +3,7 @@
 brave-origin-bin                # Brave Origin browser (also becomes the default browser)
 visual-studio-code-bin          # VS Code
 claude-desktop                  # Claude desktop app
-kdeconnect                      # phone link; omapager shows phone notifications
+kdeconnect                      # phone link
 filezilla                       # FTP/SFTP client
 freerdp                         # remote desktop client (also used by omarchy windows vm)
 proton-vpn-cli                  # Proton VPN

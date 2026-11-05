@@ -1,0 +1,249 @@
+diff --git i/Panel.qml w/Panel.qml
+index ae92f2f..1746e10 100644
+--- i/Panel.qml
++++ w/Panel.qml
+@@ -119,7 +119,100 @@ Panel {
+   // The panel names the workspace it was opened on. Move to another one and
+   // it is aimed at a workspace you have left, its fields filling with someone
+   // else's name under your hands, so it closes instead of following along.
+-  onWorkspaceIdChanged: if (opened) close()
++  onWorkspaceIdChanged: {
++    if (opened) close()
++    root.showActiveMode()
++  }
++
++  // LOCAL PATCH (Omarchy 4.5 floating workspaces): this widget replaces
++  // omarchy.workspaces, which is where the bar shows each workspace's layout, so
++  // it shows it here: a square tiles, a circle scrolls, a triangle floats. A click
++  // cycles it, as Super + L does. Same logic as plugins/bar/widgets/Workspaces.qml.
++  property string activeMode: "dwindle"
++  property bool modeStale: false
++  property var modeCache: ({})
++  property int modeGeneration: 0
++  property int modeProcWorkspace: -1
++  property int modeProcGeneration: 0
++
++  function modeGlyph(mode) {
++    if (mode === "scrolling") return "󰝥"
++    if (mode === "floating") return "󰔶"
++    return "󱓻"
++  }
++
++  function showActiveMode() {
++    var mode = root.modeCache[root.workspaceId]
++    if (mode !== undefined) root.activeMode = mode
++    else readMode()
++  }
++
++  function readMode() {
++    if (modeProc.running) {
++      root.modeStale = true
++      return
++    }
++    if (root.workspaceId <= 0) return
++    root.modeProcWorkspace = root.workspaceId
++    root.modeProcGeneration = root.modeGeneration
++    modeProc.command = ["omarchy-hyprland-workspace-layout-current", String(root.workspaceId)]
++    modeProc.running = true
++  }
++
++  function refreshMode() {
++    root.modeCache = ({})
++    root.modeGeneration++
++    readMode()
++  }
++
++  function cycleLayout() {
++    var command = "omarchy-hyprland-workspace-layout-toggle"
++    if (root.barMonitor && !root.monitorFocused) {
++      var monitor = String(root.barMonitor.name).replace(/[^A-Za-z0-9_.:-]/g, "")
++      command = "hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ monitor = \"" + monitor + "\" })") + " && " + command
++    }
++    root.bar.run(command)
++  }
++
++  Process {
++    id: modeProc
++    stdout: StdioCollector {
++      onStreamFinished: {
++        var mode = text.trim()
++        if (!mode || root.modeProcGeneration !== root.modeGeneration) return
++        root.modeCache[root.modeProcWorkspace] = mode
++        if (root.modeProcWorkspace === root.workspaceId) root.activeMode = mode
++      }
++    }
++    onExited: {
++      if (!root.modeStale) return
++      root.modeStale = false
++      Qt.callLater(root.showActiveMode)
++    }
++  }
++
++  // The layout commands ask omarchy.workspaces to read again; with that widget
++  // off the bar, the target is free to answer here, on every bar.
++  ShellIpc {
++    target: "omarchy.workspaces"
++
++    function refresh(): void {
++      var items = root.bar && typeof root.bar.moduleWidgets === "function"
++        ? root.bar.moduleWidgets(root.moduleName) : [root]
++      for (var i = 0; i < items.length; i++) {
++        if (items[i] && typeof items[i].refreshMode === "function") items[i].refreshMode()
++      }
++    }
++  }
++
++  Connections {
++    target: Hyprland
++    function onRawEvent(event) {
++      if (event && String(event.name) === "configreloaded") root.refreshMode()
++    }
++  }
++
++  Component.onCompleted: root.refreshMode()
+ 
+   // Same reasoning, other half: this instance's workspace does not change
+   // when you move to the other monitor, so without this the panel would stay
+@@ -200,17 +293,52 @@ Panel {
+   // That second half stops at ten, or at the number held open when that is
+   // higher. Some tool somewhere will make workspace 4711 one day, and a
+   // workspace nobody asked for should not be able to stretch the bar.
+-  readonly property int indicatorCeiling: Math.max(root.alwaysShown, 10)
++  //
++  // LOCAL PATCH (Omarchy 4.5 per-monitor workspaces): every monitor owns a block
++  // of ten, 1-10, 11-20 and so on, kept by Hyprland in a state file. The row shows
++  // this monitor's block labelled 1..0. Same reading as omarchy.workspaces, except
++  // guests from an unplugged monitor with no room in the block aren't listed.
++  readonly property int indicatorCeiling: 10
++
++  property var blocks: ({})
++
++  function readBlocks(text) {
++    var next = {}
++    var lines = String(text || "").split("\n")
++    for (var i = 0; i < lines.length; i++) {
++      var fields = lines[i].split("\t")
++      if (fields.length >= 3 && fields[1] !== "") next[fields[1]] = parseInt(fields[0], 10)
++    }
++    root.blocks = next
++  }
++
++  FileView {
++    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/monitor-workspaces"
++    watchChanges: true
++    printErrors: false
++    onFileChanged: reload()
++    onLoaded: root.readBlocks(text())
++    onLoadFailed: root.readBlocks("")
++  }
++
++  // First id of this monitor's block, minus one. Until Hyprland has written the
++  // file, the workspace the monitor shows is in its own block.
++  readonly property int blockBase: {
++    var block = root.barMonitor ? root.blocks[root.barMonitor.name] : undefined
++    if (block === undefined) block = root.workspaceId > 0 ? Math.floor((root.workspaceId - 1) / 10) : 0
++    return block * 10
++  }
+ 
+   function workspaceIds() {
+     var ids = []
+-    for (var n = 1; n <= root.alwaysShown; n++) ids.push(n)
++    var base = root.blockBase
++    for (var n = 1; n <= Math.min(root.alwaysShown, 10); n++) ids.push(base + n)
+ 
+     var values = Hyprland.workspaces.values
+ 
+     for (var i = 0; i < values.length; i++) {
+       var id = values[i].id
+-      if (id > 0 && id <= root.indicatorCeiling && ids.indexOf(id) === -1) ids.push(id)
++      if (id > base && id <= base + root.indicatorCeiling && ids.indexOf(id) === -1) ids.push(id)
+     }
+ 
+     ids.sort(function(left, right) { return left - right })
+@@ -246,7 +374,13 @@ Panel {
+     var n = Math.trunc(Number(id))
+     if (!(n > 0)) return
+ 
+-    root.bar.run("hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ workspace = \"" + n + "\" })"))
++    // LOCAL PATCH: focus this bar's monitor first, so a workspace that doesn't
++    // exist yet opens here and not on the monitor that has the keyboard. The name
++    // is filtered to the characters output names use.
++    var monitor = root.barMonitor ? String(root.barMonitor.name).replace(/[^A-Za-z0-9_.:-]/g, "") : ""
++    var lua = "hl.dispatch(hl.dsp.focus({ workspace = \"" + n + "\" }))"
++    if (monitor !== "") lua = "hl.dispatch(hl.dsp.focus({ monitor = \"" + monitor + "\" })) " + lua
++    root.bar.run("hyprctl eval " + Util.shellQuote(lua))
+   }
+ 
+   // Icons for the whole row. Kept apart from the focused workspace's own
+@@ -270,9 +404,14 @@ Panel {
+   // A workspace with no icon falls back to its number, which is the whole of
+   // what the stock indicators ever show. Ten reads as 0 there, so it does
+   // here.
++  function indicatorNumber(id) {
++    var n = id - root.blockBase
++    return n === 10 ? "0" : String(n)
++  }
++
+   function indicatorText(id) {
+     var icon = indicatorIcons[id] || ""
+-    var number = id === 10 ? "0" : String(id)
++    var number = root.indicatorNumber(id)
+ 
+     if (icon === "") return number
+     return root.showNumbers ? icon + " " + number : icon
+@@ -284,7 +423,7 @@ Panel {
+     delegate: FileView {
+       // Typed, so what goes into the path below is a number and nothing else.
+       required property int index
+-      readonly property int workspace: index + 1
++      readonly property int workspace: root.blockBase + index + 1
+ 
+       path: root.iconFilePath(workspace)
+       watchChanges: true
+@@ -432,7 +571,7 @@ Panel {
+   GridLayout {
+     id: content
+     anchors.fill: parent
+-    columns: root.vertical ? 1 : root.indicatorIds.length + 1
++    columns: root.vertical ? 1 : root.indicatorIds.length + 2
+     columnSpacing: root.vertical ? 0 : Style.space(1)
+     rowSpacing: root.vertical ? Style.space(2) : 0
+ 
+@@ -442,7 +581,7 @@ Panel {
+       Item {
+         id: slot
+         required property int index
+-        readonly property int workspaceNumber: index + 1
++        readonly property int workspaceNumber: root.blockBase + index + 1
+ 
+         // The grid skips a hidden child, so a slot out of the row takes no
+         // room and no cell. See slotCount.
+@@ -456,7 +595,7 @@ Panel {
+         readonly property bool keyboardHere: focused && root.monitorFocused
+ 
+         readonly property string iconGlyph: root.indicatorIcons[workspaceNumber] || ""
+-        readonly property string numberText: workspaceNumber === 10 ? "0" : String(workspaceNumber)
++        readonly property string numberText: root.indicatorNumber(workspaceNumber)
+         // With both shown, the icon and the number are drawn as two items
+         // rather than as one string. Every Nerd Font glyph advances exactly
+         // one monospace cell, but the ink inside that cell runs from about
+@@ -592,6 +731,19 @@ Panel {
+       }
+     }
+ 
++    // LOCAL PATCH: the current workspace's layout, see activeMode above.
++    WidgetButton {
++      visible: root.showIndicators
++      bar: root.bar
++      text: root.modeGlyph(root.activeMode)
++      horizontalMargin: 6
++      verticalPadding: 6
++      fixedWidth: root.vertical ? root.barSize : Style.space(20)
++      fixedHeight: root.barSize
++      tooltipText: root.activeMode
++      onPressed: function(b) { root.cycleLayout() }
++    }
++
+     WidgetButton {
+       id: label
+       bar: root.bar
