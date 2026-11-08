@@ -168,16 +168,23 @@ stay installed.
   Ctrl-T the 2FA code. Copies stay out of the clipboard history and clear after
   30 seconds, and the window stays out of screen shares. The first run asks for
   your account email.
-- **Super + A** (or the sparkle in the bar, or the first row of Super + Space)
-  opens Ask Claude: type a question, the answer streams in from Claude Sonnet,
-  follow-ups keep the conversation. It goes through the Claude Code CLI and your
-  own Claude login, so install Claude Code and run `claude` once to sign in. In
-  Super + Space, `ask <question>` sends it straight away, and any typed text gets
-  an **Ask Claude here** row. `ask-claude "question"` works in a terminal. Put a
-  line or two about yourself (city, languages) in `~/.config/ask-claude/context.md`
-  for local answers. **Ctrl+H** in the panel searches your past Ask Claude
-  conversations (only those, not other Claude Code sessions); Enter reopens one
-  and follow-ups continue it. In a terminal: `ask-claude --history <words>`.
+- **Super + A** opens omaSearch, a Spotlight-style box that asks your default
+  agent (`omarchy default agent claude`). It goes through the Claude Code CLI
+  and your own login, so run `claude` once to sign in. It asks before Claude
+  runs a command. Each question loads your Claude Code settings, plugins and
+  MCP servers, so the first answer takes a moment.
+- **Battery:** on battery the laptop suspends after 45 minutes idle
+  (`hypridle` + `~/.local/bin/suspend-if-on-battery`), never while Stay Awake
+  is on or an app keeps the screen awake. Three more changes need sudo, so the
+  installer leaves them to you:
+  - Omarchy 4.5 rescans every app each time any file in `~` is saved.
+    [The patch](extras/patches/omarchy-4.5-AppLibrary.qml.diff) only rescans
+    when the app list really changes; apply it to
+    `/usr/share/omarchy/shell/services/AppLibrary.qml` and run it again after
+    each Omarchy update.
+  - `sudo powerprofilesctl configure-action amdgpu_panel_power --enable` dims
+    the panel a little on battery below 50%.
+  - `kernel.nmi_watchdog = 0` in `/etc/sysctl.d/90-nmi-watchdog.conf`.
 - **Plugin updates** are checked every 6 hours. When a plugin has new commits
   you get a notification and a puzzle icon in the middle of the bar; click
   either to go through the changes and pick what to install
@@ -226,8 +233,8 @@ stay installed.
   at it. Electron apps such as VS Code are left alone, since the same settings
   would slow them down. Delete both files to undo it.
 - Not in this repo on purpose: SSH/GPG keys, browser profiles, passwords,
-  tokens, keyrings, shell history (atuin's `~/.atuin/data`), Ask Claude's
-  `context.md`, my personal wallpaper.
+  tokens, keyrings, shell history (atuin's `~/.atuin/data`), my personal
+  wallpaper.
 
 ## Plugins
 
@@ -236,9 +243,7 @@ stay installed.
 | [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
 | [Disk Keeper](extras/plugins/shadowone.disk-keeper) | Free space in the bar, a warning before the disk fills up, and a panel to clean caches, old packages, build folders and Docker leftovers (mine) |
 | [Memory Keeper](extras/plugins/shadowone.memory-keeper) | Available memory in the bar; stops Claude Code sessions left idle and resumes them with a click, frees cold cache under pressure, shows what holds memory (mine) |
-| [Ask Claude](extras/plugins/shadowone.ask-claude) | Quick questions to Claude Sonnet from the bar or Super + A, through the Claude Code CLI, with a searchable history (mine) |
 | [Plugin Updates](extras/plugins/shadowone.plugin-updates) | A bar icon while plugin updates are waiting; click to review them (mine) |
-| [Clock](extras/plugins/shadowone.clock) | Omarchy's clock with your Google Calendar events and reminders; `omacal setup` explains the one-time Google setup (mine) |
 | [Battery](extras/plugins/shadowone.power) | Omarchy's battery panel plus an 80% charge limit switch and battery health (mine) |
 | [Keystroke](https://github.com/evindor/keystroke) | Raycast-style command palette instead of the Omarchy menu |
 | [Exposé](https://github.com/kristofferR/omarchy-expose) | All windows at once; 3-finger swipe up/down |
@@ -246,7 +251,11 @@ stay installed.
 | [Omarchy Zones](https://github.com/shivam-g10/omarchy-zones) | FancyZones-style window zones (Super + Shift + drag) |
 | [Workspace name](https://github.com/jankeesvw/omarchy-workspace-name) | Name and icon of the current workspace. With more than one monitor, apply [the patch](extras/patches/jankeesvw.workspace-name-Panel.qml.omarchy45.diff) for Omarchy 4.5's per-monitor workspaces and layout icon (`git apply` in the plugin folder) |
 | [Bar Folder](https://github.com/arikisonfire/omarchy-bar-folder) | Folds bar icons into one folder |
-| [Hardwarchy](https://github.com/tymurbogach/hardwarchy) | CPU, GPU, memory, network, disk, fan in the bar |
+| [System Monitor](https://github.com/Harshith292002/omarchy-system-monitor) | CPU, memory, GPU, temperature, network and disk in the top bar |
+| [omaSearch](https://github.com/5h3rd1l/omaSearch) | Ask Claude from a Spotlight-style box on Super + A |
+| [Cursor Accent](https://github.com/SmoothPixels/cursor-accent) | Cursor in the theme's colors; its hooks recolor it on every theme change |
+| [OmaConnect](https://github.com/jitendradara12/omaconnect) | KDE Connect for your phone (in the Bar Folder; needs `kdeconnect`) |
+| [OmaProton VPN](https://github.com/grichard99/omaproton-vpn) | Proton VPN in the top bar (checks the link every 30 s) |
 | [Linecast](https://github.com/ashuttl/omarchy-linecast) | Weather, sun, moon and tides |
 | [hyprmoncfg](https://github.com/crmne/omarchy-hyprmoncfg) | Monitor profiles that come back when you plug in |
 | [OmaSettings](https://github.com/twiking/omasettings) | One window for every Omarchy setting |
@@ -288,8 +297,8 @@ manifests/
   packages.txt     packages the setup needs
   apps.txt         my optional apps
   themes.txt       themes to clone
-extras/plugins/    plugins I wrote (shadowone.*): top bar, disk keeper, ask claude,
-                   plugin updates, clock, battery
+extras/plugins/    plugins I wrote (shadowone.*): top bar, disk keeper, memory keeper,
+                   plugin updates, battery
 ```
 
 Paths to my home folder (`/home/shadowone/...`) in the config files are

@@ -707,6 +707,18 @@ step_services() {
     fi
   fi
 
+  # Suspends after 45 min idle, only on battery (~/.config/hypr/hypridle.conf).
+  if command -v hypridle >/dev/null && [[ -f $HOME/.config/hypr/hypridle.conf ]]; then
+    if systemctl --user is-enabled -q hypridle.service 2>/dev/null; then
+      ok "hypridle already on"
+    elif run systemctl --user enable --now hypridle.service >/dev/null 2>&1; then
+      record services-enabled hypridle.service
+      ok "hypridle on (suspends after 45 min idle on battery)"
+    else
+      problem "couldn't start hypridle"
+    fi
+  fi
+
   # The wallpaper slideshow, if its settings say it's on.
   if [[ -f $HOME/.config/systemd/user/wallpaper-slideshow.timer ]] &&
     grep -qx 'enabled=1' "$HOME/.config/wallpaper-slideshow.conf" 2>/dev/null; then

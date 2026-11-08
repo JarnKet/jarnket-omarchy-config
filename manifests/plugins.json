@@ -5,7 +5,7 @@
       "name": "Radio Atlas",
       "version": "0.1.9",
       "source": "https://github.com/AksharP5/omarchy-radio-atlas.git",
-      "revision": "cb604f717c4c3de673993e0b746c50609b701511",
+      "revision": "d90f25928c52b18223873526bd6e6ed15769099d",
       "local": false
     },
     {
@@ -29,7 +29,7 @@
       "name": "Omaland",
       "version": "1.0.0",
       "source": "https://github.com/bobby-nicholas/omaland.git",
-      "revision": "22e736a9c3bb76ac79b52cdf7a576ae91459ead9",
+      "revision": "6790543ce2227595c87fe67ad46247a90a8d8a0a",
       "local": false
     },
     {
@@ -45,7 +45,7 @@
       "name": "OmaDoctor",
       "version": "0.5.0",
       "source": "https://github.com/Davedes83/OmaDoctor.git",
-      "revision": "78c45b1a09db190d6c4f55f17e182fe60796b1e8",
+      "revision": "59891b5e9cecbd4f0521676c69da9f806a31ae4d",
       "local": false
     },
     {
@@ -59,9 +59,9 @@
     {
       "id": "expose.window-overview",
       "name": "Exposé",
-      "version": "5.0.0",
+      "version": "5.5.0",
       "source": "https://github.com/kristofferR/omarchy-expose.git",
-      "revision": "f283002259f5aba75da17b3f5dd4081bddc257f5",
+      "revision": "2c63aeab7f7b43f2b7acb293f9438c15ba28992e",
       "local": false
     },
     {
@@ -70,6 +70,14 @@
       "version": "0.3.2",
       "source": "https://github.com/gigasolo/omavoice.git",
       "revision": "86ac9be415c07a25162a434956b5b87e64813831",
+      "local": false
+    },
+    {
+      "id": "harshith.system-monitor",
+      "name": "System Monitor",
+      "version": "1.5.3",
+      "source": "https://github.com/Harshith292002/omarchy-system-monitor.git",
+      "revision": "2cbbbcc5e97096380a9935de08e4ba8a8adb840e",
       "local": false
     },
     {
@@ -89,11 +97,27 @@
       "local": false
     },
     {
+      "id": "io.github.5h3rd1l.omasearch",
+      "name": "omaSearch",
+      "version": "1.1.1",
+      "source": "https://github.com/5h3rd1l/omaSearch.git",
+      "revision": "a002289c04dff552fd9c73ef2bd7d7be838ca271",
+      "local": false
+    },
+    {
       "id": "io.github.arikisonfire.bar-folder",
       "name": "Bar Folder",
       "version": "1.1.0",
       "source": "https://github.com/arikisonfire/omarchy-bar-folder.git",
       "revision": "e393b62ace8a3d9fa3974092aea9157cfbf0f2c3",
+      "local": false
+    },
+    {
+      "id": "io.github.grichard99.omaproton-vpn",
+      "name": "OmaProton VPN",
+      "version": "1.4.9",
+      "source": "https://github.com/grichard99/omaproton-vpn.git",
+      "revision": "469dd8094036389d90e328efa79b96bc2c0b7a92",
       "local": false
     },
     {
@@ -137,19 +161,19 @@
       "local": false
     },
     {
+      "id": "io.github.smoothpixels.cursor-accent",
+      "name": "Cursor Accent",
+      "version": "1.2.0",
+      "source": "https://github.com/SmoothPixels/cursor-accent.git",
+      "revision": "e422026e5571b4526c1446cd484b65d6b6153baf",
+      "local": false
+    },
+    {
       "id": "io.github.twiking.omasettings",
       "name": "OmaSettings",
       "version": "1.4.0",
       "source": "https://github.com/twiking/omasettings.git",
       "revision": "dfadccb1e7350f7cfebc37c40d390c58883f26d2",
-      "local": false
-    },
-    {
-      "id": "io.github.tymurbogach.hardwarchy",
-      "name": "Hardwarchy",
-      "version": "2.3.4",
-      "source": "https://github.com/tymurbogach/hardwarchy.git",
-      "revision": "16a52e5a1ea8603f96d5257d09f05d7b9379753d",
       "local": false
     },
     {
@@ -182,6 +206,14 @@
       "version": "1.1.1",
       "source": "https://github.com/njpatel/omapager.git",
       "revision": "c389e73516828d18f26e8efec2127c0c3dc3cb97",
+      "local": false
+    },
+    {
+      "id": "omaconnect",
+      "name": "OmaConnect",
+      "version": "1.5.0",
+      "source": "https://github.com/jitendradara12/omaconnect.git",
+      "revision": "cd72bfd286b80dbebdaa160f7793097bb590fbfb",
       "local": false
     },
     {
@@ -223,22 +255,6 @@
       "source": "https://github.com/segersb/omarchy-printers.git",
       "revision": "14fef62b08bc4bf25afaf1239f90897dfb345b28",
       "local": false
-    },
-    {
-      "id": "shadowone.ask-claude",
-      "name": "Ask Claude",
-      "version": "1.1.0",
-      "source": null,
-      "revision": null,
-      "local": true
-    },
-    {
-      "id": "shadowone.clock",
-      "name": "Clock & Google Calendar",
-      "version": "1.1.0",
-      "source": null,
-      "revision": null,
-      "local": true
     },
     {
       "id": "shadowone.disk-keeper",

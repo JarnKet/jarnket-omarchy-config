@@ -1,11 +1,12 @@
 {
   "bar": {
+    "background": "none",
     "layout": {
       "center": [
         {
           "format": "ddd d MMM HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
-          "id": "shadowone.clock",
+          "id": "omarchy.clock",
           "verticalFormat": "HH\n—\nmm"
         }
       ],
@@ -27,27 +28,15 @@
         {
           "cities": [
             {
-              "name": "Bangkok",
-              "zone": "Asia/Bangkok"
-            },
-            {
-              "name": "Los Angeles",
-              "zone": "America/Los_Angeles"
-            },
-            {
-              "name": "New York",
-              "zone": "America/New_York"
-            },
-            {
-              "name": "London",
-              "zone": "Europe/London"
-            },
-            {
-              "name": "Dubai",
-              "zone": "Asia/Dubai"
+              "name": "Vientiane",
+              "people": [
+                "@jarnket"
+              ],
+              "zone": "Asia/Vientiane"
             }
           ],
-          "id": "omarchy.elsewhen"
+          "id": "omarchy.elsewhen",
+          "units": "C"
         },
         {
           "id": "omarchy.keyboard-layout"
@@ -64,6 +53,7 @@
           "icon": "omarchy",
           "id": "evindor.keystroke",
           "themeIcons": {
+            "shadow-one": "",
             "thinkpad": "trackpoint"
           }
         },
@@ -72,9 +62,6 @@
         },
         {
           "id": "omarchy.agents"
-        },
-        {
-          "id": "shadowone.ask-claude"
         },
         {
           "id": "shadowone.memory-keeper"
@@ -105,6 +92,7 @@
             }
           },
           "widgets": [
+            "omaconnect",
             "io.github.i12bp8.netneighbors",
             "shady.wireless-display-cast",
             "bredda.localsend",
@@ -128,6 +116,13 @@
         {
           "id": "shadowone.top-bar",
           "layout": {
+            "left": [
+              {
+                "id": "harshith.system-monitor",
+                "barMode": "Adaptive"
+              }
+            ],
+            "centerBegin": [],
             "center": [
               {
                 "alwaysShow": true,
@@ -140,17 +135,8 @@
                 ]
               }
             ],
-            "left": [
-              {
-                "id": "io.github.tymurbogach.hardwarchy"
-              }
-            ],
+            "centerEnd": [],
             "right": [
-              {
-                "allowUnverifiedInstalls": true,
-                "allowUnverifiedUpdates": true,
-                "id": "io.github.juancasanueva.plugin-manager"
-              },
               {
                 "id": "davedes.omadoctor"
               },
@@ -165,16 +151,21 @@
               },
               {
                 "id": "io.github.kristoferlund.webcam"
+              },
+              {
+                "id": "io.github.grichard99.omaproton-vpn",
+                "watchIntervalSec": 30
               }
-            ]
+            ],
+            "tray": []
           },
           "managed": [
             "akshar.radio-atlas",
             "ashuttl.linecast",
             "davedes.omadoctor",
-            "io.github.juancasanueva.plugin-manager",
+            "harshith.system-monitor",
+            "io.github.grichard99.omaproton-vpn",
             "io.github.kristoferlund.webcam",
-            "io.github.tymurbogach.hardwarchy",
             "omaplug",
             "segersb.omarchy-printers"
           ],
@@ -209,9 +200,14 @@
               "seq": 11,
               "where": "right"
             },
-            "io.github.juancasanueva.plugin-manager": {
-              "index": 2,
-              "seq": 13,
+            "harshith.system-monitor": {
+              "index": 1,
+              "seq": 16,
+              "where": "right"
+            },
+            "io.github.grichard99.omaproton-vpn": {
+              "index": 1,
+              "seq": 15,
               "where": "right"
             },
             "io.github.kristoferlund.webcam": {
@@ -228,11 +224,6 @@
               "index": 7,
               "seq": 9,
               "where": "center"
-            },
-            "io.github.tymurbogach.hardwarchy": {
-              "index": 4,
-              "seq": 12,
-              "where": "left"
             },
             "omaplug": {
               "index": 4,
@@ -261,10 +252,10 @@
             "Dnd"
           ]
         }
-      ]
+      ],
+      "tray": []
     },
-    "position": "bottom",
-    "transparent": false
+    "position": "bottom"
   },
   "cloneSourceRestores": [
     "ssupt.audio-control",
@@ -331,12 +322,6 @@
       "id": "ashuttl.linecast"
     },
     {
-      "id": "io.github.tymurbogach.hardwarchy"
-    },
-    {
-      "id": "io.github.juancasanueva.plugin-manager"
-    },
-    {
       "id": "davedes.omadoctor"
     },
     {
@@ -344,6 +329,18 @@
       "id": "io.github.sirjul1337.lock-explorer",
       "openAs": "panel",
       "tourSeen": true
+    },
+    {
+      "id": "io.github.5h3rd1l.omasearch"
+    },
+    {
+      "id": "io.github.smoothpixels.cursor-accent"
+    },
+    {
+      "id": "io.github.grichard99.omaproton-vpn"
+    },
+    {
+      "id": "harshith.system-monitor"
     }
   ],
   "version": 1

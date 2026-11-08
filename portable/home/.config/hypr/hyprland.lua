@@ -40,6 +40,9 @@ o.window("herdr-app", { tag = "-default-opacity", opacity = "0.92 0.86" })
 -- Blur behind the see-through drop-down terminal (SUPER+`).
 hl.layer_rule({ match = { namespace = "kitty-quick-access" }, blur = true })
 
+-- Glass blur behind the omaSearch overlay (SUPER+A).
+hl.layer_rule({ match = { namespace = "^omasearch$" }, blur = true, ignore_alpha = 0.45 })
+
 -- Load settings written by OmaSettings (omasettings:managed).
 require("hypr.omasettings")
 

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Run by hypridle after a long idle (see ~/.config/hypr/hypridle.conf).
+# Suspends only on battery, and never while Omarchy's Stay Awake is on.
+# The lock plugin locks the session before every suspend.
+
+[[ -e $HOME/.local/state/omarchy/indicators/stay-awake ]] && exit 0
+
+on_battery=$(busctl get-property org.freedesktop.UPower /org/freedesktop/UPower \
+  org.freedesktop.UPower OnBattery 2>/dev/null)
+[[ $on_battery == "b true" ]] || exit 0
+
+exec systemctl suspend

@@ -18,6 +18,7 @@ portable	.config/hypr/hyprsunset.conf
 portable	.config/hypr/xdph.conf
 portable	.config/hypr/titlebars.lua
 portable	.config/hypr/theme_mode.lua
+portable	.config/hypr/hypridle.conf
 portable	.config/xkb
 portable	.local/share/lao-term
 portable	.local/share/fonts/LaoTerm-Regular.ttf
@@ -42,12 +43,12 @@ portable	.config/omarchy/hooks
 portable	.config/omarchy/hardwarchy.json
 portable	.config/omarchy/audio-control.json
 portable	.config/omarchy/keystroke.json
-portable	.local/share/keystroke/extensions/ask-claude
 portable	.local/bin/plugin-updates
 portable	.local/bin/window-minimize
 portable	.local/bin/window-restore
 portable	.local/bin/rbw-picker
 portable	.local/bin/herdr-app-omarchy-theme
+portable	.local/bin/suspend-if-on-battery
 portable	.local/share/applications/plugin-updates.desktop
 portable	.config/systemd/user/plugin-updates.service
 portable	.config/systemd/user/plugin-updates.timer

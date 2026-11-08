@@ -1,0 +1,52 @@
+--- a/shell/services/AppLibrary.qml
++++ b/shell/services/AppLibrary.qml
+@@ -267,16 +267,46 @@
+     onTriggered: root.closeLaunchFeedback(root.launchSerial)
+   }
+ 
+-  Connections {
+-    target: DesktopEntries.applications
+-    function onValuesChanged() {
++  // Quickshell's desktop-entry watcher also fires when any file is created or
++  // deleted directly in ~ or ~/.local/share (an editor's atomic save, a tool
++  // rewriting its dotfile), with the app list unchanged. Each rescan costs
++  // about a second of CPU, so only rescan when the entries actually differ.
++  property string appSignature: ""
++
++  function entriesSignature() {
++    var values = DesktopEntries.applications.values || []
++    var parts = []
++    for (var i = 0; i < values.length; i++) {
++      var e = values[i]
++      if (!e) continue
++      parts.push([e.id, e.name, e.genericName, e.icon, e.execString, e.noDisplay, e.startupClass, e.comment].join("\u0001"))
++    }
++    parts.sort()
++    return parts.join("\u0002")
++  }
++
++  // A no-op refresh still arrives as a burst of per-entry removals and
++  // re-additions, so settle first and compare the end state.
++  Timer {
++    id: appChangeDebounce
++    interval: 500
++    onTriggered: {
++      var signature = root.entriesSignature()
++      if (signature === root.appSignature) return
++      root.appSignature = signature
+       hiddenEntryScan.running = true
+       iconIndexDebounce.restart()
+       root.appsChanged()
+     }
+   }
+ 
++  Connections {
++    target: DesktopEntries.applications
++    function onValuesChanged() { appChangeDebounce.restart() }
++  }
++
+   Component.onCompleted: {
++    root.appSignature = root.entriesSignature()
+     hiddenEntryScan.running = true
+     iconIndexScan.running = true
+   }

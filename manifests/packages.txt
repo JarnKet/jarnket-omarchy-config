@@ -24,3 +24,4 @@ yazi                         # terminal file manager, `y` in .bashrc
 resvg                        # yazi: SVG previews
 rbw                          # rbw-picker: Bitwarden CLI
 omarchy-hyprland-titlebars   # title bars on every window (hypr/titlebars.lua)
+hypridle                     # suspend after 45 min idle on battery (hypr/hypridle.conf)
