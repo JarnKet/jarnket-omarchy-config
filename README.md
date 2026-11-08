@@ -251,7 +251,7 @@ stay installed.
 | [Omarchy Zones](https://github.com/shivam-g10/omarchy-zones) | FancyZones-style window zones (Super + Shift + drag) |
 | [Workspace name](https://github.com/jankeesvw/omarchy-workspace-name) | Name and icon of the current workspace. With more than one monitor, apply [the patch](extras/patches/jankeesvw.workspace-name-Panel.qml.omarchy45.diff) for Omarchy 4.5's per-monitor workspaces and layout icon (`git apply` in the plugin folder) |
 | [Bar Folder](https://github.com/arikisonfire/omarchy-bar-folder) | Folds bar icons into one folder |
-| [System Monitor](https://github.com/Harshith292002/omarchy-system-monitor) | CPU, memory, GPU, temperature, network and disk in the top bar |
+| [Hardwarchy](https://github.com/tymurbogach/hardwarchy) | CPU, GPU, memory, network, disk, fan in the top bar |
 | [omaSearch](https://github.com/5h3rd1l/omaSearch) | Ask Claude from a Spotlight-style box on Super + A |
 | [Cursor Accent](https://github.com/SmoothPixels/cursor-accent) | Cursor in the theme's colors; its hooks recolor it on every theme change |
 | [OmaConnect](https://github.com/jitendradara12/omaconnect) | KDE Connect for your phone (in the Bar Folder; needs `kdeconnect`) |

@@ -73,14 +73,6 @@
       "local": false
     },
     {
-      "id": "harshith.system-monitor",
-      "name": "System Monitor",
-      "version": "1.5.3",
-      "source": "https://github.com/Harshith292002/omarchy-system-monitor.git",
-      "revision": "2cbbbcc5e97096380a9935de08e4ba8a8adb840e",
-      "local": false
-    },
-    {
       "id": "ilysorc.pointer-feel",
       "name": "Pointer Feel",
       "version": "1.0.0",
@@ -174,6 +166,14 @@
       "version": "1.4.0",
       "source": "https://github.com/twiking/omasettings.git",
       "revision": "dfadccb1e7350f7cfebc37c40d390c58883f26d2",
+      "local": false
+    },
+    {
+      "id": "io.github.tymurbogach.hardwarchy",
+      "name": "Hardwarchy",
+      "version": "2.3.4",
+      "source": "https://github.com/tymurbogach/hardwarchy.git",
+      "revision": "16a52e5a1ea8603f96d5257d09f05d7b9379753d",
       "local": false
     },
     {

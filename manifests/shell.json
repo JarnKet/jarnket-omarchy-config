@@ -116,13 +116,6 @@
         {
           "id": "shadowone.top-bar",
           "layout": {
-            "left": [
-              {
-                "id": "harshith.system-monitor",
-                "barMode": "Adaptive"
-              }
-            ],
-            "centerBegin": [],
             "center": [
               {
                 "alwaysShow": true,
@@ -135,7 +128,13 @@
                 ]
               }
             ],
+            "centerBegin": [],
             "centerEnd": [],
+            "left": [
+              {
+                "id": "io.github.tymurbogach.hardwarchy"
+              }
+            ],
             "right": [
               {
                 "id": "davedes.omadoctor"
@@ -163,9 +162,9 @@
             "akshar.radio-atlas",
             "ashuttl.linecast",
             "davedes.omadoctor",
-            "harshith.system-monitor",
             "io.github.grichard99.omaproton-vpn",
             "io.github.kristoferlund.webcam",
+            "io.github.tymurbogach.hardwarchy",
             "omaplug",
             "segersb.omarchy-printers"
           ],
@@ -200,11 +199,6 @@
               "seq": 11,
               "where": "right"
             },
-            "harshith.system-monitor": {
-              "index": 1,
-              "seq": 16,
-              "where": "right"
-            },
             "io.github.grichard99.omaproton-vpn": {
               "index": 1,
               "seq": 15,
@@ -224,6 +218,11 @@
               "index": 7,
               "seq": 9,
               "where": "center"
+            },
+            "io.github.tymurbogach.hardwarchy": {
+              "index": 5,
+              "seq": 17,
+              "where": "left"
             },
             "omaplug": {
               "index": 4,
@@ -340,7 +339,7 @@
       "id": "io.github.grichard99.omaproton-vpn"
     },
     {
-      "id": "harshith.system-monitor"
+      "id": "io.github.tymurbogach.hardwarchy"
     }
   ],
   "version": 1
