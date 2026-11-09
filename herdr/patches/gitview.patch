@@ -1,0 +1,13 @@
+diff -ruN a/gitview/telemetry.js b/gitview/telemetry.js
+--- a/gitview/telemetry.js
++++ b/gitview/telemetry.js
+@@ -24,7 +24,8 @@
+ const SLOW_RENDER_MS = 16;
+ 
+ export const traceDir = () => `${appHome()}/data/gitview/trace`;
+-export const tracing = () => shared("gitview.trace") !== false;
++// Local change: off unless turned on ("gitview: tracing on/off" in the palette).
++export const tracing = () => shared("gitview.trace") === true;
+ const clock = typeof performance !== "undefined" && performance.now ? () => performance.now() : () => Date.now();
+ const round = (ms) => Math.round(ms * 10) / 10;
+ 

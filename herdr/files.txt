@@ -1,0 +1,9 @@
+# Plain files for the Herdr step, relative to ~. snapshot.sh copies them into
+# home/, install.sh puts them back (pointing my home paths at yours).
+.config/herdr-app/layouts/orchi.json
+.config/herdr-app/keys.json
+.config/herdr/plugins/config/herdr-recap/config.json
+.config/herdr/plugins/config/chmarax.gitview/config.toml
+.local/bin/claude-recap-plan
+.claude/skills/opengpui/SKILL.md
+.agents/skills/opengpui/SKILL.md

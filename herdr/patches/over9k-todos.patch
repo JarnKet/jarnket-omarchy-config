@@ -1,0 +1,9 @@
+diff -ruN a/over9k-todos/mod.json b/over9k-todos/mod.json
+--- a/over9k-todos/mod.json
++++ b/over9k-todos/mod.json
+@@ -1,4 +1 @@
+-{
+-  "place": "right",
+-  "size": 368
+-}
++{ "place": "none" }

@@ -125,6 +125,61 @@ snapshot_themes() {
   echo "Themes: ${#lines[@]} in manifests/themes.txt (current: ${current:-?})"
 }
 
+# --- herdr -----------------------------------------------------------------
+
+HERDR_DIR=$REPO_DIR/herdr
+HERDR_CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/jarnket-omarchy-config/herdr
+# shellcheck source=herdr/sources.sh
+source "$HERDR_DIR/sources.sh"
+
+# The Herdr app: the files in herdr/files.txt, and my changes to the mods in
+# herdr/mods.tsv as patches against the commits listed there.
+snapshot_herdr() {
+  if [[ ! -d $HERDR_APP_HOME/mods ]]; then
+    warn "no Herdr app here (~/.config/herdr-app); herdr/ left as it is"
+    return 0
+  fi
+  local rel repo sha folder mods more m dir p patches=0 listed=() missing=() extra=()
+  rm -rf "$HERDR_DIR/home"
+  while IFS= read -r rel; do
+    [[ -z $rel || $rel == \#* ]] && continue
+    copy_into "$HERDR_DIR/home" "$rel"
+  done <"$HERDR_DIR/files.txt"
+
+  mkdir -p "$HERDR_DIR/patches"
+  while IFS=$'\t' read -r repo sha folder mods more; do
+    # shellcheck disable=SC2086 # word lists
+    listed+=($mods)
+    # shellcheck disable=SC2086
+    if ! dir=$(herdr_fetch "$repo" "$sha" "$folder" $more); then
+      warn "couldn't fetch $repo; its patches left as they are"
+      continue
+    fi
+    for m in $mods; do
+      if [[ -d $HERDR_APP_HOME/mods/$m ]]; then
+        herdr_make_patch "$dir/$folder/$m" "$HERDR_APP_HOME/mods/$m" "$HERDR_DIR/patches/$m.patch"
+        [[ -f $HERDR_DIR/patches/$m.patch ]] && patches=$((patches + 1))
+      else
+        missing+=("$m")
+      fi
+    done
+  done < <(herdr_sources)
+  for p in "$HERDR_DIR"/patches/*.patch; do
+    [[ -f $p && " ${listed[*]} " != *" $(basename "$p" .patch) "* ]] && rm -f "$p"
+  done
+
+  # Mods here that are neither Herdr's own nor in mods.tsv won't reach another machine.
+  local shipped
+  shipped=$(jq -r 'keys[]' "$HERDR_APP_HOME/installed.json" 2>/dev/null || true)
+  for dir in "$HERDR_APP_HOME"/mods/*/; do
+    m=$(basename "$dir")
+    [[ " ${listed[*]} " == *" $m "* ]] || grep -qx "$m" <<<"$shipped" || extra+=("$m")
+  done
+  ((${#missing[@]})) && warn "in herdr/mods.tsv but not installed here: ${missing[*]}"
+  ((${#extra[@]})) && warn "Herdr mods here but not in herdr/mods.tsv (add them there to keep them): ${extra[*]}"
+  echo "Herdr: ${#listed[@]} mods in herdr/mods.tsv, $patches with my changes in herdr/patches/"
+}
+
 # --- packages --------------------------------------------------------------
 
 # The package lists are written by hand (packages.txt = needed, apps.txt =
@@ -151,7 +206,7 @@ check_secrets() {
   local hits
   hits=$(cd "$REPO_DIR" && grep -rIniE --exclude-dir=.git --exclude=snapshot.sh \
     'BEGIN [A-Z ]*PRIVATE KEY|api[_-]?key|secret|password|passwd|token|@gmail\.com|bearer ' \
-    portable personal device manifests extras 2>/dev/null |
+    portable personal device manifests extras herdr 2>/dev/null |
     grep -viE 'allow_token_by_default|password-store' || true)
   if [[ -n $hits ]]; then
     warn "These lines look sensitive. Check them before you commit:"
@@ -165,6 +220,7 @@ main() {
   snapshot_files
   snapshot_plugins
   snapshot_themes
+  snapshot_herdr
   pacman -Q omarchy | awk '{ sub(/-[0-9]+$/, "", $2); print $2 }' >"$MANIFESTS/omarchy-version"
   echo "Omarchy: $(cat "$MANIFESTS/omarchy-version")"
   check_packages

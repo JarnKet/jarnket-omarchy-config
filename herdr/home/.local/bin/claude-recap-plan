@@ -1,0 +1,5 @@
+#!/bin/sh
+# herdr-recap's background recap and title forks run Claude Code through this, in plan mode,
+# so a fork can't edit files or run commands. Set as "claude" in
+# ~/.config/herdr/plugins/config/herdr-recap/config.json; delete both to undo.
+exec claude --permission-mode plan "$@"

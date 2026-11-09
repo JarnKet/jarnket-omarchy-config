@@ -1,0 +1,11 @@
+diff -ruN a/open-with/main.js b/open-with/main.js
+--- a/open-with/main.js
++++ b/open-with/main.js
+@@ -41,6 +41,7 @@
+   { id: "zed", name: "Zed", mac: ["Zed.app", "Zed Preview.app"], cli: ["zed", "zeditor"], flatpak: ["dev.zed.Zed"], family: "zed", bin: "Contents/MacOS/cli" },
+   { id: "sublime", name: "Sublime Text", mac: ["Sublime Text.app"], cli: ["subl"], flatpak: ["com.sublimetext.three"] },
+   { id: "idea", name: "IntelliJ IDEA", mac: ["IntelliJ IDEA.app", "IntelliJ IDEA Ultimate.app", "IntelliJ IDEA CE.app"], cli: ["idea", "intellij-idea-ultimate", "intellij-idea-community"] },
++  { id: "openidea", name: "OpenIDEA", cli: ["openidea"] },
+   { id: "webstorm", name: "WebStorm", mac: ["WebStorm.app"], cli: ["webstorm"] },
+   { id: "pycharm", name: "PyCharm", mac: ["PyCharm.app", "PyCharm Professional Edition.app", "PyCharm CE.app"], cli: ["pycharm", "pycharm-professional", "pycharm-community"] },
+   { id: "goland", name: "GoLand", mac: ["GoLand.app"], cli: ["goland"] },

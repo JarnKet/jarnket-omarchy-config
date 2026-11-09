@@ -30,7 +30,7 @@ PLUGINS_DIR="$HOME/.config/omarchy/plugins"
 THEMES_DIR="$HOME/.config/omarchy/themes"
 SHELL_JSON="$HOME/.config/omarchy/shell.json"
 
-ALL_STEPS="packages apps config plugins bar theme services"
+ALL_STEPS="packages apps config plugins bar theme services herdr"
 
 usage() {
   cat <<'EOF'
@@ -44,6 +44,8 @@ Steps, in order:
   bar       bar layout and widget settings (shell.json)
   theme     ThinkPad theme, its ASCII wallpapers, extra themes
   services  user services: hyprmoncfgd, plugin update checks, wallpaper slideshow
+  herdr     the Herdr app: orchi layout, mods (herdr/mods.tsv), Lao fonts, and
+            their Claude Code hooks (needs the Herdr app, opened once)
 
 Options:
   -y, --yes          don't ask; take the defaults (installs no optional apps)
@@ -733,6 +735,261 @@ step_services() {
   fi
 }
 
+# --- herdr -----------------------------------------------------------------
+
+# The Herdr app (herdr.dev): the orchi layout, the mods in herdr/mods.tsv at
+# the commits I reviewed with my changes from herdr/patches, the helpers they
+# build, the Lao fonts for Herdr's UI and terminals, and the Claude Code side.
+
+HERDR_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/jarnket-omarchy-config/herdr"
+# Geist, the UI font Herdr ships, from its own release (Geist Lao is built on it).
+GEIST_ZIP_URL="https://github.com/vercel/geist-font/releases/download/v1.9.2/geist-font-v1.9.2.zip"
+GEIST_ZIP_SHA256="15f066d58dcb99fb10014a49913009fdaf41e464cfb8851a44b44e593c95d3d8"
+FONT_TOOLS=("uharfbuzz==0.57.0" "fonttools==4.68.0")
+RECAP_SRC=""
+
+herdr_app() {
+  command -v herdr-app 2>/dev/null && return
+  [[ -x $HOME/.local/bin/herdr-app ]] && printf '%s' "$HOME/.local/bin/herdr-app"
+}
+
+# Same mod, apart from what Herdr writes into it and the built helper.
+herdr_same() {
+  diff -rq --exclude=jsconfig.json --exclude='*.d.ts' --exclude=node_modules --exclude=bin "$1" "$2" >/dev/null 2>&1
+}
+
+# Each mod is put together in a hidden folder (Herdr doesn't watch those),
+# checked, and swapped in with one rename, only when it differs from the one
+# installed: Herdr reloads a mod on every file it sees change.
+herdr_mods() {
+  local app=$1 mods_dir=$HERDR_APP_HOME/mods stage repo sha folder mods more m dir gitview="" changed=0 same=0
+  stage=$mods_dir/.jarnket-stage
+  rm -rf "$stage"
+  mkdir -p "$stage"
+  info "fetching the mods at their commits…"
+  while IFS=$'\t' read -r repo sha folder mods more; do
+    # shellcheck disable=SC2086 # word lists
+    if ! dir=$(herdr_fetch "$repo" "$sha" "$folder" $more); then
+      problem "Herdr: couldn't fetch $repo at ${sha:0:7}"
+      continue
+    fi
+    [[ $repo == */herdr-gitview ]] && gitview=$dir
+    [[ $repo == */herdr-recap ]] && RECAP_SRC=$dir
+    for m in $mods; do
+      herdr_clean_copy "$dir/$folder/$m" "$stage/$m"
+      herdr_apply_patch "$stage" "$m" || problem "Herdr: my changes to $m didn't apply"
+    done
+  done < <(herdr_sources)
+
+  if [[ -d $stage/gitview && -n $gitview ]]; then
+    info "building gitview's helper (cargo)…"
+    if (cd "$gitview" && cargo build --release --locked --quiet) >/dev/null 2>&1; then
+      install -D -m 755 "$gitview/target/release/herdr-gitview" "$stage/gitview/bin/herdr-gitview"
+      printf '{\n  "bin": "%s",\n  "herdr_app": "%s",\n  "hc": "%s"\n}\n' \
+        "$mods_dir/gitview/bin/herdr-gitview" "$app" "$(command -v hc || printf '%s' "$HOME/.local/bin/hc")" \
+        >"$stage/gitview/config.json"
+    else
+      problem "Herdr: gitview's helper didn't build (cargo build in $gitview)"
+    fi
+  fi
+  if [[ -d $stage/kolczyk/node-helper ]]; then
+    # Only the packages in its lockfile, and no install scripts.
+    (cd "$stage/kolczyk/node-helper" && npm ci --ignore-scripts --no-audit --no-fund --silent) >/dev/null 2>&1 ||
+      problem "Herdr: Kolczyk's image helper didn't install, so its Image mode won't work"
+  fi
+
+  for dir in "$stage"/*/; do
+    dir=${dir%/}
+    m=$(basename "$dir")
+    if ! "$app" check "$dir" >/dev/null 2>&1; then
+      problem "Herdr: $m failed herdr-app check; left as it was"
+      continue
+    fi
+    if [[ -d $mods_dir/$m ]] && herdr_same "$dir" "$mods_dir/$m"; then
+      same=$((same + 1))
+      continue
+    fi
+    backup "$mods_dir/$m"
+    rm -rf "${mods_dir:?}/$m"
+    mv "$dir" "$mods_dir/$m"
+    changed=$((changed + 1))
+    info "~/.config/herdr-app/mods/$m"
+  done
+  rm -rf "$stage"
+  ok "Herdr mods: $changed installed or updated, $same already up to date"
+}
+
+# The recap mod downloads its helper when it's missing; build it from the
+# reviewed commit instead, where the mod looks for it.
+herdr_recap() {
+  local ver dest
+  [[ -n $RECAP_SRC && -f $HERDR_APP_HOME/mods/recap/main.js ]] || return 0
+  ver=$(sed -n 's/^export const RECAP_VERSION = "\(.*\)";/\1/p' "$HERDR_APP_HOME/mods/recap/main.js")
+  [[ -n $ver ]] || return 0
+  dest=$HOME/.local/share/herdr-recap/app/$ver/herdr-recap
+  [[ -x $dest ]] && return 0
+  info "building herdr-recap $ver (go)…"
+  backup "$HOME/.local/share/herdr-recap"
+  mkdir -p "$(dirname "$dest")"
+  if (cd "$RECAP_SRC" && CGO_ENABLED=0 go build -mod=readonly -trimpath -ldflags "-s -w" -o "$dest" .) >/dev/null 2>&1; then
+    ok "herdr-recap $ver built"
+  else
+    problem "herdr-recap didn't build; the recap mod would download it itself"
+  fi
+}
+
+# font and ui_font from herdr/settings.json; the rest of Herdr's settings stay yours.
+herdr_settings() {
+  local f=$HERDR_APP_HOME/settings.json tmp
+  tmp=$(mktemp)
+  if [[ -s $f ]]; then
+    if ! jq -s '.[0] * .[1]' "$f" "$HERDR_DIR/settings.json" >"$tmp" 2>/dev/null; then
+      rm -f "$tmp"
+      problem "Herdr: settings.json isn't valid JSON, so its fonts weren't set"
+      return 0
+    fi
+  else
+    cp "$HERDR_DIR/settings.json" "$tmp"
+  fi
+  if [[ -f $f ]] && cmp -s <(jq -S . "$f") <(jq -S . "$tmp"); then
+    rm -f "$tmp"
+    return 0
+  fi
+  backup "$f"
+  install -m 644 "$tmp" "$f"
+  rm -f "$tmp"
+  info "~/.config/herdr-app/settings.json (font, ui_font)"
+}
+
+# GPUI on Linux drops the offsets that put Lao vowels and tone marks on their
+# consonant, so Herdr gets fonts with every cluster precomposed: JetBrains Mono
+# Lao for terminals and Geist Lao for the UI (generators in ~/.local/share/lao-term).
+herdr_fonts() {
+  local fonts=$HERDR_APP_HOME/fonts gen=$HOME/.local/share/lao-term venv=$HOME/.cache/lao-term/venv
+  local py w out ttf geist=$HERDR_CACHE/geist need=0
+  for w in JetBrainsMonoLao-Regular JetBrainsMonoLao-Bold GeistLao-Regular GeistLao-Medium GeistLao-SemiBold GeistLao-Bold; do
+    [[ -f $fonts/$w.ttf ]] || need=1
+  done
+  ((need)) || return 0
+  if [[ ! -f $gen/make-jbm-lao.py || ! -f $gen/make-ui-lao.py ]]; then
+    problem "Herdr: the Lao font generators aren't in ~/.local/share/lao-term (the config step puts them there)"
+    return 0
+  fi
+  py=$venv/bin/python
+  if ! "$py" -c 'import uharfbuzz, fontTools' >/dev/null 2>&1; then
+    info "font tools (${FONT_TOOLS[*]}) into ~/.cache/lao-term/venv…"
+    if ! { python3 -m venv "$venv" && "$py" -m pip install -q "${FONT_TOOLS[@]}"; } >/dev/null 2>&1; then
+      problem "Herdr: couldn't set up the font tools, so Lao stays broken in Herdr"
+      return 0
+    fi
+  fi
+  mkdir -p "$fonts"
+  info "building the Lao fonts for Herdr (a few minutes)…"
+  for w in Regular Bold; do
+    out=$fonts/JetBrainsMonoLao-$w.ttf
+    [[ -f $out ]] && continue
+    backup "$out"
+    "$py" "$gen/make-jbm-lao.py" "/usr/share/fonts/TTF/JetBrainsMonoNerdFont-$w.ttf" \
+      "$HOME/.local/share/fonts/LaoTerm-$w.ttf" "$out" "$w" >/dev/null 2>&1 ||
+      problem "Herdr: JetBrains Mono Lao $w didn't build"
+  done
+  if [[ ! -d $geist/x ]]; then
+    mkdir -p "$geist"
+    if ! { curl -fsSL -o "$geist/geist.zip" "$GEIST_ZIP_URL" &&
+      printf '%s  %s\n' "$GEIST_ZIP_SHA256" "$geist/geist.zip" | sha256sum -c --quiet &&
+      unzip -q -o "$geist/geist.zip" -d "$geist/x"; } >/dev/null 2>&1; then
+      rm -rf "$geist"
+      problem "Herdr: couldn't download Geist ($GEIST_ZIP_URL), so Geist Lao wasn't built"
+      return 0
+    fi
+  fi
+  ttf=$geist/x/geist-font/Geist/ttf
+  # Noto Sans Lao has no SemiBold; SemiBold takes its Medium.
+  for w in Regular:Regular Medium:Medium SemiBold:Medium Bold:Bold; do
+    out=$fonts/GeistLao-${w%%:*}.ttf
+    [[ -f $out ]] && continue
+    backup "$out"
+    "$py" "$gen/make-ui-lao.py" "$ttf/Geist-${w%%:*}.ttf" "/usr/share/fonts/noto/NotoSansLao-${w##*:}.ttf" \
+      "$out" "${w%%:*}" >/dev/null 2>&1 || problem "Herdr: Geist Lao ${w%%:*} didn't build"
+  done
+  ok "Lao fonts for Herdr in ~/.config/herdr-app/fonts"
+}
+
+herdr_links() {
+  local link=$HOME/.local/bin/opengpui target=$HERDR_APP_HOME/mods/opengpui/cli/opengpui
+  [[ -f $target ]] || return 0
+  [[ $(readlink "$link" 2>/dev/null) == "$target" ]] && return 0
+  backup "$link"
+  mkdir -p "$(dirname "$link")"
+  ln -sfn "$target" "$link"
+  info "~/.local/bin/opengpui"
+}
+
+# What the mods add to Claude Code, through their own installers (each finds
+# its own entries again, so a rerun changes nothing).
+herdr_claude() {
+  local mods=$HERDR_APP_HOME/mods
+  if [[ ! -d $HOME/.claude ]]; then
+    manual "Install Claude Code, then run: $REPO_DIR/install.sh --only herdr (revive, the to-do list and the usage line hook into it)"
+    return 0
+  fi
+  confirm "Set up the Claude Code side too (revive's session hooks, the to-do rule and hook, the usage status line)?" yes || return 0
+  local f
+  for f in .claude/settings.json .claude/CLAUDE.md .codex/AGENTS.md .pi/agent/AGENTS.md .local/bin/todo; do
+    backup "$HOME/$f"
+  done
+  node "$mods/revive/revive.mjs" install --no-shell --no-codex --no-pi --no-omp --no-droid --no-cursor >/dev/null 2>&1 ||
+    problem "revive's Claude Code hooks didn't install"
+  sh "$mods/over9k-usage/setup.sh" status on "$mods/over9k-usage/claude-statusline.sh" >/dev/null 2>&1 ||
+    problem "the usage status line didn't install"
+  sh "$mods/over9k-todos/setup.sh" todo on "$mods" >/dev/null 2>&1 ||
+    problem "the to-do rule and hook didn't install"
+  ok "Claude Code: revive's hooks, the to-do rule and hook, the usage status line"
+}
+
+step_herdr() {
+  step "Herdr app: orchi layout, mods, Lao fonts"
+  HERDR_DIR=$REPO_DIR/herdr
+  # shellcheck source=herdr/sources.sh
+  source "$HERDR_DIR/sources.sh"
+  local app t missing=()
+  app=$(herdr_app || true)
+  if [[ -z $app ]]; then
+    info "skipped: the Herdr app isn't installed"
+    manual "Install the Herdr app (https://herdr.dev), open it once, then run: $REPO_DIR/install.sh --only herdr"
+    return 0
+  fi
+  if [[ ! -d $HERDR_APP_HOME ]]; then
+    info "skipped: ~/.config/herdr-app doesn't exist yet"
+    manual "Open the Herdr app once (it creates ~/.config/herdr-app), then run: $REPO_DIR/install.sh --only herdr"
+    return 0
+  fi
+  for t in git cargo go node npm patch python3 jq curl unzip sha256sum; do
+    command -v "$t" >/dev/null 2>&1 || missing+=("$t")
+  done
+  if ((${#missing[@]})); then
+    problem "Herdr step skipped: ${missing[*]} missing (the packages step installs them)"
+    return 0
+  fi
+  if ((DRY_RUN)); then
+    info "would fetch the mods in herdr/mods.tsv at their commits, apply herdr/patches, build gitview's and herdr-recap's helpers and the Lao fonts, and set up the Claude Code side"
+    install_tree "$REPO_DIR/herdr" "Herdr layout, keys and helpers"
+    return 0
+  fi
+  herdr_mods "$app"
+  herdr_recap
+  install_tree "$REPO_DIR/herdr" "Herdr layout, keys and helpers"
+  herdr_settings
+  herdr_fonts
+  herdr_links
+  herdr_claude
+  if "$app" status >/dev/null 2>&1; then
+    "$app" do layout.switch --name orchi >/dev/null 2>&1 && ok "Herdr shows the orchi layout"
+  else
+    manual "Open Herdr and press Ctrl+Shift+L until it shows the orchi layout"
+  fi
+}
+
 # --- main ------------------------------------------------------------------
 
 want() { # want <step>
@@ -826,6 +1083,7 @@ main() {
   want bar && step_bar
   want theme && step_theme
   want services && step_services
+  want herdr && step_herdr
   finish
 }
 

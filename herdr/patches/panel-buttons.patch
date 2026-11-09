@@ -1,0 +1,71 @@
+diff -ruN a/panel-buttons/main.js b/panel-buttons/main.js
+--- a/panel-buttons/main.js
++++ b/panel-buttons/main.js
+@@ -7,7 +7,7 @@
+ import { closeSteps, newPane, openSteps, openedSteps, progressState } from "./progress.js";
+ import { herdBlocked, sessionOf } from "./herd-badge.js";
+ 
+-const PANELS = ["files", "changes", "tickets", "orchi", "herd"];
++const PANELS = ["files", "changes", "tickets", "orchi", "herd", "graph", "todo", "prompts"];
+ const PANEL_PX = 368;
+ const PAIRS = "chatpane.pairs";
+ 
+@@ -33,10 +33,27 @@
+       setShared("workspace.panels", [...new Set([...(Array.isArray(have) ? have : []), ...PANELS])]);
+     }
+     cx.spawn(async () => {
+-      for (;;) if ((await nextCommand()) === "swap") this.swap();
++      for (;;) {
++        const c = await nextCommand();
++        if (c === "swap") this.swap();
++        else if (["graph", "todo", "prompts"].includes(c)) this.togglePanel(c);
++      }
+     });
+   }
+ 
++  // Shows a side panel, or hides it when it is the one showing: the buttons' click and the keys ("panel-buttons.graph").
++  togglePanel(id) {
++    const root = layout(), panel = find(root, "panel"), body = find(root, "panel-body");
++    const on = Boolean(panel) && !panel.hidden && body?.active === id;
++    // Herd can fill the window. The other panels aren't made for that, and closing it must leave the terminals showing.
++    if (find(root, "main")?.hidden && (on || id !== "herd")) {
++      run("layout.show", { id: "main" });
++      run("layout.resize", { id: "panel", px: Number(shared("herd.panelWidth")) || PANEL_PX });
++    }
++    if (on) run("layout.hide", { id: "panel" });
++    else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
++  }
++
+   // A first press splits, and the new pane only exists on a later render, so finish the swap there.
+   settle(list) {
+     const wait = this.waiting;
+@@ -122,16 +139,9 @@
+       return h_flex().id(`panel-${id}`).h(26).px(7).gap(5).flex_none().items_center().rounded(6)
+         .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
+         .hover((s) => s.bg(t.hover)).on_mouse_down("left", stop)
+-        .on_click(() => {
+-          // Herd can fill the window. The other panels aren't made for that, and closing it must leave the terminals showing.
+-          if (find(root, "main")?.hidden && (on || id !== "herd")) {
+-            run("layout.show", { id: "main" });
+-            run("layout.resize", { id: "panel", px: Number(shared("herd.panelWidth")) || PANEL_PX });
+-          }
+-          if (on) run("layout.hide", { id: "panel" });
+-          else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
+-        })
+-        .child(svg(icon).size(14).flex_none().text_color(on ? t.foreground : t.muted)).child(label)
++        .on_click(() => this.togglePanel(id))
++        // Icon only, the name on hover: seven labelled buttons squeezed the tabs out of the bar.
++        .tooltip(label).child(svg(icon).size(14).flex_none().text_color(on ? t.foreground : t.muted))
+         .when(badge > 0, (e) => e.child(div().min_w(16).h(16).px(4).flex().items_center().justify_center().rounded(8)
+           .bg(t.blocked).text_color(t.background).text_size(11).font_semibold().child(String(badge))));
+     };
+@@ -139,6 +149,9 @@
+       .child(button("tickets", "Tickets", "mods/tickets/tickets.svg", 0))
+       .child(button("orchi", "Orchi", "mods/orchi/orchi.svg", open))
+       .child(button("herd", "Herd", "mods/herd/herd.svg", herdBlocked(terminals(), sessionOf(list))))
++      .child(button("graph", "Git", "mods/git-graph/icons/graph.svg", 0))
++      .child(button("todo", "To-do", "mods/over9k-todos/log.svg", 0))
++      .child(button("prompts", "Timeline", "mods/over9k-prompts/timeline.svg", 0))
+       .when(Boolean(swap), (e) => e.child(this.toggle(t, swap)))
+       .when(Boolean(orchestrator), (e) => e.child(this.progressButton(t, orchestrator)));
+   }

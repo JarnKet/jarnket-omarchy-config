@@ -1,0 +1,30 @@
+diff -ruN a/kolczyk/picker.js b/kolczyk/picker.js
+--- a/kolczyk/picker.js
++++ b/kolczyk/picker.js
+@@ -1,6 +1,6 @@
+ import { View, div, image } from 'gpui-kit';
+ import { h_flex, v_flex, InputState, Input, Popover, Button } from 'gpui-base';
+-import { props, spaces, panes, shared, setShared, closeOverlay, theme } from 'herdr';
++import { props, spaces, panes, shared, setShared, closeOverlay, theme, home } from 'herdr';
+ import { draftFor, validateDraft, filterIcons, firstEmoji, COLORS, EMOJIS, transformKey } from './model.js';
+ import { ICONS } from './catalogue.js';
+ import { FEATHER, HUGEICONS } from './libraries.js';
+@@ -91,7 +91,8 @@
+     const folder = this.folder();
+     cx.spawn(async cx => {
+       try {
+-        const result = await assetAction('Import', path.trim().replace(/^["']|["']$/g, ''));
++        // Local change: "~/..." means the home folder (the helper doesn't expand it).
++        const result = await assetAction('Import', path.trim().replace(/^["']|["']$/g, '').replace(/^~(?=\/|$)/, home()));
+         // Import may complete after the user has switched to another icon type.
+         if (this.draft.kind === 'image' && request === this.importRequest && folder === this.folder()) {
+           this.draft.image = result.path; this.imageSource = path.trim();
+@@ -299,7 +300,7 @@
+   images() {
+     return v_flex().gap(8)
+       .child(this.label('Drop an image here, choose a project image, or enter a local file path'))
+-      .child(h_flex().gap(8).child(div().flex_1().child(this.field(this.imageInput, 'ki-image-path', 'C:\\project\\icon.png')))
++      .child(h_flex().gap(8).child(div().flex_1().child(this.field(this.imageInput, 'ki-image-path', '~/Pictures/icon.png')))
+         .child(this.button('ki-image-import', this.importing ? 'Importing…' : 'Import', cx => this.importImage(this.imagePath, cx), false, this.importing)))
+       .child(this.label(this.loading ? 'Finding project images…' : this.info.message ?? `${this.info.files.length} project images${this.info.limited ? ' (list limited to 200)' : ''}`))
+       .child(this.label('Hover a file or press P while focused to preview it (up to 12 per dialog).'))

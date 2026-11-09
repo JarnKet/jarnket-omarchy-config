@@ -54,6 +54,7 @@ Run it again any time; it skips what's already in place.
 | `bar` | Installs my `shell.json`: bar layout and widget settings |
 | `theme` | Clones the ThinkPad, Min Dark and Blueprint themes plus 5 others and switches to ThinkPad (it ships its 13 ASCII wallpapers) |
 | `services` | Turns on `hyprmoncfgd`, which switches monitor profiles when you plug screens in, the plugin update check and the wallpaper slideshow |
+| `herdr` | The [Herdr app](https://herdr.dev) the way I use it: the orchi layout and the mods in [herdr/mods.tsv](herdr/mods.tsv), each fetched at the commit I reviewed with my changes from [herdr/patches](herdr/patches); it builds their helpers (gitview, herdr-recap), fonts that draw Lao right in Herdr (Geist Lao, JetBrains Mono Lao), and sets up their Claude Code side (session hooks, to-do list, usage line). Install the Herdr app and open it once first; Claude Code is optional |
 
 Before it changes a file it copies the old one to
 `~/.local/state/jarnket-omarchy-config/backups/<time>/`.
@@ -299,6 +300,13 @@ manifests/
   themes.txt       themes to clone
 extras/plugins/    plugins I wrote (shadowone.*): top bar, disk keeper, memory keeper,
                    plugin updates, battery
+herdr/
+  mods.tsv         Herdr mods: repo and the commit I reviewed
+  patches/         my changes to those mods
+  home/            Herdr layout and keys, and the mods' helper files
+  files.txt        which files snapshot.sh copies into home/
+  settings.json    the fonts merged into Herdr's settings
+  sources.sh       fetching the mods and making or applying the patches
 ```
 
 Paths to my home folder (`/home/shadowone/...`) in the config files are
@@ -318,7 +326,9 @@ git push
 
 `snapshot.sh` also lists packages I installed that aren't in `packages.txt` or
 `apps.txt`, and warns about plugins with local edits (a fresh clone won't have
-them). To record which monitor layout goes with a new laptop model, run it on
+them). For Herdr it rewrites `herdr/patches/` from the live mods, and warns about
+mods that aren't in `herdr/mods.tsv`; a new mod or a newer commit goes into
+`mods.tsv` by hand, after a review. To record which monitor layout goes with a new laptop model, run it on
 that laptop: device files land in `device/<its model>/`.
 
 The `laptop` branch is an old battery-saving snapshot from 2026-09-24 and isn't

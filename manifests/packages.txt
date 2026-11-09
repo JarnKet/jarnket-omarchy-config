@@ -25,3 +25,11 @@ resvg                        # yazi: SVG previews
 rbw                          # rbw-picker: Bitwarden CLI
 omarchy-hyprland-titlebars   # title bars on every window (hypr/titlebars.lua)
 hypridle                     # suspend after 45 min idle on battery (hypr/hypridle.conf)
+# The Herdr step (herdr/): building gitview, herdr-recap, Kolczyk's helper and the Lao UI fonts.
+rust                         # herdr: gitview's helper (cargo build)
+go                           # herdr: herdr-recap (go build)
+nodejs                       # herdr: revive, openGPUI, Kolczyk's image helper
+npm                          # herdr: Kolczyk's image helper (npm ci)
+patch                        # herdr: my changes to the mods (herdr/patches)
+ttf-jetbrains-mono-nerd      # herdr: base of the JetBrains Mono Lao terminal font
+neovim                       # herdr: gitview opens files in nvim

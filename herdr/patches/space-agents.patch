@@ -1,0 +1,197 @@
+diff -ruN a/space-agents/kolczyk-avatar.js b/space-agents/kolczyk-avatar.js
+--- a/space-agents/kolczyk-avatar.js
++++ b/space-agents/kolczyk-avatar.js
+@@ -0,0 +1,29 @@
++import { div, svg, image } from 'gpui-kit';
++import { h_flex } from 'gpui-base';
++import { appearance } from './kolczyk-model.js';
++import { shared, theme } from 'herdr';
++
++const MARK = { ansi6: '#22a99a', ansi3: '#e3814f', ansi4: '#5b8def', ansi5: '#8b7cf6', ansi2: '#3fae6a', ansi1: '#d9649a' };
++
++export function herdrAvatar(name, space, size = 18) {
++  const color = (shared('space.colors') ?? {})[space] ?? 'ansi6';
++  const fill = color.startsWith('#') ? color : MARK[color] ?? theme()[color];
++  return h_flex().size(size).flex_none().rounded(size * 5 / 18).bg(fill).items_center().justify_center()
++    .text_size(size * 10.5 / 18).font_bold().text_color('#ffffff').child([...String(name ?? '')][0]?.toUpperCase() ?? '?');
++}
++
++export function avatar(value, name, automatic, size = 22) {
++  const a = appearance(value, name, automatic, size);
++  const glyphSize = size * a.scale;
++  const content = a.kind === 'lucide'
++    ? svg(`mods/kolczyk/${a.library === 'lucide' ? 'icons' : `icons-${a.library}`}/${a.name}.svg`).size(glyphSize * 0.68).text_color(a.foreground)
++    : a.kind === 'image'
++      ? image(a.path).size(glyphSize * 0.78)
++      : a.kind === 'emoji'
++        ? div().relative().top(-glyphSize * 0.08).text_size(glyphSize * 0.58).line_height(`${glyphSize * 0.72}px`).child(a.text)
++        : div().text_size(glyphSize * 0.43).line_height(`${glyphSize * 0.55}px`).font_semibold().text_color(a.foreground).child(a.text);
++  return h_flex().size(size).flex_none().items_center().justify_center()
++    .rounded(a.radius).overflow_hidden()
++    .when(Boolean(a.background), el => el.bg(a.background))
++    .child(div().relative().left(a.offsetX).top(a.offsetY).child(content));
++}
+diff -ruN a/space-agents/kolczyk-model.js b/space-agents/kolczyk-model.js
+--- a/space-agents/kolczyk-model.js
++++ b/space-agents/kolczyk-model.js
+@@ -0,0 +1,91 @@
++// Pure model shared by native views and tests. No app/runtime dependencies.
++export const COLORS = ['#a78bfa', '#60a5fa', '#22d3ee', '#34d399', '#a3e635', '#facc15', '#fb923c', '#f87171', '#f472b6', '#ffffff', '#94a3b8', '#18181b'];
++export const EMOJIS = ['🐑', '🐏', '💻', '🛠️', '🚀', '🤖', '✨', '⚡', '🌐', '📱', '🖥️', '⌨️', '⚙️', '🗄️', '☁️', '📦', '📚', '🧪', '🔒', '🎮', '🎵', '🎬', '🖼️', '🛍️', '🔥', '💡', '🧩', '📊', '🧠', '🦄', '🐙', '🌱'];
++export const POPULAR = ['folder-code', 'code', 'terminal', 'globe', 'server', 'database', 'bot', 'sparkles', 'smartphone', 'monitor', 'cloud-cog', 'package', 'book-open', 'flask-conical', 'shield-check', 'rocket', 'gamepad-2', 'music', 'image', 'shopping-bag', 'git-branch', 'workflow', 'wrench', 'layers', 'heart', 'star', 'coffee', 'paw-print', 'leaf', 'gem'];
++const hex = /^#[a-f0-9]{6}$/i;
++
++export function monogram(name) {
++  const parts = String(name || '?').normalize('NFKC').trim().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
++  if (!parts.length) return '?';
++  const first = [...parts[0]];
++  return (parts.length > 1 ? first[0] + [...parts[1]][0] : first[0] + (first.length > 1 ? first.at(-1) : '')).toUpperCase();
++}
++
++export function draftFor(value, name) {
++  return {
++    kind: 'auto', library: 'lucide', name: 'folder-code', emoji: '🐑', text: monogram(name),
++    color: '#a78bfa', background: null, shape: 'rounded', image: null,
++    ...(value && typeof value === 'object' ? value : {}),
++    emojiOffsets: Object.fromEntries(Object.entries(value?.emojiOffsets ?? {}).map(([emoji, offset]) => [emoji, { ...offset }])),
++    adjustments: Object.fromEntries(Object.entries(value?.adjustments ?? {}).map(([key, a]) => [key, { ...a }])),
++  };
++}
++
++export function firstEmoji(value) {
++  const text = String(value ?? '').trim();
++  if (!text) return null;
++  // QuickJS builds without Intl.Segmenter still preserve common ZWJ/flag/keycap sequences.
++  const segment = typeof Intl !== 'undefined' && Intl.Segmenter
++    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)[Symbol.iterator]().next().value?.segment
++    : text.match(/^(?:\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|\p{Extended_Pictographic}[\uFE0F\p{Emoji_Modifier}]*(?:\u200D\p{Extended_Pictographic}[\uFE0F\p{Emoji_Modifier}]*)*)/u)?.[0];
++  return segment && (/\p{Extended_Pictographic}/u.test(segment) || /^\p{Regional_Indicator}{2}$/u.test(segment) || /^[#*0-9]\uFE0F?\u20E3$/u.test(segment)) ? segment : null;
++}
++
++export function validateDraft(d) {
++  if (d.kind === 'herdr') return null;
++  if (!['auto', 'lucide', 'emoji', 'monogram', 'image'].includes(d.kind)) return 'Choose an icon type.';
++  if (['auto', 'lucide', 'monogram'].includes(d.kind) && !hex.test(d.color)) return 'Symbol color must be #RRGGBB.';
++  if (d.background !== null && !hex.test(d.background)) return 'Background must be #RRGGBB, or choose None.';
++  if (!['circle', 'square', 'rounded'].includes(d.shape)) return 'Choose a background shape.';
++  if (d.kind === 'lucide' && !['lucide', 'feather', 'hugeicons'].includes(d.library ?? 'lucide')) return 'Choose an icon library.';
++  if (Object.values(d.emojiOffsets ?? {}).some(o => !o || !Number.isInteger(o.x) || !Number.isInteger(o.y) || Math.abs(o.x) > 8 || Math.abs(o.y) > 8)) return 'Emoji offsets must be whole pixels between -8 and 8.';
++  if (Object.values(d.adjustments ?? {}).some(o => !o || !Number.isInteger(o.x) || !Number.isInteger(o.y) || Math.abs(o.x) > 8 || Math.abs(o.y) > 8 || !Number.isInteger(o.scale) || o.scale < 50 || o.scale > 150)) return 'Use position -8 to 8 px and size 50–150%.';
++  if (d.kind === 'lucide' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(d.name)) return 'Choose a Lucide icon.';
++  if (d.kind === 'monogram' && !/^[\p{L}\p{N}]{1,2}$/u.test(d.text.normalize('NFKC').trim().toUpperCase())) return 'Use one or two letters or numbers.';
++  if (d.kind === 'emoji' && firstEmoji(d.emoji) !== d.emoji) return 'Paste one complete emoji.';
++  if (d.kind === 'image' && !/^assets\/kolczyk\/[a-f0-9]+\.(svg|png)$/i.test(d.image ?? '')) return 'Choose and import an image first.';
++  return null;
++}
++
++export function appearance(value, name, automatic, size = 24) {
++  const d = draftFor(value, name);
++  const defaults = draftFor(null, name);
++  // An incomplete editor field must not replace the rest of the preview.
++  // Sanitize the detached rendering copy; validation still blocks saving it.
++  if (!hex.test(d.color)) d.color = defaults.color;
++  if (d.background !== null && !hex.test(d.background)) d.background = defaults.background;
++  if (!['circle', 'square', 'rounded'].includes(d.shape)) d.shape = defaults.shape;
++  if (!['lucide', 'feather', 'hugeicons'].includes(d.library)) d.library = defaults.library;
++  if (!['auto', 'lucide', 'emoji', 'monogram', 'image', 'herdr'].includes(d.kind)) d.kind = 'auto';
++  if (d.kind === 'lucide' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(d.name)) d.name = defaults.name;
++  if (d.kind === 'emoji' && firstEmoji(d.emoji) !== d.emoji) d.emoji = defaults.emoji;
++  if (typeof d.text !== 'string' || !/^[\p{L}\p{N}]{1,2}$/u.test(d.text.normalize('NFKC').trim().toUpperCase())) d.text = defaults.text;
++  if (d.kind === 'image' && !/^assets\/kolczyk\/[a-f0-9]+\.(svg|png)$/i.test(d.image ?? '')) d.kind = 'auto';
++  for (const [key, adjustment] of Object.entries(d.adjustments)) {
++    if (!Number.isInteger(adjustment.x) || !Number.isInteger(adjustment.y) || Math.abs(adjustment.x) > 8 || Math.abs(adjustment.y) > 8 || !Number.isInteger(adjustment.scale) || adjustment.scale < 50 || adjustment.scale > 150) delete d.adjustments[key];
++  }
++  for (const [key, offset] of Object.entries(d.emojiOffsets)) {
++    if (!Number.isInteger(offset.x) || !Number.isInteger(offset.y) || Math.abs(offset.x) > 8 || Math.abs(offset.y) > 8) delete d.emojiOffsets[key];
++  }
++  const kind = d.kind === 'auto' ? (automatic ? 'image' : 'monogram') : d.kind;
++  const adjustment = d.adjustments[transformKey(d)] ?? { x: 0, y: 0, scale: 100 };
++  const offset = d.kind === 'emoji' ? d.emojiOffsets[d.emoji] ?? { x: 0, y: 0 } : adjustment;
++  return {
++    kind, path: d.kind === 'auto' ? automatic : d.image, name: d.name, library: d.library,
++    text: kind === 'emoji' ? d.emoji : d.kind === 'auto' ? monogram(name) : d.text.normalize('NFKC').trim().toUpperCase(),
++    foreground: d.color, background: d.background,
++    emojiX: (d.emojiOffsets[d.emoji]?.x ?? 0) * size / 22,
++    emojiY: (d.emojiOffsets[d.emoji]?.y ?? 0) * size / 22,
++    offsetX: offset.x * size / 22, offsetY: offset.y * size / 22, scale: adjustment.scale / 100,
++    radius: d.shape === 'circle' ? size / 2 : d.shape === 'square' ? 0 : size * 0.24,
++  };
++}
++
++export function transformKey(d) {
++  return d.kind === 'lucide' ? `${d.library ?? 'lucide'}:${d.name}` : d.kind === 'emoji' ? `emoji:${d.emoji}` : d.kind === 'image' ? `image:${d.image ?? ''}` : d.kind;
++}
++
++export function filterIcons(names, query) {
++  const needle = String(query).trim().toLowerCase().replace(/\s+/g, '-');
++  return needle ? names.filter(name => name.includes(needle)) : POPULAR.filter(name => names.includes(name));
++}
+diff -ruN a/space-agents/main.js b/space-agents/main.js
+--- a/space-agents/main.js
++++ b/space-agents/main.js
+@@ -7,6 +7,8 @@
+ import { View, div, image, svg } from "gpui-kit";
+ import { v_flex, h_flex } from "gpui-base";
+ import { agents, terminals, panes, focused, spaces, machines, run, openOverlay, exec, hc, theme, shared, setShared, setAgentOrder, settings, playSound, watchFolder, window, layout, appHome, nextCommand } from "herdr";
++// Kolczyk (mods/kolczyk): a space's own icon, chosen with "Change icon…" in its right-click menu.
++import { avatar } from "./kolczyk-avatar.js";
+ import {
+   CONTEXT_WARN, NO_SPACE, RANK, agentNames, agentTree, blockedReason, changedPaths, contextShare, displayOrder, dropTarget, finishedWorkers, fleetCounts,
+   foldKey, foldPressed, foldSummary, inbox, kidStatus, nextHeld, pruneFolds, sharedEdits, spaceActive, subtree, terminalName, unseenCount, urgencyOf,
+@@ -140,6 +142,7 @@
+       for (;;) {
+         const command = await nextCommand();
+         if (command === "oldest-blocked") this.jumpToOldest();
++        else if (command === "icon") openOverlay({ mod: "kolczyk", kind: "dialog", width: 520, props: { mode: "picker", space: focused()?.space } });
+         cx.notify();
+       }
+     });
+@@ -372,7 +375,8 @@
+ 
+   menu(w) {
+     // A popup is as tall as its items; height is only the most.
+-    openOverlay({ mod: "menu", kind: "popup", width: 200, height: 260, props: { tab: "space", target: { id: w.id } } });
++    // Kolczyk's copy of the space menu: the shipped one plus "Change icon…".
++    openOverlay({ mod: "kolczyk", kind: "popup", width: 220, height: 310, props: { mode: "menu", tab: "space", target: { id: w.id } } });
+   }
+ 
+   // Spaces in order, each worktree space moved under its main checkout's.
+@@ -494,7 +498,10 @@
+   }
+ 
+   // A space's icon, in the theme's accent with a slow glow behind it while an agent in the space is working.
+-  mark(path, active, t) {
++  mark(path, active, t, w) {
++    // The icon chosen with Kolczyk for this space (w), else the spark.
++    const k = w && (shared("kolczyk.spaces") ?? {})[w.id];
++    const own = Boolean(k?.kind) && k.kind !== "auto" && k.kind !== "herdr";
+     return div()
+       .relative()
+       .size(18)
+@@ -505,7 +512,7 @@
+       .when(active, (el) => el
+         .children(GLOW.map(({ size, to }) => div().absolute().left((18 - size) / 2).top((18 - size) / 2).size(size).rounded_full().bg(t.accent)
+           .loop("opacity", { from: to / 4, to, period: GLOW_MS }))))
+-      .child(svg(path).size(14).text_color(active ? t.accent : t.dim));
++      .child(own ? avatar(k, w.name, null, 18) : svg(path).size(14).text_color(active ? t.accent : t.dim));
+   }
+ 
+   // A drag that ends anywhere but on a row: released elsewhere in the list, or the pointer left the list.
+@@ -568,7 +575,7 @@
+           .gap(9)
+           .items_center()
+           .when(Boolean(tree), (el) => el.pl(22))
+-          .child(this.mark(tree ? BRANCH : SPARK, active, t))
++          .child(this.mark(tree ? BRANCH : SPARK, active, t, tree ? null : w))
+           .child(div().flex_shrink(0).max_w(150).truncate().text_color(t.foreground).child(w.name))
+           .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1())
+           .when(clash.length > 0, (el) => el.child(h_flex().id(`clash-${w.id}`).flex_none().gap(3).items_center().text_size(11).text_color(t.ansi3)
+@@ -745,7 +752,7 @@
+       .when(w.active, (el) => el.bg(t.selected))
+       .hover((s) => s.bg(t.hover))
+       .on_click(() => run("space.select", { id: w.id }))
+-      .child(this.mark(branch ? BRANCH : SPARK, spaceActive(groups, this.all, this.listed), t))
++      .child(this.mark(branch ? BRANCH : SPARK, spaceActive(groups, this.all, this.listed), t, branch ? null : w))
+       .child(div().text_size(11).text_color(w.active ? t.foreground : t.dim).child(String(i + 1)));
+     const rows = groups.flatMap((g) => g.members).map((a) => this.compactAgent(a, t));
+     return [tile, ...rows];

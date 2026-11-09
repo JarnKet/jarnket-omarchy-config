@@ -1,0 +1,19 @@
+# Herdr app mods this setup uses, each fetched at the commit I reviewed.
+# install.sh copies the mods into ~/.config/herdr-app/mods and applies my
+# changes from patches/<mod>.patch; snapshot.sh writes those patches from the
+# live mods. A new commit here needs a new review first.
+#
+# repo<TAB>commit<TAB>folder holding the mods<TAB>mods (space-separated)<TAB>more folders to fetch
+adamentwistle/orchi-build	db5a720ad7cccfd579e26b7ced7a1bbdcf586306	mods	claude-chat herd linear-agent orchi orch-pane pane-header panel-buttons plan-view space-agents tickets
+rabeeh-ta/herdr-git-graph	2f4fe0fc22e7cc726f3c1a2a654887c96227c37b	mods	git-graph
+ChmaraX/herdr-gitview	0160d1da846fd06784eef3dca3a80f9e71a32e4f	herdr-app/mods	gitview gitview-agents gitview-ask gitview-diff gitview-keys gitview-mark gitview-sidebar gitview-tab gitview-tracing	src
+jlopezlira/herdr-kanso	d8df831f0b45e3a8e9fa7dc4270fb7cb253a0f48	markdown-panel/mods	markdown-panel
+jlopezlira/herdr-kanso	d8df831f0b45e3a8e9fa7dc4270fb7cb253a0f48	open-with/mods	open-with
+mrolafsson/herdr-recap	b2e25a779ad1b0260e3dcce3e39ee1974ad01382	app/mods	recap
+dmazlum/herdr-revive	cebe0913248a2f349005aee6fb6a91bebe6461bf	mods	revive
+herunan/herdr-over9k	2ff6512c1a638e2e8493da3596faf1087e8ca226	over9k-timeline/mods	over9k-prompts
+herunan/herdr-over9k	2ff6512c1a638e2e8493da3596faf1087e8ca226	over9k-todo/mods	over9k-todos
+herunan/herdr-over9k	2ff6512c1a638e2e8493da3596faf1087e8ca226	over9k-usage/mods	over9k-usage
+atleugim/herdr-symbols-icons	29bf02f8065cbd06d9314b1bb51f1df94944dcdb	mods	symbols-icons
+rgonek/Kolczyk	67d8c21ecf3619e1adf9d29ba8f19031fb7a000a	mods	kolczyk
+lukachi/openGPUI	5edb9ad9ed7a2155249ebef5a9a576e8c7a2b52f	gallery/opengpui/mods	opengpui

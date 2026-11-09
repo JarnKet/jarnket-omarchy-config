@@ -1,0 +1,34 @@
+diff -ruN a/claude-chat/images.js b/claude-chat/images.js
+--- a/claude-chat/images.js
++++ b/claude-chat/images.js
+@@ -22,6 +22,17 @@
+   return data.writeToFileAtomically(argv[0], true) ? "ok" : "none";
+ }`;
+ 
++// Linux (local change): osascript is macOS-only, so the clipboard comes from wl-paste (Wayland) or xclip (X11). The
++// first image type it offers, PNG first, is written as <base>.<ext>; prints that path, or "none". The path stays an argument.
++const READ_CLIPBOARD_LINUX = `b=$1
++# The clipboard's image types; PNG if it has one, else the first.
++pick() { l=$("$@" 2>/dev/null | grep -x -E 'image/(png|jpeg|webp|gif)'); printf '%s\n' "$l" | grep -m1 -x image/png || printf '%s\n' "$l" | grep -m1 .; }
++if command -v wl-paste >/dev/null 2>&1 && t=$(pick wl-paste --list-types); then get() { wl-paste --no-newline --type "$t"; }
++elif command -v xclip >/dev/null 2>&1 && t=$(pick xclip -selection clipboard -t TARGETS -o); then get() { xclip -selection clipboard -t "$t" -o; }
++else echo none; exit 0; fi
++e=\${t#image/}; [ "$e" = jpeg ] && e=jpg
++if get > "$b.$e" 2>/dev/null && [ -s "$b.$e" ]; then printf '%s' "$b.$e"; else rm -f "$b.$e"; echo none; fi`;
++
+ export const IMAGE_FOLDER = "chat-images";
+ export const isImagePath = (path) => IMAGE.test(String(path ?? "")) && !CONTROL.test(path);
+ const imageDir = (home) => `${home}/${IMAGE_FOLDER}`;
+@@ -31,6 +42,12 @@
+ export async function clipboardImage(exec, home, name, board = "") {
+   const path = `${imageDir(home)}/${name}.png`;
+   await exec("mkdir", ["-p", "-m", "700", imageDir(home)]);
++  const os = (await exec("uname", ["-s"]).catch(() => null))?.stdout?.trim();
++  if (os && os !== "Darwin") {
++    const l = await exec("sh", ["-c", READ_CLIPBOARD_LINUX, "sh", `${imageDir(home)}/${name}`]).catch(() => null);
++    const out = l?.code === 0 ? l.stdout.trim() : "";
++    return out && out !== "none" && isImagePath(out) && inFolder(home, out) ? out : null;
++  }
+   const r = await exec("osascript", ["-l", "JavaScript", "-e", READ_CLIPBOARD, path, board]);
+   return r.code === 0 && r.stdout.trim() === "ok" ? path : null;
+ }

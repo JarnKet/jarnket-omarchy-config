@@ -1,0 +1,13 @@
+diff -ruN a/revive/main.js b/revive/main.js
+--- a/revive/main.js
++++ b/revive/main.js
+@@ -178,7 +178,8 @@
+     this.busy = true;
+     cx.notify();
+     cx.spawn(async (cx) => {
+-      const r = await engine(["install"]);
++      // Claude Code hooks only: no shell auto-restart block, no Codex/pi/omp/droid/Cursor (local change).
++      const r = await engine(["install", "--no-shell", "--no-codex", "--no-pi", "--no-omp", "--no-droid", "--no-cursor"]);
+       this.busy = false;
+       this.note = r.ok ? { level: "info", text: r.out.trim() } : { level: "error", text: r.error };
+       if (r.ok) notify({ title: "Revive", body: "Installed. New agent sessions are remembered from now on.", level: "success" });
