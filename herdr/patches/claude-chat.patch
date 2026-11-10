@@ -202,7 +202,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
  import { usagePanel } from "./usage-view.js";
  import { completionCard, exitCard } from "./slash-view.js";
 +// Local addition: @ file mentions (mention.js).
-+import { FILES, MENTION_GROUP, applyMention, filterFiles, mentionAt, parseFiles } from "./mention.js";
++import { FILES, MENTION_GROUP, SLASH_GROUPS, applyMention, applySlash, filterFiles, mentionAt, parseFiles, slashAt } from "./mention.js";
  
  // The same width and sides as the composer's foot in main.js, so the cards line up with it.
  const SIDE = 24, GAP = 8;
@@ -232,7 +232,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
    chosen(text, cx) {
 +    // @ with the list open: Enter puts the path in. The composer empties its box when this returns true, so the text
 +    // goes back on the next turn.
-+    if (this.slash?.mode === "file") {
++    if (this.slash?.mode === "file" || this.slash?.mode === "inline") {
 +      const next = this.mentionText(text, this.slash.index);
 +      this.slash = null;
 +      if (next == null) return false;
@@ -255,21 +255,29 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
    // Called as the composer's text changes.
    typing(text, cx) {
 -    if (!completing(text)) { if (this.slash) { this.slash = null; cx.notify(); } return; }
-+    const mention = completing(text) ? null : mentionAt(text);
++    const mention = completing(text) ? null : mentionAt(text) ?? slashAt(text);
 +    if (!completing(text) && !mention) { if (this.slash) { this.slash = null; cx.notify(); } return; }
-+    const mode = mention ? "file" : "command";
++    const mode = !mention ? "command" : text[mention.at] === "/" ? "inline" : "file";
 +    if (this.slash && this.slash.mode !== mode) this.slash = null;
-+    if (mode === "file") return this.typingMention(text, mention, cx);
++    if (mode === "file" || mode === "inline") return this.typingMention(text, mention, cx, mode);
      if (!this.slash) {
 -      const slash = this.slash = { typed: "", index: 0, moved: false, entered: false, list: null, rows: [], flat: [] };
 +      const slash = this.slash = { mode, typed: "", index: 0, moved: false, entered: false, list: null, rows: [], flat: [] };
        cx.timer.after(ENTER_MS, (cx) => { if (this.slash === slash) { slash.entered = true; cx.notify(); } });
        const folder = this.folder();
        if (folder) cx.spawn(async (cx) => { await ensureList(folder, { exec, trusted: (f) => this.trusted(f) }); cx.notify(); });
-@@ -103,6 +125,15 @@
+@@ -103,6 +125,23 @@
    // The rows are worked out when what was typed or the list changes, never on every render.
    refilter() {
      const slash = this.slash, folder = this.folder();
++    if (slash.mode === "inline") {
++      const list = (folder && cachedList(folder)) || (fallback ??= fallbackList());
++      if (slash.list === list && slash.shown === slash.typed) return;
++      const f = filterList(list.filter((c) => SLASH_GROUPS.includes(c.group)), slash.mention?.query ?? "");
++      slash.list = list; slash.shown = slash.typed; slash.rows = completionRows(f.sections); slash.flat = f.flat;
++      slash.index = slash.moved ? Math.min(slash.index, Math.max(0, f.flat.length - 1)) : 0;
++      return;
++    }
 +    if (slash.mode === "file") {
 +      const list = (folder && files.get(folder)?.list) || [];
 +      if (slash.list === list && slash.shown === slash.typed) return;
@@ -282,11 +290,11 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
      const list = (folder && cachedList(folder)) || (fallback ??= fallbackList());
      if (slash.list === list && slash.shown === slash.typed) return;
      const f = filterList(list, slash.typed);
-@@ -124,6 +155,11 @@
+@@ -124,6 +163,11 @@
          cx.notify();
          return true;
        }
-+      if (stroke === "tab" && slash.mode === "file") {
++      if (stroke === "tab" && (slash.mode === "file" || slash.mode === "inline")) {
 +        const next = this.mentionText(this.host.input.value(), slash.index);
 +        if (next != null) this.putText(next, cx);
 +        return true;
@@ -294,18 +302,19 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
        if (stroke === "tab") {
          const { name } = slash.flat[slash.index], { input } = this.host;
          input.set_value(name);
-@@ -139,6 +175,46 @@
+@@ -139,6 +183,49 @@
      return false;
    }
  
 +  // ---- @ file mentions ----
 +
-+  typingMention(text, mention, cx) {
++  typingMention(text, mention, cx, mode = "file") {
 +    if (!this.slash) {
-+      const slash = this.slash = { mode: "file", typed: "", index: 0, moved: false, entered: false, list: null, rows: [], flat: [], mention };
++      const slash = this.slash = { mode, typed: "", index: 0, moved: false, entered: false, list: null, rows: [], flat: [], mention };
 +      cx.timer.after(ENTER_MS, (cx) => { if (this.slash === slash) { slash.entered = true; cx.notify(); } });
 +      const folder = this.folder();
-+      if (folder) cx.spawn(async (cx) => { await this.loadFiles(folder); cx.notify(); });
++      if (folder && mode === "file") cx.spawn(async (cx) => { await this.loadFiles(folder); cx.notify(); });
++      if (folder && mode === "inline") cx.spawn(async (cx) => { await ensureList(folder, { exec, trusted: (f) => this.trusted(f) }); cx.notify(); });
 +    }
 +    this.slash.mention = mention;
 +    if (this.slash.typed !== text) { this.slash.typed = text; this.slash.index = 0; this.slash.moved = false; }
@@ -326,7 +335,9 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
 +
 +  // The text with row `index`'s path in place of the @word, or null when there's nothing to put in.
 +  mentionText(text, index) {
-+    const at = mentionAt(text), item = this.slash?.flat?.[index] ?? this.slash?.flat?.[0];
++    const item = this.slash?.flat?.[index] ?? this.slash?.flat?.[0];
++    if (this.slash?.mode === "inline") { const at = slashAt(text); return at && item ? applySlash(text, at.at, item.name) : null; }
++    const at = mentionAt(text);
 +    return at && item ? applyMention(text, at.at, item.name.slice(1)) : null;
 +  }
 +
@@ -341,13 +352,13 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
    // ---- the usage panel ----
  
    toggleUsage(tab, cx) {
-@@ -226,7 +302,10 @@
+@@ -226,7 +313,10 @@
      if (this.slash) {
        this.refilter();
        if (this.slash.flat.length) parts.push(completionCard(t, { rows: this.slash.rows, index: this.slash.index, entered: this.slash.entered, scroll: this.scroll }, {
 -        onPick: (index, cx) => { const item = this.slash?.flat[index]; if (item) this.host.submit(item.name, cx); },
 +        onPick: (index, cx) => {
-+          if (this.slash?.mode === "file") { const next = this.mentionText(this.host.input.value(), index); if (next != null) this.putText(next, cx); return; }
++          if (this.slash?.mode === "file" || this.slash?.mode === "inline") { const next = this.mentionText(this.host.input.value(), index); if (next != null) this.putText(next, cx); return; }
 +          const item = this.slash?.flat[index]; if (item) this.host.submit(item.name, cx);
 +        },
          onHover: (index, cx) => { if (this.slash && this.slash.index !== index) { this.slash.index = index; this.slash.moved = true; cx.notify(); } },
@@ -613,7 +624,16 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
  const FOOT_SIDE = 24, FOOT_BOTTOM = 14;
  // The foot's height before it first reports one. It keeps the list's box the height of the thread with no panel open.
  const FOOT_START = 110;
-@@ -200,6 +202,7 @@
+@@ -99,6 +101,8 @@
+       for (;;) {
+         const command = await nextCommand();
+         if (testing(appHome())) await this.testCommand(command, cx);
++        // Local addition: scrolling to either end is harmless, so `herdr-app do claude-chat.top|bottom` works anywhere.
++        else if (command === "top" || command === "bottom") await this.testCommand(command, cx);
+         cx.notify();
+       }
+     });
+@@ -200,6 +204,7 @@
      const moves = !first && this.landed && this.pinned && this.showing && reply.start === this.thread.end;
      if (!first && !this.showing) this.addUnseen(newMessages(reply.rows));
      this.thread = first ? prependReply(this.thread, reply) : appendReply(this.thread, reply);
@@ -621,7 +641,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
      const settled = this.composer.settle(reply.rows, this.thread.queue, Date.now());
      for (const [item, row] of settled) this.heights[row.id] = this.heights[item.id];
      // A row that took over from a sent message is already there.
-@@ -296,12 +299,70 @@
+@@ -296,12 +301,70 @@
      this.motion.glide = { top, on: true, name: "panel" };
    }
  
@@ -696,7 +716,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
 diff -ruN a/claude-chat/mention.js b/claude-chat/mention.js
 --- a/claude-chat/mention.js
 +++ b/claude-chat/mention.js
-@@ -0,0 +1,65 @@
+@@ -0,0 +1,79 @@
 +// Local addition: @ file mentions in the composer, as Claude Code's own prompt has them. Typing @ offers the session
 +// folder's files and folders; Enter, Tab or a click puts the path in, and Claude Code reads the file when the message
 +// lands. No Herdr imports, so `node` can load this file. commands.js runs FILES and draws the rows with the / list's card.
@@ -762,6 +782,20 @@ diff -ruN a/claude-chat/mention.js b/claude-chat/mention.js
 +export function applyMention(text, at, path) {
 +  return `${String(text).slice(0, at)}@${path}${path.endsWith("/") ? "" : " "}`;
 +}
++
++// Local addition: a /word typed after other text (after a space or on a new line), as with @. Only skills are offered
++// there: Claude Code runs a built-in command only when the message starts with it, but the model reads a skill's name
++// anywhere. The start of the box stays the full / list. { at, query } like mentionAt, or null.
++export const SLASH_GROUPS = ["Skills"];
++export function slashAt(text) {
++  const m = /(^|\s)\/([^\s/]*)$/.exec(String(text ?? ""));
++  if (!m) return null;
++  const at = m.index + m[1].length;
++  return at > 0 ? { at, query: m[2] } : null;
++}
++
++// The text with the /word replaced by the picked name and a space.
++export const applySlash = (text, at, name) => `${String(text).slice(0, at)}${name} `;
 diff -ruN a/claude-chat/openui.js b/claude-chat/openui.js
 --- a/claude-chat/openui.js
 +++ b/claude-chat/openui.js
@@ -848,6 +882,41 @@ diff -ruN a/claude-chat/openui.js b/claude-chat/openui.js
 +  }
 +  return out;
 +}
+diff -ruN a/claude-chat/send.js b/claude-chat/send.js
+--- a/claude-chat/send.js
++++ b/claude-chat/send.js
+@@ -304,10 +304,15 @@
+ const WORD = /\[image\]/g;
+ 
+ // True when a transcript row is this sent message. A row says [image] where an image went.
++// Local addition: both sides lose their image marks and are compared in one Unicode form (Lao has letters such as ໜ with a
++// second spelling), and a long message also matches when one holds the other, so a grey copy doesn't stay for minutes.
++const MARKS = /\[image\]|\[Image #\d+\]/g;
++const plain = (text) => squash(String(text ?? "").normalize("NFKC").replace(MARKS, ""));
+ function sentAs(item, row) {
+-  const text = squash(String(row.text).replace(WORD, ""));
+-  const want = squash(item.text);
+-  return (row.clipped ? want.startsWith(text.slice(0, 200)) : want === text) && item.images <= (row.images ?? 0);
++  if (item.images > (row.images ?? 0)) return false;
++  const text = plain(row.text), want = plain(item.text);
++  if (row.clipped) return want.startsWith(text.slice(0, 200));
++  return want === text || (Math.min(want.length, text.length) >= 20 && (want.includes(text) || text.includes(want)));
+ }
+ 
+ // What's still waiting after new rows land. A queued message gives way to its queue row, and anything else to its own
+@@ -322,6 +327,12 @@
+     if (at >= 0) settled.push([item, ...users.splice(at, 1)]);
+     else if (!(item.queued && texts.includes(squash(item.text))) && now - item.at < SENT_MS) left.push(item);
+   }
++  // Local addition: one message waiting and one person's row landing after it that matched nothing are the same message.
++  const waiting = left.filter((item) => !item.queued);
++  if (waiting.length === 1 && users.length === 1 && (users[0].at ?? now) >= waiting[0].at - 2000) {
++    settled.push([waiting[0], users[0]]);
++    left.splice(left.indexOf(waiting[0]), 1);
++  }
+   return { left, settled };
+ }
+ 
 diff -ruN a/claude-chat/slash.js b/claude-chat/slash.js
 --- a/claude-chat/slash.js
 +++ b/claude-chat/slash.js
@@ -948,3 +1017,17 @@ diff -ruN a/claude-chat/tail.py b/claude-chat/tail.py
      return rows
  
  
+diff -ruN a/claude-chat/thread.js b/claude-chat/thread.js
+--- a/claude-chat/thread.js
++++ b/claude-chat/thread.js
+@@ -204,7 +204,9 @@
+     .when(width > 0 && count > 0, (e) => e
+       .child(div().id("thread-anchor").absolute().left(0).right(0).bottom(0).h(height + OVERSCAN).when(!landed, (b) => b.opacity(0))
+         .child(opts.glide(div().id("thread-glide").relative().size_full()).child(list())))
+-      .child(Scrollbar.vertical(LIST_ID).absolute().inset_0()));
++      // Local addition: always shown. Left to the theme it fades out, and older rows loading at the top while you scroll
++      // up kept it from coming back.
++      .child(Scrollbar.vertical(LIST_ID).mode("always").absolute().inset_0()));
+ }
+ 
+ // A quiet line in the middle of the pane, for a thread with nothing to show yet.
