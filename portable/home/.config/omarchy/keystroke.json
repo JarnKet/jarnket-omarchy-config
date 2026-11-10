@@ -1,4 +1,8 @@
 {
   "version": 1,
-  "providers": {}
+  "providers": {
+    "ask-claude": {
+      "enabled": true
+    }
+  }
 }

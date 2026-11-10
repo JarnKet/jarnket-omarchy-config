@@ -169,11 +169,16 @@ stay installed.
   Ctrl-T the 2FA code. Copies stay out of the clipboard history and clear after
   30 seconds, and the window stays out of screen shares. The first run asks for
   your account email.
-- **Super + A** opens omaSearch, a Spotlight-style box that asks your default
-  agent (`omarchy default agent claude`). It goes through the Claude Code CLI
-  and your own login, so run `claude` once to sign in. It asks before Claude
-  runs a command. Each question loads your Claude Code settings, plugins and
-  MCP servers, so the first answer takes a moment.
+- **Super + A** (or the sparkle in the bar, or the first row of Super + Space)
+  opens Ask Claude: type a question, the answer streams in from Claude Sonnet,
+  follow-ups keep the conversation. It goes through the Claude Code CLI and your
+  own Claude login, so install Claude Code and run `claude` once to sign in. In
+  Super + Space, `ask <question>` sends it straight away, and any typed text gets
+  an **Ask Claude here** row. `ask-claude "question"` works in a terminal. Put a
+  line or two about yourself (city, languages) in `~/.config/ask-claude/context.md`
+  for local answers. **Ctrl+H** in the panel searches your past Ask Claude
+  conversations (only those, not other Claude Code sessions); Enter reopens one
+  and follow-ups continue it. In a terminal: `ask-claude --history <words>`.
 - **Battery:** on battery the laptop suspends after 45 minutes idle
   (`hypridle` + `~/.local/bin/suspend-if-on-battery`), never while Stay Awake
   is on or an app keeps the screen awake. Three more changes need sudo, so the
@@ -244,6 +249,7 @@ stay installed.
 | [Top Bar](extras/plugins/shadowone.top-bar) | A second bar opposite the Omarchy bar for third-party widgets (mine) |
 | [Disk Keeper](extras/plugins/shadowone.disk-keeper) | Free space in the bar, a warning before the disk fills up, and a panel to clean caches, old packages, build folders and Docker leftovers (mine) |
 | [Memory Keeper](extras/plugins/shadowone.memory-keeper) | Available memory in the bar; stops Claude Code sessions left idle and resumes them with a click, frees cold cache under pressure, shows what holds memory (mine) |
+| [Ask Claude](extras/plugins/shadowone.ask-claude) | Quick questions to Claude Sonnet from the bar or Super + A, through the Claude Code CLI, with a searchable history (mine) |
 | [Plugin Updates](extras/plugins/shadowone.plugin-updates) | A bar icon while plugin updates are waiting; click to review them (mine) |
 | [Battery](extras/plugins/shadowone.power) | Omarchy's battery panel plus an 80% charge limit switch and battery health (mine) |
 | [Keystroke](https://github.com/evindor/keystroke) | Raycast-style command palette instead of the Omarchy menu |
@@ -253,7 +259,6 @@ stay installed.
 | [Workspace name](https://github.com/jankeesvw/omarchy-workspace-name) | Name and icon of the current workspace. With more than one monitor, apply [the patch](extras/patches/jankeesvw.workspace-name-Panel.qml.omarchy45.diff) for Omarchy 4.5's per-monitor workspaces and layout icon (`git apply` in the plugin folder) |
 | [Bar Folder](https://github.com/arikisonfire/omarchy-bar-folder) | Folds bar icons into one folder |
 | [Hardwarchy](https://github.com/tymurbogach/hardwarchy) | CPU, GPU, memory, network, disk, fan in the top bar |
-| [omaSearch](https://github.com/5h3rd1l/omaSearch) | Ask Claude from a Spotlight-style box on Super + A |
 | [Cursor Accent](https://github.com/SmoothPixels/cursor-accent) | Cursor in the theme's colors; its hooks recolor it on every theme change |
 | [OmaConnect](https://github.com/jitendradara12/omaconnect) | KDE Connect for your phone (in the Bar Folder; needs `kdeconnect`) |
 | [OmaProton VPN](https://github.com/grichard99/omaproton-vpn) | Proton VPN in the top bar (checks the link every 30 s) |

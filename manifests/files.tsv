@@ -43,6 +43,7 @@ portable	.config/omarchy/hooks
 portable	.config/omarchy/hardwarchy.json
 portable	.config/omarchy/audio-control.json
 portable	.config/omarchy/keystroke.json
+portable	.local/share/keystroke/extensions/ask-claude
 portable	.local/bin/plugin-updates
 portable	.local/bin/window-minimize
 portable	.local/bin/window-restore

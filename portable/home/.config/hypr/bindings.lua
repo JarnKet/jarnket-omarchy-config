@@ -49,8 +49,8 @@ o.bind("SUPER + ALT + C", "Claude history", "omarchy-launch-tui claude-history")
 -- Touchpad feels heavy? Press, move one finger for 3 s; report in ~/.local/state/touchpad-lag/.
 o.bind("SUPER + ALT + T", "Touchpad lag capture", "$HOME/.local/bin/touchpad-lag-capture")
 
--- Ask Claude: omaSearch overlay (io.github.5h3rd1l.omasearch, replaced shadowone.ask-claude 2026-11-08).
-o.rebind("SUPER + A", "Ask Claude", "omarchy-shell shell toggle io.github.5h3rd1l.omasearch '{}'")
+-- Ask Claude quick-ask panel (shadowone.ask-claude bar plugin; back 2026-11-10 after omaSearch proved too slow).
+o.rebind("SUPER + A", "Ask Claude", "omarchy-shell shadowone.ask-claude toggle")
 
 -- Drop-down Kitty from the top edge; the same key hides it (~/.config/kitty/quick-access-terminal.conf).
 o.rebind("SUPER + grave", "Drop-down terminal", "kitten quick-access-terminal")

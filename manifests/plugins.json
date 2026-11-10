@@ -45,7 +45,7 @@
       "name": "OmaDoctor",
       "version": "0.5.0",
       "source": "https://github.com/Davedes83/OmaDoctor.git",
-      "revision": "59891b5e9cecbd4f0521676c69da9f806a31ae4d",
+      "revision": "a991a7ee234f93ed52fe28fd5e21c4a3fb84d61e",
       "local": false
     },
     {
@@ -86,14 +86,6 @@
       "version": "1.3.2",
       "source": "https://github.com/07dcolem/omarchy-target-boot.git",
       "revision": "1dd19a779c55b8c86b187a558ce9addeaa287897",
-      "local": false
-    },
-    {
-      "id": "io.github.5h3rd1l.omasearch",
-      "name": "omaSearch",
-      "version": "1.1.1",
-      "source": "https://github.com/5h3rd1l/omaSearch.git",
-      "revision": "a002289c04dff552fd9c73ef2bd7d7be838ca271",
       "local": false
     },
     {
@@ -181,7 +173,7 @@
       "name": "Workspace name",
       "version": "1.1.1",
       "source": "https://github.com/jankeesvw/omarchy-workspace-name.git",
-      "revision": "8e9de7f6752f38a37633d8375e875727770c89b7",
+      "revision": "455bf90e382b10bb764fa5913c59d73df60d747d",
       "local": false
     },
     {
@@ -229,7 +221,7 @@
       "name": "Omarchy Zones",
       "version": "0.5.4",
       "source": "https://github.com/shivam-g10/omarchy-zones.git",
-      "revision": "ead717544a1a19d8765396dce1ede1b92bec4381",
+      "revision": "80eef05b1ae3dffaf003ab4060099e465383c7f8",
       "local": false
     },
     {
@@ -255,6 +247,14 @@
       "source": "https://github.com/segersb/omarchy-printers.git",
       "revision": "14fef62b08bc4bf25afaf1239f90897dfb345b28",
       "local": false
+    },
+    {
+      "id": "shadowone.ask-claude",
+      "name": "Ask Claude",
+      "version": "1.1.0",
+      "source": null,
+      "revision": null,
+      "local": true
     },
     {
       "id": "shadowone.disk-keeper",
