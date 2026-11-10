@@ -1,7 +1,12 @@
 diff -ruN a/panel-buttons/main.js b/panel-buttons/main.js
 --- a/panel-buttons/main.js
 +++ b/panel-buttons/main.js
-@@ -7,7 +7,7 @@
+@@ -3,11 +3,11 @@
+ import { View, div, svg } from "gpui-kit";
+ import { h_flex } from "gpui-base";
+ import { nextCommand, panes, run, layout, terminals, theme, shared, setShared } from "herdr";
+-import { SPLIT_MS, splitPending, swapState, swapSteps, tidyPairs } from "./swap.js";
++import { SPLIT_MS, VIEWS, keepChatSteps, splitPending, swapState, swapSteps, tidyPairs, zoomsOf } from "./swap.js";
  import { closeSteps, newPane, openSteps, openedSteps, progressState } from "./progress.js";
  import { herdBlocked, sessionOf } from "./herd-badge.js";
  
@@ -39,7 +44,38 @@ diff -ruN a/panel-buttons/main.js b/panel-buttons/main.js
    // A first press splits, and the new pane only exists on a later render, so finish the swap there.
    settle(list) {
      const wait = this.waiting;
-@@ -122,16 +139,9 @@
+@@ -86,6 +103,7 @@
+     if (!state) return;
+     const to = target ?? (state.showing === "chat" ? "terminal" : "chat");
+     if (to === state.showing) return;
++    setShared(VIEWS, { ...(shared(VIEWS) ?? {}), [state.terminal]: to });
+     if (to === "chat" && !state.chatPane) {
+       if (splitPending(this.waiting, state.tab, Date.now())) return;
+       this.waiting = { tab: state.tab, terminal: state.terminal, known: list.map((p) => p.pane), at: Date.now() };
+@@ -107,10 +125,22 @@
+       .child(cell("terminal", "mods/claude-chat/terminal.svg", "Terminal"));
+   }
+ 
++  // See keepChatSteps. The first render only takes note of the zooms.
++  keepChat(list) {
++    const before = this.zooms;
++    this.zooms = zoomsOf(list);
++    if (!before) return;
++    const steps = keepChatSteps(list, shared(PAIRS) ?? {}, shared(VIEWS) ?? {}, before);
++    if (!steps.length) return;
++    for (const [name, args] of steps) run(name, args);
++    this.zooms = zoomsOf(panes());
++  }
++
+   render() {
+     const list = panes();
+     this.settle(list);
+     this.settleProgress(list);
++    this.keepChat(list);
+     const swap = swapState(list, shared(PAIRS) ?? {});
+     const orchestrator = progressState(list, nameOf);
+     const t = theme();
+@@ -122,16 +152,9 @@
        return h_flex().id(`panel-${id}`).h(26).px(7).gap(5).flex_none().items_center().rounded(6)
          .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
          .hover((s) => s.bg(t.hover)).on_mouse_down("left", stop)
@@ -59,7 +95,7 @@ diff -ruN a/panel-buttons/main.js b/panel-buttons/main.js
          .when(badge > 0, (e) => e.child(div().min_w(16).h(16).px(4).flex().items_center().justify_center().rounded(8)
            .bg(t.blocked).text_color(t.background).text_size(11).font_semibold().child(String(badge))));
      };
-@@ -139,6 +149,9 @@
+@@ -139,6 +162,9 @@
        .child(button("tickets", "Tickets", "mods/tickets/tickets.svg", 0))
        .child(button("orchi", "Orchi", "mods/orchi/orchi.svg", open))
        .child(button("herd", "Herd", "mods/herd/herd.svg", herdBlocked(terminals(), sessionOf(list))))
@@ -69,3 +105,40 @@ diff -ruN a/panel-buttons/main.js b/panel-buttons/main.js
        .when(Boolean(swap), (e) => e.child(this.toggle(t, swap)))
        .when(Boolean(orchestrator), (e) => e.child(this.progressButton(t, orchestrator)));
    }
+diff -ruN a/panel-buttons/swap.js b/panel-buttons/swap.js
+--- a/panel-buttons/swap.js
++++ b/panel-buttons/swap.js
+@@ -48,6 +48,33 @@
+   return [...(zoomed ? [] : [["pane.zoom", { pane }]]), ["pane.focus", { pane }]];
+ }
+ 
++// Local addition: the chat stays in front when something other than the toggle goes to its session. Clicking the session
++// in the sidebar (or anything else that runs `pane.focus` on its terminal) makes Herdr move the tab's zoom from the chat to
++// the terminal. `views` holds what the person last chose for each terminal ("chat" or "terminal"; the toggle and the
++// chat's own trips to the terminal write it), and `before` each tab's zoomed pane at the last render. A zoom that moved
++// from a chat to its own terminal, with the terminal not chosen, goes back to the chat.
++export const VIEWS = "chatpane.view";
++
++export function zoomsOf(panes) {
++  const out = {};
++  for (const p of panes) if (p.zoomed) out[p.tab] = p.pane;
++  return out;
++}
++
++export function keepChatSteps(panes, pairs, views, before) {
++  const steps = [];
++  for (const term of panes) {
++    if (!term.zoomed || !isSession(term) || views?.[term.terminal] === "terminal") continue;
++    const was = before?.[term.tab];
++    if (!was || was === term.pane) continue;
++    const chat = panes.find((p) => p.pane === was && p.mod === CHAT && p.tab === term.tab && pairs[p.pane] === term.terminal);
++    if (!chat) continue;
++    steps.push(["pane.zoom", { pane: chat.pane }]);
++    if (term.focused) steps.push(["pane.focus", { pane: chat.pane }]);
++  }
++  return steps;
++}
++
+ export function tidyPairs(pairs, panes) {
+   const live = new Set(panes.filter((p) => p.mod === CHAT).map((p) => p.pane));
+   return Object.fromEntries(Object.entries(pairs ?? {}).filter(([pane]) => live.has(pane)));

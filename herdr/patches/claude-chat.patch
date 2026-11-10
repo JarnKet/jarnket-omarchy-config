@@ -1,7 +1,38 @@
+diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
+--- a/claude-chat/cards.js
++++ b/claude-chat/cards.js
+@@ -7,8 +7,8 @@
+ //   on.tab(index, cx)   a step's tab, in a card with several questions
+ import { div, svg } from "gpui-kit";
+ import { h_flex, v_flex } from "gpui-base";
+-import { hc, panes, run, settings, shared } from "herdr";
+-import { checkPress, follow, idle, parseDialog, pressed, stepKeys, terminalSteps } from "./dialog.js";
++import { hc, panes, run, setShared, settings, shared } from "herdr";
++import { VIEWS, checkPress, choseTerminal, follow, idle, parseDialog, pressed, stepKeys, terminalSteps } from "./dialog.js";
+ import { ease, spring } from "./motion.js";
+ import { settle } from "./reveal.js";
+ import { zoom } from "./thread.js";
+@@ -256,6 +256,7 @@
+     const steps = terminalSteps(panes(), shared("chatpane.pairs") ?? {}, this.terminal);
+     if (!steps) return;
+     this.owed = false;
++    setShared(VIEWS, choseTerminal(shared(VIEWS), this.terminal));
+     for (const [name, args] of steps) run(name, args);
+   }
+ 
 diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
 --- a/claude-chat/commands.js
 +++ b/claude-chat/commands.js
-@@ -10,6 +10,8 @@
+@@ -3,13 +3,15 @@
+ //   terminal, session(), threadEnd(), own(), paneHeight(), submit(text, cx), send(text, cx), say(note, cx), moved(height), input
+ // Colours come from `theme()` in the view files.
+ import { h_flex, v_flex, VirtualListScrollHandle } from "gpui-base";
+-import { appHome, exec, hc, home, panes, readTextFile, run, shared } from "herdr";
+-import { terminalSteps } from "./dialog.js";
++import { appHome, exec, hc, home, panes, readTextFile, run, setShared, shared } from "herdr";
++import { VIEWS, choseTerminal, terminalSteps } from "./dialog.js";
+ import { dialogNet, route } from "./route.js";
+ import { cachedList, completing, completionRows, ensureList, fallbackList, filterList, folderTrusted, keysWanted, pick, rowNumber, startRow, step } from "./slash.js";
  import { buildStats, limitMeters, longestRanges, parseStatsCache, sharedDetail, usageHeight, withLongest } from "./usage-data.js";
  import { usagePanel } from "./usage-view.js";
  import { completionCard, exitCard } from "./slash-view.js";
@@ -46,7 +77,15 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
      const chosen = pick(text, this.slash?.flat?.[this.slash.index], this.slash?.flat, this.slash?.moved);
      this.slash = null;
      if (chosen === text) return false;
-@@ -89,9 +106,13 @@
+@@ -76,6 +93,7 @@
+   swap(cx) {
+     const steps = terminalSteps(panes(), shared("chatpane.pairs") ?? {}, this.host.terminal);
+     if (!steps) { this.host.say(AWAY_NOTE, cx); return; }
++    setShared(VIEWS, choseTerminal(shared(VIEWS), this.host.terminal));
+     for (const [name, args] of steps) run(name, args);
+   }
+ 
+@@ -89,9 +107,13 @@
  
    // Called as the composer's text changes.
    typing(text, cx) {
@@ -62,7 +101,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
        cx.timer.after(ENTER_MS, (cx) => { if (this.slash === slash) { slash.entered = true; cx.notify(); } });
        const folder = this.folder();
        if (folder) cx.spawn(async (cx) => { await ensureList(folder, { exec, trusted: (f) => this.trusted(f) }); cx.notify(); });
-@@ -103,6 +124,15 @@
+@@ -103,6 +125,15 @@
    // The rows are worked out when what was typed or the list changes, never on every render.
    refilter() {
      const slash = this.slash, folder = this.folder();
@@ -78,7 +117,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
      const list = (folder && cachedList(folder)) || (fallback ??= fallbackList());
      if (slash.list === list && slash.shown === slash.typed) return;
      const f = filterList(list, slash.typed);
-@@ -124,6 +154,11 @@
+@@ -124,6 +155,11 @@
          cx.notify();
          return true;
        }
@@ -90,7 +129,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
        if (stroke === "tab") {
          const { name } = slash.flat[slash.index], { input } = this.host;
          input.set_value(name);
-@@ -139,6 +174,46 @@
+@@ -139,6 +175,46 @@
      return false;
    }
  
@@ -137,7 +176,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
    // ---- the usage panel ----
  
    toggleUsage(tab, cx) {
-@@ -226,7 +301,10 @@
+@@ -226,7 +302,10 @@
      if (this.slash) {
        this.refilter();
        if (this.slash.flat.length) parts.push(completionCard(t, { rows: this.slash.rows, index: this.slash.index, entered: this.slash.entered, scroll: this.scroll }, {
@@ -149,6 +188,21 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
          onHover: (index, cx) => { if (this.slash && this.slash.index !== index) { this.slash.index = index; this.slash.moved = true; cx.notify(); } },
        }));
      }
+diff -ruN a/claude-chat/dialog.js b/claude-chat/dialog.js
+--- a/claude-chat/dialog.js
++++ b/claude-chat/dialog.js
+@@ -376,6 +376,11 @@
+ // After a press lands. A card with steps stays up, dimmed, until the next step is on the screen.
+ export const pressed = (card, now) => ({ phase: "pressed", card: card.tabs ? card : null, key: card.key, at: now });
+ 
++// Local addition: a trip to the terminal counts as choosing it, so panel-buttons' keepChat (see its swap.js) leaves it in
++// front until the toggle brings the chat back. `VIEWS` is that shared key.
++export const VIEWS = "chatpane.view";
++export const choseTerminal = (views, terminal) => ({ ...(views ?? {}), [terminal]: "terminal" });
++
+ // The commands that show the terminal, or null when the chat isn't the focused pane: `pane.focus` would pull the window
+ // to another tab. A chat side by side with its terminal only moves focus, because a second zoom undoes a zoom.
+ export function terminalSteps(panes, pairs, terminal) {
 diff -ruN a/claude-chat/images.js b/claude-chat/images.js
 --- a/claude-chat/images.js
 +++ b/claude-chat/images.js
