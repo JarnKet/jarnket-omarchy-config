@@ -1,0 +1,14 @@
+#!/bin/sh
+# herdr-browser: orchi-build's browser pane for Herdr, set up by omarchy-config (install.sh, herdr step).
+# Brave draws the pages (else Chromium, else agent-browser's own Chrome), on an Agent profile of its own, and agents
+# share that one browser unless they pass --session.
+export AGENT_BROWSER_BIN="${AGENT_BROWSER_BIN:-$HOME/.local/share/mise/shims/agent-browser}"
+export AGENT_BROWSER_ENGINE=chrome
+for b in /opt/brave-origin-bin/brave /opt/brave-bin/brave /usr/lib/brave-browser/brave /usr/lib/chromium/chromium; do
+  if [ -x "$b" ]; then export AGENT_BROWSER_EXECUTABLE_PATH="$b"; break; fi
+done
+export HERDR_BROWSER_PROFILE="$HOME/.local/share/herdr-browser/profile"
+export HERDR_BROWSER_SESSION="${HERDR_BROWSER_SESSION:-herdr}"
+node=/usr/bin/node
+[ -x "$node" ] || node=$(command -v node)
+exec "$node" "$HOME/.local/libexec/herdr-browser/herdr-browser.mjs" "$@"

@@ -155,6 +155,12 @@ snapshot_herdr() {
       warn "couldn't fetch $repo; its patches left as they are"
       continue
     fi
+    # orchi's browser pane lives outside the mods, in ~/.local/libexec (see herdr_browser in install.sh).
+    if [[ $repo == */orchi-build && -d $HOME/.local/libexec/herdr-browser ]]; then
+      listed+=(herdr-browser)
+      herdr_make_patch "$dir/browser" "$HOME/.local/libexec/herdr-browser" "$HERDR_DIR/patches/herdr-browser.patch"
+      [[ -f $HERDR_DIR/patches/herdr-browser.patch ]] && patches=$((patches + 1))
+    fi
     for m in $mods; do
       if [[ -d $HERDR_APP_HOME/mods/$m ]]; then
         herdr_make_patch "$dir/$folder/$m" "$HERDR_APP_HOME/mods/$m" "$HERDR_DIR/patches/$m.patch"

@@ -54,7 +54,7 @@ Run it again any time; it skips what's already in place.
 | `bar` | Installs my `shell.json`: bar layout and widget settings |
 | `theme` | Clones the ThinkPad, Min Dark and Blueprint themes plus 5 others and switches to ThinkPad (it ships its 13 ASCII wallpapers) |
 | `services` | Turns on `hyprmoncfgd`, which switches monitor profiles when you plug screens in, the plugin update check and the wallpaper slideshow |
-| `herdr` | The [Herdr app](https://herdr.dev) the way I use it: the orchi layout and the mods in [herdr/mods.tsv](herdr/mods.tsv), each fetched at the commit I reviewed with my changes from [herdr/patches](herdr/patches); it builds their helpers (gitview, herdr-recap), fonts that draw Lao right in Herdr (Geist Lao, JetBrains Mono Lao), and sets up their Claude Code side (session hooks, to-do list, usage line). Install the Herdr app and open it once first; Claude Code is optional |
+| `herdr` | The [Herdr app](https://herdr.dev) the way I use it: the orchi layout and the mods in [herdr/mods.tsv](herdr/mods.tsv), each fetched at the commit I reviewed with my changes from [herdr/patches](herdr/patches); it builds their helpers (gitview, herdr-recap), a Browser tab agents drive (orchi's herdr-browser on Brave, + menu or Ctrl+Alt+B), fonts that draw Lao right in Herdr (Geist Lao, JetBrains Mono Lao), and sets up their Claude Code side (session hooks, to-do list, usage line). Install the Herdr app and open it once first; Claude Code is optional |
 
 Before it changes a file it copies the old one to
 `~/.local/state/jarnket-omarchy-config/backups/<time>/`.

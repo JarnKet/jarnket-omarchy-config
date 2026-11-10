@@ -1,0 +1,58 @@
+diff -ruN a/herdr-browser/herdr-browser.mjs b/herdr-browser/herdr-browser.mjs
+--- a/herdr-browser/herdr-browser.mjs
++++ b/herdr-browser/herdr-browser.mjs
+@@ -11,6 +11,24 @@
+ const AGENT_BROWSER = process.env.AGENT_BROWSER_BIN || "agent-browser";
+ const pidFile = (session) => path.join(os.tmpdir(), `herdr-browser-${session}.pid`);
+ 
++// Local addition (omarchy-config): the shared session runs on a profile that's kept, so logins made there stay. A profile
++// can only be open in one browser at a time, so any other session starts empty, as before. Brave reopens the last tabs by
++// default, which would put an old page in front of the one asked for, so a new profile starts on a new tab instead.
++// The wrapper in ~/.local/bin sets HERDR_BROWSER_PROFILE and the browser (AGENT_BROWSER_ENGINE, _EXECUTABLE_PATH).
++const SHARED = "herdr";
++const PASSED = ["AGENT_BROWSER_ENGINE", "AGENT_BROWSER_EXECUTABLE_PATH", "HERDR_BROWSER_PROFILE"];
++function useProfile(session) {
++  const dir = process.env.HERDR_BROWSER_PROFILE;
++  delete process.env.AGENT_BROWSER_PROFILE;
++  if (!dir || session !== SHARED) return;
++  const prefs = path.join(dir, "Default", "Preferences");
++  if (!fs.existsSync(prefs)) {
++    fs.mkdirSync(path.dirname(prefs), { recursive: true });
++    fs.writeFileSync(prefs, JSON.stringify({ session: { restore_on_startup: 5 } }));
++  }
++  process.env.AGENT_BROWSER_PROFILE = dir;
++}
++
+ function run(bin, args, timeout = 0) {
+   return new Promise((resolve) => {
+     execFile(bin, args, { maxBuffer: 16 * 1024 * 1024, timeout }, (error, stdout, stderr) =>
+@@ -46,7 +64,8 @@
+ async function show(session, where) {
+   if (where.kind === "none" || viewerRunning(session)) return;
+   const terminal = process.env.HC_TERMINAL_ID;
+-  const argv = ["/usr/bin/env", `AGENT_BROWSER_BIN=${AGENT_BROWSER}`, process.execPath, fileURLToPath(import.meta.url), "view", "--session", session];
++  const passed = PASSED.filter((name) => process.env[name]).map((name) => `${name}=${process.env[name]}`);
++  const argv = ["/usr/bin/env", `AGENT_BROWSER_BIN=${AGENT_BROWSER}`, ...passed, process.execPath, fileURLToPath(import.meta.url), "view", "--session", session];
+   const { space, pane, shown } = await whereIs(terminal);
+   if (where.kind === "split") {
+     if (!pane) throw new Error("--split needs a Herdr terminal. Use --tab, or run this inside one");
+@@ -66,6 +85,7 @@
+ async function main() {
+   const args = parseArgs(process.argv.slice(2));
+   const session = sessionFor(args.session, process.env);
++  useProfile(session);
+   switch (args.command) {
+     case "open": {
+       if (args.rest.length !== 1) throw new Error("open takes one address");
+diff -ruN a/herdr-browser/lib.mjs b/herdr-browser/lib.mjs
+--- a/herdr-browser/lib.mjs
++++ b/herdr-browser/lib.mjs
+@@ -8,7 +8,7 @@
+   herdr-browser close [--session name]
+   herdr-browser ls
+ 
+-The session defaults to one per terminal. In the pane, Ctrl+L types an address and Ctrl+Q closes the pane.`;
++The session defaults to $HERDR_BROWSER_SESSION (the wrapper sets "herdr", a shared browser on a kept profile), else one per terminal. In the pane, Ctrl+L types an address and Ctrl+Q closes the pane.`;
+ 
+ export function sessionFor(given, env = {}) {
+   const raw = given || env.HERDR_BROWSER_SESSION || (env.HC_TERMINAL_ID ? `term-${env.HC_TERMINAL_ID}` : "herdr");
