@@ -1,3 +1,154 @@
+diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
+--- a/claude-chat/commands.js
++++ b/claude-chat/commands.js
+@@ -10,6 +10,8 @@
+ import { buildStats, limitMeters, longestRanges, parseStatsCache, sharedDetail, usageHeight, withLongest } from "./usage-data.js";
+ import { usagePanel } from "./usage-view.js";
+ import { completionCard, exitCard } from "./slash-view.js";
++// Local addition: @ file mentions (mention.js).
++import { FILES, MENTION_GROUP, applyMention, filterFiles, mentionAt, parseFiles } from "./mention.js";
+ 
+ // The same width and sides as the composer's foot in main.js, so the cards line up with it.
+ const SIDE = 24, GAP = 8;
+@@ -19,6 +21,9 @@
+ const AWAY_NOTE = "Opened in the terminal";
+ const PICKER_NOTE = "Not sent. Use the model control";
+ let fallback = null;
++// Each folder's files for @, read again when older than FILES_MS.
++const FILES_MS = 15_000;
++const files = new Map();
+ 
+ export class Commands {
+   constructor(cx, host) {
+@@ -33,6 +38,9 @@
+   async trusted(folder) {
+     const session = this.host.session();
+     if (!session || !folder) return false;
++    // Local change: Claude Code doesn't record trust for the home folder, whose project settings are the user settings
++    // themselves, so a headless start there runs nothing a session in ~ doesn't. Other folders still need trust.
++    if (folder === home()) return true;
+     return folderTrusted(await readTextFile(`${session.dir}/.claude.json`).catch(() => null), folder);
+   }
+ 
+@@ -42,6 +50,15 @@
+   // be a command in its own right, such as `/model` with the arrows moved off it. The row goes round again so it takes the
+   // same road as typed text. False when the text stands.
+   chosen(text, cx) {
++    // @ with the list open: Enter puts the path in. The composer empties its box when this returns true, so the text
++    // goes back on the next turn.
++    if (this.slash?.mode === "file") {
++      const next = this.mentionText(text, this.slash.index);
++      this.slash = null;
++      if (next == null) return false;
++      cx.timer.after(0, (cx) => this.putText(next, cx));
++      return true;
++    }
+     const chosen = pick(text, this.slash?.flat?.[this.slash.index], this.slash?.flat, this.slash?.moved);
+     this.slash = null;
+     if (chosen === text) return false;
+@@ -89,9 +106,13 @@
+ 
+   // Called as the composer's text changes.
+   typing(text, cx) {
+-    if (!completing(text)) { if (this.slash) { this.slash = null; cx.notify(); } return; }
++    const mention = completing(text) ? null : mentionAt(text);
++    if (!completing(text) && !mention) { if (this.slash) { this.slash = null; cx.notify(); } return; }
++    const mode = mention ? "file" : "command";
++    if (this.slash && this.slash.mode !== mode) this.slash = null;
++    if (mode === "file") return this.typingMention(text, mention, cx);
+     if (!this.slash) {
+-      const slash = this.slash = { typed: "", index: 0, moved: false, entered: false, list: null, rows: [], flat: [] };
++      const slash = this.slash = { mode, typed: "", index: 0, moved: false, entered: false, list: null, rows: [], flat: [] };
+       cx.timer.after(ENTER_MS, (cx) => { if (this.slash === slash) { slash.entered = true; cx.notify(); } });
+       const folder = this.folder();
+       if (folder) cx.spawn(async (cx) => { await ensureList(folder, { exec, trusted: (f) => this.trusted(f) }); cx.notify(); });
+@@ -103,6 +124,15 @@
+   // The rows are worked out when what was typed or the list changes, never on every render.
+   refilter() {
+     const slash = this.slash, folder = this.folder();
++    if (slash.mode === "file") {
++      const list = (folder && files.get(folder)?.list) || [];
++      if (slash.list === list && slash.shown === slash.typed) return;
++      const items = filterFiles(list, slash.mention?.query ?? "");
++      slash.list = list; slash.shown = slash.typed;
++      slash.rows = completionRows(items.length ? [{ title: MENTION_GROUP, items }] : []); slash.flat = items;
++      slash.index = slash.moved ? Math.min(slash.index, Math.max(0, items.length - 1)) : 0;
++      return;
++    }
+     const list = (folder && cachedList(folder)) || (fallback ??= fallbackList());
+     if (slash.list === list && slash.shown === slash.typed) return;
+     const f = filterList(list, slash.typed);
+@@ -124,6 +154,11 @@
+         cx.notify();
+         return true;
+       }
++      if (stroke === "tab" && slash.mode === "file") {
++        const next = this.mentionText(this.host.input.value(), slash.index);
++        if (next != null) this.putText(next, cx);
++        return true;
++      }
+       if (stroke === "tab") {
+         const { name } = slash.flat[slash.index], { input } = this.host;
+         input.set_value(name);
+@@ -139,6 +174,46 @@
+     return false;
+   }
+ 
++  // ---- @ file mentions ----
++
++  typingMention(text, mention, cx) {
++    if (!this.slash) {
++      const slash = this.slash = { mode: "file", typed: "", index: 0, moved: false, entered: false, list: null, rows: [], flat: [], mention };
++      cx.timer.after(ENTER_MS, (cx) => { if (this.slash === slash) { slash.entered = true; cx.notify(); } });
++      const folder = this.folder();
++      if (folder) cx.spawn(async (cx) => { await this.loadFiles(folder); cx.notify(); });
++    }
++    this.slash.mention = mention;
++    if (this.slash.typed !== text) { this.slash.typed = text; this.slash.index = 0; this.slash.moved = false; }
++    cx.notify();
++  }
++
++  // The folder's paths, shared by every pane on it and read again once they're old. A read that fails leaves the list empty.
++  async loadFiles(folder) {
++    const hit = files.get(folder);
++    if (hit?.promise) return hit.promise;
++    if (hit && Date.now() - hit.at < FILES_MS) return hit.list;
++    const entry = { list: hit?.list ?? [], at: hit?.at ?? 0, promise: null };
++    entry.promise = exec("sh", ["-c", FILES, "files", folder]).then((r) => { entry.list = parseFiles(r.stdout); entry.at = Date.now(); return entry.list; })
++      .catch(() => entry.list).finally(() => { entry.promise = null; });
++    files.set(folder, entry);
++    return entry.promise;
++  }
++
++  // The text with row `index`'s path in place of the @word, or null when there's nothing to put in.
++  mentionText(text, index) {
++    const at = mentionAt(text), item = this.slash?.flat?.[index] ?? this.slash?.flat?.[0];
++    return at && item ? applyMention(text, at.at, item.name.slice(1)) : null;
++  }
++
++  // Puts text in the composer with the cursor at its end, and lets the list follow it (a folder keeps it open).
++  putText(text, cx) {
++    const { input } = this.host;
++    input.set_value(text);
++    input.set_selected_range({ start: text.length, end: text.length });
++    this.typing(text, cx);
++  }
++
+   // ---- the usage panel ----
+ 
+   toggleUsage(tab, cx) {
+@@ -226,7 +301,10 @@
+     if (this.slash) {
+       this.refilter();
+       if (this.slash.flat.length) parts.push(completionCard(t, { rows: this.slash.rows, index: this.slash.index, entered: this.slash.entered, scroll: this.scroll }, {
+-        onPick: (index, cx) => { const item = this.slash?.flat[index]; if (item) this.host.submit(item.name, cx); },
++        onPick: (index, cx) => {
++          if (this.slash?.mode === "file") { const next = this.mentionText(this.host.input.value(), index); if (next != null) this.putText(next, cx); return; }
++          const item = this.slash?.flat[index]; if (item) this.host.submit(item.name, cx);
++        },
+         onHover: (index, cx) => { if (this.slash && this.slash.index !== index) { this.slash.index = index; this.slash.moved = true; cx.notify(); } },
+       }));
+     }
 diff -ruN a/claude-chat/images.js b/claude-chat/images.js
 --- a/claude-chat/images.js
 +++ b/claude-chat/images.js
@@ -32,3 +183,92 @@ diff -ruN a/claude-chat/images.js b/claude-chat/images.js
    const r = await exec("osascript", ["-l", "JavaScript", "-e", READ_CLIPBOARD, path, board]);
    return r.code === 0 && r.stdout.trim() === "ok" ? path : null;
  }
+diff -ruN a/claude-chat/mention.js b/claude-chat/mention.js
+--- a/claude-chat/mention.js
++++ b/claude-chat/mention.js
+@@ -0,0 +1,65 @@
++// Local addition: @ file mentions in the composer, as Claude Code's own prompt has them. Typing @ offers the session
++// folder's files and folders; Enter, Tab or a click puts the path in, and Claude Code reads the file when the message
++// lands. No Herdr imports, so `node` can load this file. commands.js runs FILES and draws the rows with the / list's card.
++
++export const MENTION_GROUP = "Files";
++const MAX_ROWS = 50;
++
++// The @word being typed at the end of the text: { at, query }, `at` being where its @ is. Null when there's none.
++// An @ inside a word (an email address) doesn't count.
++export function mentionAt(text) {
++  const m = /(^|\s)@([^\s@]*)$/.exec(String(text ?? ""));
++  return m ? { at: m.index + m[1].length, query: m[2] } : null;
++}
++
++// sh -c FILES <name> <folder>: paths under the folder, one per line, folders ending in "/". In a git repo, git's own list
++// (tracked and untracked, without what's ignored); elsewhere `find` three levels deep, skipping dot folders and the
++// usual build and package folders. At most 20000 lines.
++export const FILES = `cd "$1" 2>/dev/null || exit 0
++if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
++  git ls-files -co --exclude-standard 2>/dev/null | head -n 20000
++else
++  find . -mindepth 1 -maxdepth 3 \\( -name '.*' -o -name node_modules -o -name target -o -name dist -o -name build -o -name __pycache__ \\) -prune \\
++    -o \\( -type d -printf '%P/\\n' -o -type f -printf '%P\\n' \\) 2>/dev/null | head -n 20000
++fi`;
++
++// FILES' output as a list, with the folders of git's files added (git lists files only).
++export function parseFiles(text) {
++  const out = new Set();
++  for (const line of String(text ?? "").split("\n")) {
++    const p = line.trim();
++    if (!p) continue;
++    out.add(p);
++    let i = p.lastIndexOf("/", p.length - 2);
++    while (i > 0) { out.add(p.slice(0, i + 1)); i = p.lastIndexOf("/", i - 1); }
++  }
++  return [...out];
++}
++
++// Rows for the card, best first: a path that starts with what's typed, then one whose last part does, then one that has it
++// anywhere; shorter paths first within each. Rows look like the / list's: { name: "@path", desc, group, hit }.
++export function filterFiles(paths, query, max = MAX_ROWS) {
++  const q = String(query ?? "").toLowerCase();
++  const scored = [];
++  for (const p of paths) {
++    const l = p.toLowerCase();
++    const base = l.slice(l.lastIndexOf("/", l.length - 2) + 1);
++    let rank;
++    if (!q) rank = 0;
++    else if (l.startsWith(q)) rank = 0;
++    else if (base.startsWith(q)) rank = 1;
++    else if (l.includes(q)) rank = 2;
++    else continue;
++    scored.push({ p, rank, at: q ? l.indexOf(q) : -1 });
++  }
++  scored.sort((a, b) => a.rank - b.rank || a.p.length - b.p.length || a.p.localeCompare(b.p));
++  return scored.slice(0, max).map(({ p, at }) => ({
++    name: `@${p}`, desc: "", group: MENTION_GROUP, hit: at >= 0 ? [1 + at, 1 + at + q.length] : null,
++  }));
++}
++
++// The text with the @word replaced by the picked path. A file gets a space after it; a folder doesn't, so typing goes on
++// inside it and the list follows.
++export function applyMention(text, at, path) {
++  return `${String(text).slice(0, at)}@${path}${path.endsWith("/") ? "" : " "}`;
++}
+diff -ruN a/claude-chat/slash.js b/claude-chat/slash.js
+--- a/claude-chat/slash.js
++++ b/claude-chat/slash.js
+@@ -181,9 +181,15 @@
+ // Resolves to its stdout. Throws when the folder isn't trusted, so nothing runs there, or when it didn't finish in time.
+ // There's no JS timer here: a mod has no `setTimeout` or `clearTimeout`. The watchdog stops `claude`, and `exec` itself
+ // gives up at 30 s, so the read always settles.
++// Local change: zsh when it's installed, else bash (Omarchy has no zsh), each with the shell's profile as above.
++let shellPick = null;
++const interactiveShell = (exec) => (shellPick ??= exec("sh", ["-c", "command -v zsh >/dev/null 2>&1 && echo zsh || echo bash"])
++  .then((r) => (r.stdout.trim() === "zsh" ? "zsh" : "bash")).catch(() => "bash"));
++
+ export async function runHeadless(exec, folder, text, trusted) {
+   if (trusted !== true) throw new Error("folder not trusted");
+-  const r = await exec("zsh", ["-ic", SCRIPT, "zsh", userLine(text), ...HEADLESS], { cwd: folder });
++  const shell = await interactiveShell(exec);
++  const r = await exec(shell, ["-ic", SCRIPT, shell, userLine(text), ...HEADLESS], { cwd: folder });
+   if (STOPPED.has(r.code)) throw new Error("claude -p took too long");
+   if (r.code !== 0 && !/"subtype"\s*:\s*"init"/.test(String(r.stdout))) throw new Error(`claude -p exited ${r.code}`);
+   return r.stdout;
