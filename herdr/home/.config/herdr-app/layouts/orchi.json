@@ -122,9 +122,9 @@
                   },
                   "focus": {
                     "width": 1,
-                    "color": "accent"
+                    "color": "border"
                   },
-                  "radius": 10,
+                  "radius": 0,
                   "gap": 8,
                   "lone": true
                 }
