@@ -188,13 +188,15 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
 diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
 --- a/claude-chat/commands.js
 +++ b/claude-chat/commands.js
-@@ -3,13 +3,15 @@
+@@ -3,13 +3,17 @@
  //   terminal, session(), threadEnd(), own(), paneHeight(), submit(text, cx), send(text, cx), say(note, cx), moved(height), input
  // Colours come from `theme()` in the view files.
  import { h_flex, v_flex, VirtualListScrollHandle } from "gpui-base";
 -import { appHome, exec, hc, home, panes, readTextFile, run, shared } from "herdr";
 -import { terminalSteps } from "./dialog.js";
 +import { appHome, exec, hc, home, panes, readTextFile, run, setShared, shared } from "herdr";
++import * as fs from "fs/promises";
++import { pathTag } from "./openui.js";
 +import { VIEWS, choseTerminal, terminalSteps } from "./dialog.js";
  import { dialogNet, route } from "./route.js";
  import { cachedList, completing, completionRows, ensureList, fallbackList, filterList, folderTrusted, keysWanted, pick, rowNumber, startRow, step } from "./slash.js";
@@ -206,7 +208,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
  
  // The same width and sides as the composer's foot in main.js, so the cards line up with it.
  const SIDE = 24, GAP = 8;
-@@ -19,6 +21,9 @@
+@@ -19,6 +23,9 @@
  const AWAY_NOTE = "Opened in the terminal";
  const PICKER_NOTE = "Not sent. Use the model control";
  let fallback = null;
@@ -216,17 +218,58 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
  
  export class Commands {
    constructor(cx, host) {
-@@ -33,6 +38,9 @@
+@@ -29,11 +36,49 @@
+ 
+   folder() { return this.host.session()?.cwd ?? null; }
+ 
++  // Local addition: the / list as ensureList is asked for it everywhere here, with the folder's list kept on disk in the
++  // app's hidden cache (hidden, so writing it reloads no mod), and a redraw when the saved one is in.
++  listOptions(cx) {
++    const dir = `${appHome()}/.cache/claude-chat/slash`;
++    const file = (folder) => `${dir}/${pathTag(folder)}.json`;
++    return {
++      exec, trusted: (f) => this.trusted(f), onSaved: () => cx.notify(),
++      store: {
++        read: async (folder) => {
++          const saved = JSON.parse((await fs.readFile(file(folder), "utf8").catch(() => null)) ?? "null");
++          return saved?.folder === folder ? saved.list : null;
++        },
++        write: async (folder, list) => {
++          await fs.mkdir(dir, { recursive: true });
++          await fs.writeFile(file(folder), JSON.stringify({ folder, at: Date.now(), list }));
++        },
++      },
++    };
++  }
++
++  // Reads the list ahead of the first /, a few seconds after the chat has its session.
++  warm(cx) {
++    const folder = this.folder();
++    if (!folder || this.warmed === folder) return;
++    this.warmed = folder;
++    cx.timer.after(3000, (cx) => cx.spawn(async (cx) => {
++      await ensureList(folder, this.listOptions(cx));
++      cx.notify();
++    }));
++  }
++
+   // `claude -p` skips the trust question, so it only runs where the terminal has accepted the folder.
    async trusted(folder) {
      const session = this.host.session();
      if (!session || !folder) return false;
+-    return folderTrusted(await readTextFile(`${session.dir}/.claude.json`).catch(() => null), folder);
 +    // Local change: Claude Code doesn't record trust for the home folder, whose project settings are the user settings
 +    // themselves, so a headless start there runs nothing a session in ~ doesn't. Other folders still need trust.
 +    if (folder === home()) return true;
-     return folderTrusted(await readTextFile(`${session.dir}/.claude.json`).catch(() => null), folder);
++    // Local change: with no CLAUDE_CONFIG_DIR, Claude Code keeps .claude.json in the home folder, not in ~/.claude (a stale
++    // copy there named no project, so no folder but ~ ever got its skills). Either file saying yes is enough.
++    const files = [`${session.dir}/.claude.json`, ...(session.dir === `${home()}/.claude` ? [`${home()}/.claude.json`] : [])];
++    for (const file of files) if (folderTrusted(await readTextFile(file).catch(() => null), folder)) return true;
++    return false;
    }
  
-@@ -42,6 +50,15 @@
+   // ---- the hook before anything is sent ----
+@@ -42,6 +87,15 @@
    // be a command in its own right, such as `/model` with the arrows moved off it. The row goes round again so it takes the
    // same road as typed text. False when the text stands.
    chosen(text, cx) {
@@ -242,7 +285,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
      const chosen = pick(text, this.slash?.flat?.[this.slash.index], this.slash?.flat, this.slash?.moved);
      this.slash = null;
      if (chosen === text) return false;
-@@ -76,6 +93,7 @@
+@@ -76,6 +130,7 @@
    swap(cx) {
      const steps = terminalSteps(panes(), shared("chatpane.pairs") ?? {}, this.host.terminal);
      if (!steps) { this.host.say(AWAY_NOTE, cx); return; }
@@ -250,7 +293,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
      for (const [name, args] of steps) run(name, args);
    }
  
-@@ -89,9 +107,13 @@
+@@ -89,12 +144,16 @@
  
    // Called as the composer's text changes.
    typing(text, cx) {
@@ -265,8 +308,12 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
 +      const slash = this.slash = { mode, typed: "", index: 0, moved: false, entered: false, list: null, rows: [], flat: [] };
        cx.timer.after(ENTER_MS, (cx) => { if (this.slash === slash) { slash.entered = true; cx.notify(); } });
        const folder = this.folder();
-       if (folder) cx.spawn(async (cx) => { await ensureList(folder, { exec, trusted: (f) => this.trusted(f) }); cx.notify(); });
-@@ -103,6 +125,23 @@
+-      if (folder) cx.spawn(async (cx) => { await ensureList(folder, { exec, trusted: (f) => this.trusted(f) }); cx.notify(); });
++      if (folder) cx.spawn(async (cx) => { await ensureList(folder, this.listOptions(cx)); cx.notify(); });
+     }
+     if (this.slash.typed !== text) { this.slash.typed = text; this.slash.index = 0; this.slash.moved = false; }
+     cx.notify();
+@@ -103,6 +162,23 @@
    // The rows are worked out when what was typed or the list changes, never on every render.
    refilter() {
      const slash = this.slash, folder = this.folder();
@@ -290,7 +337,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
      const list = (folder && cachedList(folder)) || (fallback ??= fallbackList());
      if (slash.list === list && slash.shown === slash.typed) return;
      const f = filterList(list, slash.typed);
-@@ -124,6 +163,11 @@
+@@ -124,6 +200,11 @@
          cx.notify();
          return true;
        }
@@ -302,7 +349,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
        if (stroke === "tab") {
          const { name } = slash.flat[slash.index], { input } = this.host;
          input.set_value(name);
-@@ -139,6 +183,49 @@
+@@ -139,6 +220,49 @@
      return false;
    }
  
@@ -314,7 +361,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
 +      cx.timer.after(ENTER_MS, (cx) => { if (this.slash === slash) { slash.entered = true; cx.notify(); } });
 +      const folder = this.folder();
 +      if (folder && mode === "file") cx.spawn(async (cx) => { await this.loadFiles(folder); cx.notify(); });
-+      if (folder && mode === "inline") cx.spawn(async (cx) => { await ensureList(folder, { exec, trusted: (f) => this.trusted(f) }); cx.notify(); });
++      if (folder && mode === "inline") cx.spawn(async (cx) => { await ensureList(folder, this.listOptions(cx)); cx.notify(); });
 +    }
 +    this.slash.mention = mention;
 +    if (this.slash.typed !== text) { this.slash.typed = text; this.slash.index = 0; this.slash.moved = false; }
@@ -352,7 +399,7 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
    // ---- the usage panel ----
  
    toggleUsage(tab, cx) {
-@@ -226,7 +313,10 @@
+@@ -226,7 +350,10 @@
      if (this.slash) {
        this.refilter();
        if (this.slash.flat.length) parts.push(completionCard(t, { rows: this.slash.rows, index: this.slash.index, entered: this.slash.entered, scroll: this.scroll }, {
@@ -624,7 +671,15 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
  const FOOT_SIDE = 24, FOOT_BOTTOM = 14;
  // The foot's height before it first reports one. It keeps the list's box the height of the thread with no panel open.
  const FOOT_START = 110;
-@@ -99,6 +101,8 @@
+@@ -93,12 +95,16 @@
+       this.settleScroll(cx);
+       const cover = this.motion.cover;
+       this.updateShowing();
++      // Local addition: the session's folder arrives after the first render, so the / list is warmed from here too.
++      if (this.showing) this.commands.warm(cx);
+       if (this.drawing || this.working || this.motion.cover !== cover) cx.notify();
+     });
+     cx.spawn(async (cx) => {
        for (;;) {
          const command = await nextCommand();
          if (testing(appHome())) await this.testCommand(command, cx);
@@ -633,7 +688,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
          cx.notify();
        }
      });
-@@ -200,6 +204,7 @@
+@@ -200,6 +206,7 @@
      const moves = !first && this.landed && this.pinned && this.showing && reply.start === this.thread.end;
      if (!first && !this.showing) this.addUnseen(newMessages(reply.rows));
      this.thread = first ? prependReply(this.thread, reply) : appendReply(this.thread, reply);
@@ -641,7 +696,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
      const settled = this.composer.settle(reply.rows, this.thread.queue, Date.now());
      for (const [item, row] of settled) this.heights[row.id] = this.heights[item.id];
      // A row that took over from a sent message is already there.
-@@ -296,12 +301,70 @@
+@@ -296,12 +303,70 @@
      this.motion.glide = { top, on: true, name: "panel" };
    }
  
@@ -713,6 +768,14 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
    }
  
    // Newest code rows get a coloured editor. Past the cap a row draws as plain text. Editor state is held by the app, so
+@@ -558,6 +623,7 @@
+     const state = this.liveState(live);
+     this.updateShowing();
+     this.composer.followFocus(this.cx, this.terminal, shared("chatpane.pairs") ?? {});
++    if (this.showing) this.commands.warm(this.cx);
+     const view = v_flex().id("chat").relative().size_full().min_h(0).bg(t.canvas).text_color(t.foreground).text_size(14)
+       .on_size_change((size, cx) => this.setPane(size, cx))
+       // A drag on the pad can let go anywhere.
 diff -ruN a/claude-chat/mention.js b/claude-chat/mention.js
 --- a/claude-chat/mention.js
 +++ b/claude-chat/mention.js
@@ -937,6 +1000,45 @@ diff -ruN a/claude-chat/slash.js b/claude-chat/slash.js
    if (STOPPED.has(r.code)) throw new Error("claude -p took too long");
    if (r.code !== 0 && !/"subtype"\s*:\s*"init"/.test(String(r.stdout))) throw new Error(`claude -p exited ${r.code}`);
    return r.stdout;
+@@ -199,19 +205,31 @@
+ export const resetCache = () => cache.clear();
+ 
+ // `trusted(folder)` says whether the folder is trusted, and a folder that isn't gets the table's commands only.
+-export function ensureList(folder, { exec, trusted, now = Date.now }) {
+-  const hit = cache.get(folder);
++// Local change: `store` keeps each folder's list on disk ({ read(folder), write(folder, list) }). The read headless takes
++// seconds (8 s here, with the hooks), so the first / of a session used to find no skills. Now a saved list shows at
++// once, and `onSaved` says so; the headless read still runs once per folder per run and replaces it. `fresh` marks a
++// list from this run.
++export function ensureList(folder, { exec, trusted, now = Date.now, store = null, onSaved = null }) {
++  let hit = cache.get(folder);
+   if (hit?.promise) return hit.promise;
+-  if (hit?.list) return Promise.resolve(hit.list);
+-  if (hit?.failedAt != null && now() - hit.failedAt < RETRY_MS) return Promise.resolve(null);
+-  const entry = { list: null, failedAt: null, promise: null };
++  if (hit?.fresh) return Promise.resolve(hit.list);
++  if (hit?.failedAt != null && now() - hit.failedAt < RETRY_MS) return Promise.resolve(hit.list);
++  if (!hit) {
++    hit = { list: null, fresh: false, failedAt: null, promise: null };
++    cache.set(folder, hit);
++    store?.read(folder).then((list) => {
++      if (Array.isArray(list) && list.length && !hit.fresh) { hit.list = list; onSaved?.(); }
++    }).catch(() => {});
++  }
++  const entry = hit;
+   entry.promise = Promise.resolve().then(() => trusted?.(folder)).then((ok) => runHeadless(exec, folder, "/usage", ok === true)).then((out) => {
+     const parsed = parseStream(out);
+     if (!parsed.names.length) throw new Error("no commands in the init message");
+     entry.list = buildList(parsed);
++    entry.fresh = true;
++    store?.write(folder, entry.list).catch?.(() => {});
+     return entry.list;
+-  }).catch(() => { entry.failedAt = now(); return null; }).finally(() => { entry.promise = null; });
+-  cache.set(folder, entry);
++  }).catch(() => { entry.failedAt = now(); return entry.list; }).finally(() => { entry.promise = null; });
+   return entry.promise;
+ }
+ 
 diff -ruN a/claude-chat/tail.py b/claude-chat/tail.py
 --- a/claude-chat/tail.py
 +++ b/claude-chat/tail.py
@@ -1025,9 +1127,9 @@ diff -ruN a/claude-chat/thread.js b/claude-chat/thread.js
        .child(div().id("thread-anchor").absolute().left(0).right(0).bottom(0).h(height + OVERSCAN).when(!landed, (b) => b.opacity(0))
          .child(opts.glide(div().id("thread-glide").relative().size_full()).child(list())))
 -      .child(Scrollbar.vertical(LIST_ID).absolute().inset_0()));
-+      // Local addition: always shown. Left to the theme it fades out, and older rows loading at the top while you scroll
-+      // up kept it from coming back.
-+      .child(Scrollbar.vertical(LIST_ID).mode("always").absolute().inset_0()));
++      // Local addition: always shown, and told the whole list's height. The list paints only the rows on screen, so the bar
++      // measured just those and lost its thumb as you scrolled up (Herdr's docs: `scroll_size` is for exactly this).
++      .child(Scrollbar.vertical(LIST_ID).mode("always").scroll_size(0, sizes.reduce((sum, h) => sum + h, 0)).absolute().inset_0()));
  }
  
  // A quiet line in the middle of the pane, for a thread with nothing to show yet.
