@@ -272,3 +272,19 @@ diff -ruN a/claude-chat/slash.js b/claude-chat/slash.js
    if (STOPPED.has(r.code)) throw new Error("claude -p took too long");
    if (r.code !== 0 && !/"subtype"\s*:\s*"init"/.test(String(r.stdout))) throw new Error(`claude -p exited ${r.code}`);
    return r.stdout;
+diff -ruN a/claude-chat/tail.py b/claude-chat/tail.py
+--- a/claude-chat/tail.py
++++ b/claude-chat/tail.py
+@@ -368,6 +368,12 @@
+             continue
+         if block.get("type") == "text":
+             rows += text_rows(block.get("text") or "", f"{offset}.{index}", at, limit)
++        elif block.get("type") == "thinking" and line.get("thinkingDisplay") == "updates":
++            # Local change: with thinking shown as updates, Claude Code's progress notes (the terminal's
++            # "· summary" lines) are thinking blocks with text. The rest are empty, signature only.
++            note = (block.get("thinking") or "").strip()
++            if note:
++                rows += text_rows(note, f"{offset}.{index}", at, limit)
+         elif block.get("type") == "tool_use":
+             rows.append({
+                 "id": f"{offset}.{index}",
