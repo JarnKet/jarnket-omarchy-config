@@ -768,7 +768,17 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
    }
  
    // Newest code rows get a coloured editor. Past the cap a row draws as plain text. Editor state is held by the app, so
-@@ -558,6 +623,7 @@
+@@ -497,7 +562,9 @@
+       entry: (item, element) => entry(item, element, drawn), glide: (element) => glideBox(element, this.motion),
+       sliding: this.motion.reaching, tail: this.motion.slide?.tail ?? 0, closing: this.motion.slide?.grow === false ? this.motion.slide.key : null,
+     };
++    this.listId ??= `thread-${String(this.terminal ?? "x").replace(/\W/g, "")}-${Math.random().toString(36).slice(2, 8)}`;
+     return threadView({
++      listId: this.listId,
+       items: this.shown, heights: this.motion.sizes(this.heights), width: this.paneWidth, height: this.paneHeight - this.foot, pending, handle: this.handle, landed: this.landed, opts,
+       onDrawing: () => { this.drawing = true; },
+       onRange: (start, end, count, ms) => this.drew(start, end, count, ms),
+@@ -558,6 +625,7 @@
      const state = this.liveState(live);
      this.updateShowing();
      this.composer.followFocus(this.cx, this.terminal, shared("chatpane.pairs") ?? {});
@@ -1122,14 +1132,29 @@ diff -ruN a/claude-chat/tail.py b/claude-chat/tail.py
 diff -ruN a/claude-chat/thread.js b/claude-chat/thread.js
 --- a/claude-chat/thread.js
 +++ b/claude-chat/thread.js
-@@ -204,7 +204,9 @@
+@@ -185,10 +185,10 @@
+ // no panel open. `opts` holds what rows read: `results`, `editors`, `live`, `working`, `copied`, `copiedPart`, and the motion: `entry`
+ // wraps a row, `glide` moves the whole list, `sliding` lets a row reach out of its slot while a tool line moves, `tail` is
+ // room below the last row for that move, and `closing` names a tool line shutting.
+-export function threadView({ items, heights, width, height, pending, handle, landed, onDrawing, onRange, onPress, onMeasure, onWheel, opts }, t) {
++export function threadView({ items, heights, width, height, pending, handle, landed, onDrawing, onRange, onPress, onMeasure, onWheel, opts, listId = LIST_ID }, t) {
+   const count = items.length;
+   const sizes = listSizes(items, heights, { overscan: OVERSCAN, tail: opts.tail });
+-  const list = () => v_virtual_list(LIST_ID, count + SPACER, sizes, (i) => (i ? items[i - SPACER].key : "spacer"), (range) => {
++  const list = () => v_virtual_list(listId, count + SPACER, sizes, (i) => (i ? items[i - SPACER].key : "spacer"), (range) => {
+     const begun = Date.now();
+     onDrawing();
+     const out = [];
+@@ -204,7 +204,11 @@
      .when(width > 0 && count > 0, (e) => e
        .child(div().id("thread-anchor").absolute().left(0).right(0).bottom(0).h(height + OVERSCAN).when(!landed, (b) => b.opacity(0))
          .child(opts.glide(div().id("thread-glide").relative().size_full()).child(list())))
 -      .child(Scrollbar.vertical(LIST_ID).absolute().inset_0()));
-+      // Local addition: always shown, and told the whole list's height. The list paints only the rows on screen, so the bar
-+      // measured just those and lost its thumb as you scrolled up (Herdr's docs: `scroll_size` is for exactly this).
-+      .child(Scrollbar.vertical(LIST_ID).mode("always").scroll_size(0, sizes.reduce((sum, h) => sum + h, 0)).absolute().inset_0()));
++      // Local change: the list scrolls in a box OVERSCAN taller than the one you see (thread-anchor reaches up past the
++      // top), and a bar takes its track from the area it drives, so scrolling up moved the thumb into the hidden part and
++      // it was gone. `viewport_from_layout` puts the track in this box instead. Always shown, and named per pane
++      // (`listId`), since a bar finds its list by name.
++      .child(Scrollbar.vertical(listId).mode("always").viewport_from_layout().absolute().inset_0()));
  }
  
  // A quiet line in the middle of the pane, for a thread with nothing to show yet.
