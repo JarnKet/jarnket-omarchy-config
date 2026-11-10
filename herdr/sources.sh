@@ -42,7 +42,7 @@ herdr_clean_copy() {
   rm -rf "$dest"
   mkdir -p "$(dirname "$dest")"
   cp -RL "$src" "$dest"
-  find "$dest" \( -name jsconfig.json -o -name '*.d.ts' -o -name '.*' \) -prune -exec rm -rf {} + 2>/dev/null || true
+  find "$dest" \( -name jsconfig.json -o -name '*.d.ts' -o -name '.*' -o -name __pycache__ -o -name '*.pyc' \) -prune -exec rm -rf {} + 2>/dev/null || true
   for g in "${HERDR_GENERATED[@]}"; do
     [[ $g == "$name"/* ]] && rm -rf "${dest:?}/${g#"$name"/}"
   done
@@ -63,11 +63,9 @@ herdr_make_patch() {
   else
     if grep -q '^Binary files ' "$tmp/patch"; then
       printf '  ! %s: binary changes left out of its patch\n' "$name" >&2
-      grep -v '^Binary files ' "$tmp/patch" >"$out"
-    else
-      # Timestamps would make every snapshot a change.
-      sed -E 's/^((---|\+\+\+) [^\t]+)\t.*$/\1/' "$tmp/patch" >"$out"
     fi
+    # Timestamps would make every snapshot a change.
+    grep -v '^Binary files ' "$tmp/patch" | sed -E 's/^((---|\+\+\+) [^\t]+)\t.*$/\1/' >"$out"
   fi
   rm -rf "$tmp"
 }

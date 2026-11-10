@@ -164,6 +164,17 @@ snapshot_herdr() {
       fi
     done
   done < <(herdr_sources)
+  # My own mods, copied whole (a new one goes in by making its folder in herdr/mods once).
+  for dir in "$HERDR_DIR"/mods/*/; do
+    [[ -d $dir ]] || continue
+    m=$(basename "$dir")
+    listed+=("$m")
+    if [[ -d $HERDR_APP_HOME/mods/$m ]]; then
+      herdr_clean_copy "$HERDR_APP_HOME/mods/$m" "$HERDR_DIR/mods/$m"
+    else
+      missing+=("$m")
+    fi
+  done
   for p in "$HERDR_DIR"/patches/*.patch; do
     [[ -f $p && " ${listed[*]} " != *" $(basename "$p" .patch) "* ]] && rm -f "$p"
   done
