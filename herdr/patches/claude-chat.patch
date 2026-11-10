@@ -1,18 +1,105 @@
 diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
 --- a/claude-chat/cards.js
 +++ b/claude-chat/cards.js
-@@ -7,8 +7,8 @@
+@@ -5,10 +5,11 @@
+ //   on.cancel(cx)       Cancel, the same as Esc
+ //   on.terminal(cx)     swap to the terminal, for what needs typing
  //   on.tab(index, cx)   a step's tab, in a card with several questions
++//   on.feedback(cx)     a plan card's "Tell Claude what to change", with the composer's text (local addition)
  import { div, svg } from "gpui-kit";
- import { h_flex, v_flex } from "gpui-base";
+-import { h_flex, v_flex } from "gpui-base";
 -import { hc, panes, run, settings, shared } from "herdr";
 -import { checkPress, follow, idle, parseDialog, pressed, stepKeys, terminalSteps } from "./dialog.js";
-+import { hc, panes, run, setShared, settings, shared } from "herdr";
++import { h_flex, v_flex, TextView } from "gpui-base";
++import { hc, home, panes, readTextFile, run, setShared, settings, shared } from "herdr";
 +import { VIEWS, checkPress, choseTerminal, follow, idle, parseDialog, pressed, stepKeys, terminalSteps } from "./dialog.js";
  import { ease, spring } from "./motion.js";
  import { settle } from "./reveal.js";
  import { zoom } from "./thread.js";
-@@ -256,6 +256,7 @@
+@@ -40,14 +41,18 @@
+     .child(div().min_w(0).child(text));
+ }
+ 
+-function option(id, t, { key, label, note, first, chosen, busy }, on) {
++// `box` (local addition): a multi-select choice, with an empty box or a tick on the right instead of the arrow.
++function option(id, t, { key, label, note, first, chosen, busy, box = false }, on) {
++  const mark = box && !chosen
++    ? div().size(13).flex_none().rounded(3).border_1().border_color(t.dim)
++    : svg(chosen ? TICK : ARROW).size(12).flex_none().text_color(box ? t.foreground : t.dim);
+   return h_flex().id(`${id}-${key}`).w_full().flex_none().gap(11).items_center().px(14).py(9).border_t(1).border_color(t.border)
+     .when(!busy, (e) => e.cursor_pointer().hover((s) => s.bg(t.hover)).on_click((_, cx) => on.press(key, cx)))
+     .child(kbd(t, key))
+     .child(v_flex().flex_1().min_w(0).text_size(13.5).line_height("20px").text_color(t.foreground)
+       .child(div().min_w(0).when(Boolean(first), (e) => e.font_medium()).child(label))
+       .when(Boolean(note), (e) => e.child(div().min_w(0).text_size(12.5).line_height("18px").text_color(t.muted).child(note))))
+-    .child(svg(chosen ? TICK : ARROW).size(12).flex_none().text_color(t.dim));
++    .child(mark);
+ }
+ 
+ const foot = (t) => h_flex().w_full().flex_none().gap(8).items_center().justify_end().px(10).py(8).border_t(1).border_color(t.border).bg(well(t));
+@@ -94,11 +99,17 @@
+ 
+ export function questionCard(id, { dialog, t, mono, busy = false }, on) {
+   const several = dialog.tabs !== null;
++  const preview = dialog.preview;
+   return frame(t)
+     .when(several, (e) => e.child(tabs(id, t, dialog, on)))
+     .child(head(t, mono, { title: dialog.question }))
+-    .children(dialog.options.map((o) => option(id, t, { ...o, busy }, on)))
+-    .child(typingFoot(id, t, dialog, on));
++    // Local addition: the preview Claude Code shows beside the option under its cursor.
++    .when(Boolean(preview), (e) => e.child(v_flex().mx(14).mb(10).flex_none().gap(4)
++      .child(div().text_size(12).text_color(t.dim).child(`Preview · ${preview.label}`))
++      .child(body(`${id}-preview`, t, mono, preview.text))))
++    .children(dialog.options.map((o) => option(id, t, { ...o, busy, box: Boolean(dialog.multi) }, on)))
++    .child(typingFoot(id, t, dialog, on)
++      .when(Boolean(dialog.multi) && !busy, (e) => e.child(solid(`${id}-next`, t, "Next", (_, cx) => on.next(cx)))));
+ }
+ 
+ export function reviewCard(id, { dialog, t, mono, busy = false }, on) {
+@@ -114,12 +125,30 @@
+       .when(!busy, (e) => e.child(solid(`${id}-submit`, t, "Submit", (_, cx) => on.press(submit.key, cx)))));
+ }
+ 
++// Local addition: plan approval. The plan comes from the file the dialog names, drawn as Markdown in a well that scrolls,
++// then the dialog's own options. "Tell Claude what to change" sends what's in the composer, so it says when that's empty.
++const PLAN_HEIGHT = 300;
++export function planCard(id, { dialog, t, mono, busy = false, plan = null, typed = "" }, on) {
++  const typing = dialog.typing?.[0];
++  return frame(t)
++    .child(head(t, mono, { tag: "Plan", title: dialog.question }))
++    .when(Boolean(plan), (e) => e.child(div().id(`${id}-plan`).mx(14).mb(12).px(14).py(10).flex_none().max_h(PLAN_HEIGHT).overflow_y_scroll()
++      .rounded(8).bg(well(t)).border_1().border_color(t.border).text_size(13).line_height("20px").text_color(t.foreground)
++      .child(TextView.markdown(`${id}-plan-text`, plan).selectable(true))))
++    .children(dialog.options.map((o, i) => option(id, t, { ...o, first: i === 0, busy }, on)))
++    .when(Boolean(typing), (e) => e.child(option(id, t, {
++      key: typing.key, label: typing.label, busy: busy || !typed.trim(),
++      note: typed.trim() ? `Sends what's in the box below: ${typed.trim().slice(0, 80)}${typed.trim().length > 80 ? "…" : ""}` : "Type what to change in the box below, then press this or Enter",
++    }, { press: (_key, cx) => on.feedback(cx) })));
++}
++
+ // The right card for what dialog.js read, or null when it read no card.
+ export function dialogCard(id, state, on) {
+   const kind = state.dialog?.kind;
+   if (kind === "permission") return permissionCard(id, state, on);
+   if (kind === "question") return questionCard(id, state, on);
+   if (kind === "review") return reviewCard(id, state, on);
++  if (kind === "plan") return planCard(id, state, on);
+   return null;
+ }
+ 
+@@ -146,7 +175,10 @@
+       cancel: (cx) => this.press("esc", cx),
+       terminal: (cx) => { this.owed = true; this.showTerminal(); cx.notify(); },
+       tab: (index, cx) => this.step(index, cx),
++      feedback: (cx) => this.feedback(this.composer.input.value(), cx, true),
++      next: (cx) => this.step(this.stepNow() + 1, cx),
+     };
++    this.plans = new Map();
+     cx.timer.every(POLL_MS, (cx) => this.poll(cx));
+   }
+ 
+@@ -256,11 +288,12 @@
      const steps = terminalSteps(panes(), shared("chatpane.pairs") ?? {}, this.terminal);
      if (!steps) return;
      this.owed = false;
@@ -20,6 +107,84 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
      for (const [name, args] of steps) run(name, args);
    }
  
+   // Reads again, then sends, or lets the card go. One at a time, so a double press can't send twice.
+-  act(press, keys, cx) {
++  act(press, keys, cx, then = null) {
+     const card = this.state.card;
+     if (!card || this.pressing || this.state.phase !== "card" || Date.now() < this.armedAt) return false;
+     this.pressing = true;
+@@ -270,6 +303,7 @@
+         const { send } = checkPress(card, seen.read, seen.status, press);
+         if (send) {
+           await hc(["keys", this.terminal, ...keys]).catch(() => null);
++          if (then) await then(cx);
+           this.set(pressed(card, Date.now()), cx);
+         } else {
+           this.set(idle, cx);
+@@ -283,6 +317,35 @@
+     return true;
+   }
+ 
++  // A plan card's file, read once per path. "~/" is the home folder, as the dialog writes it.
++  planText(path, cx) {
++    if (!path) return null;
++    if (!this.plans.has(path)) {
++      this.plans.set(path, null);
++      const file = path.startsWith("~/") ? `${home()}${path.slice(1)}` : path;
++      cx.spawn(async (cx) => {
++        const text = await readTextFile(file).catch(() => null);
++        this.plans.set(path, text);
++        if (text) cx.notify();
++      });
++    }
++    return this.plans.get(path);
++  }
++
++  // A plan card's "Tell Claude what to change": its number, then the text, sent once the screen still shows the same
++  // dialog. True when it took the text, so the composer sends nothing itself. `clear` empties the composer after.
++  feedback(text, cx, clear = false) {
++    const card = this.state.card, typing = card?.kind === "plan" ? card.typing?.[0] : null;
++    const words = String(text ?? "").trim();
++    if (!typing || !words || this.state.phase !== "card") return false;
++    if (!this.act(typing.key, [typing.key], cx, async (cx) => {
++      await cx.sleep(250);
++      await hc(["send", "--force", this.terminal, words]).catch(() => null);
++    })) return false;
++    if (clear) this.composer.input.set_value("");
++    return true;
++  }
++
+   stepNow() {
+     const card = this.state.card;
+     if (card?.kind === "review") return card.tabs.length;
+@@ -291,7 +354,9 @@
+ 
+   press(key, cx) {
+     const from = this.stepNow(), card = this.state.card;
+-    if (this.act(key, [key], cx) && card?.tabs) this.at = key === "esc" ? null : from + 1;
++    // A multi-select number only toggles its box, so the step stays where it is.
++    const keys = key !== "esc" && card?.pick ? [key, ...card.pick] : [key];
++    if (this.act(key, keys, cx) && card?.tabs) this.at = key === "esc" ? null : card.multi ? from : from + 1;
+   }
+ 
+   step(index, cx) {
+@@ -305,7 +370,7 @@
+     cx.stop_propagation();
+     if (press === "esc") { if (this.state.card?.kind !== "review") this.press("esc", cx); return; }
+     if (this.state.card?.options.some((o) => o.key === press)) this.press(press, cx);
+-    else if (this.state.card?.typing?.some((o) => o.key === press)) this.on.terminal(cx);
++    else if (this.state.card?.typing?.some((o) => o.key === press)) (this.state.card.kind === "plan" ? this.on.feedback : this.on.terminal)(cx);
+   }
+ 
+   // Draws between the thread and the foot, as wide as the foot. `room` is the pane's height.
+@@ -316,6 +381,7 @@
+     const slow = this.motion.slow;
+     const dialog = card.tabs && card.kind !== "review" ? { ...card, step: this.stepNow() } : card;
+     const state = { dialog, t, mono: settings().font_family ?? "JetBrains Mono", busy: this.state.phase !== "card" };
++    if (card.kind === "plan") { state.plan = this.planText(card.path, cx); state.typed = this.composer.input.value(); }
+     const column = v_flex().id(`card-slot-${this.serial}`).w_full().max_w(width).px(side).pb(8).when(room > KEEP_HEIGHT, (e) => e.max_h(room - KEEP_HEIGHT))
+       .overflow_y_scroll().track_focus(this.focus).on_key_down((event, cx) => this.key(event, cx))
+       .child(dialogCard(`card-${this.serial}`, state, this.on));
 diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
 --- a/claude-chat/commands.js
 +++ b/claude-chat/commands.js
@@ -191,7 +356,195 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
 diff -ruN a/claude-chat/dialog.js b/claude-chat/dialog.js
 --- a/claude-chat/dialog.js
 +++ b/claude-chat/dialog.js
-@@ -376,6 +376,11 @@
+@@ -213,17 +213,33 @@
+   if (row < 0) return terminal("cut off");
+   const below = lines.slice(row + 1, foot);
+   while (below.length && !below[below.length - 1]) below.pop();
+-  if (below.some((l) => TICK_BOX.test(l.replace(/^(❯ |  )\d+\. /, "")) && /^(❯ |  )\d+\. /.test(l))) return terminal("multi-select");
+-  if (!QUESTION_FOOT.test(lines[foot].trim())) return terminal(/n to add notes/.test(lines[foot]) ? "preview" : "unreadable");
++  // Local addition: multi-select, from saved screens (.fixtures/multi-select*.txt). Each choice has a box, [ ] or [✔], a
++  // number toggles it, "Type something" has a box too, and a "Next" line sits under it. Only with the Submit step, which
++  // is where the answers go in.
++  const multi = below.some((l) => TICK_BOX.test(l.replace(/^(❯ |  )\d+\. /, "")) && /^(❯ |  )\d+\. /.test(l));
++  if (multi && !tabsOf(lines[row]).submit) return terminal("multi-select");
++  if (!QUESTION_FOOT.test(lines[foot].trim())) return /n to add notes/.test(lines[foot]) ? previewQuestion(lines, report) : terminal("unreadable");
+ 
+   const starts = questionRows(below);
+   if (!starts) return terminal("unreadable");
+   const first = starts[0];
+-  const list = below.slice(first).filter((l) => l && !isRule(l, RULE));
++  const ticks = {};
++  let list = below.slice(first).filter((l) => l && !isRule(l, RULE));
++  if (multi) {
++    const next = list.findIndex((l) => l.trim() === "Next");
++    if (next < 0 || list.slice(next + 1).length !== 1) return terminal("unreadable");
++    list = list.filter((_, i) => i !== next).map((l) => {
++      const m = /^((?:❯ |  )(\d+)\. )\[(.)\] (.*)$/.exec(l);
++      if (!m) return l;
++      ticks[m[2]] = m[3] !== " ";
++      return `${m[1]}${m[4]}`;
++    });
++  }
+   const rows = numbered(list, /^(?:(❯) |  )(\d+)\. (.*)$/);
+   if (!rows || rows.length < 3) return terminal("unreadable");
+   if (!isRule(below[below.length - 2] ?? "", RULE) || rows[rows.length - 1].lines[0] !== "Chat about this") return terminal("unreadable");
+-  if (rows[rows.length - 2].lines[0] !== "Type something.") return terminal("unreadable");
++  if (rows[rows.length - 2].lines[0] !== (multi ? "Type something" : "Type something.")) return terminal("unreadable");
++  if (multi && rows.slice(0, -1).some((r) => !(r.key in ticks))) return terminal("unreadable");
+ 
+   const { tabs, submit } = tabsOf(lines[row]);
+   if (!tabs.length || (submit && tabs.length < 2)) return terminal("unreadable");
+@@ -245,11 +261,88 @@
+   for (let i = 0; i < choices.length; i++) {
+     const option = choiceOf(choices[i], labels?.[i] ?? null, width);
+     if (!option) return terminal("unreadable");
+-    options.push(option);
++    options.push(multi ? { ...option, chosen: ticks[option.key] } : option);
+   }
+   const typing = rows.slice(-2).map((r) => ({ key: r.key, label: r.lines[0].replace(/\.$/, "") }));
+   return card({
+-    kind: "question", question: asked, options, typing,
++    kind: "question", question: asked, options, typing, multi,
++    // The report names the first question, so a match is the first step even once it has an answer (a multi-select tick
++    // marks its tab answered while it's still on screen).
++    tabs: submit ? tabs : null, step: submit ? (match ? 0 : tabs.findIndex((t) => !t.answered)) : 0, tab: submit ? null : tabs[0].label,
++  });
++}
++
++// Local addition: a question whose options have previews, from a saved screen (.fixtures/preview.txt). The options sit on
++// the left and the preview of the one under the cursor in a box on the right, on the same lines. Under a rule there's an
++// unnumbered "Chat about this", and the foot offers notes (n). A number picks that option, as in any question.
++const BOX = /[┌│├└]/;
++// The box's lines: its top, the preview's lines, maybe a "✂ N lines hidden" rule when the pane is too small (it can wrap
++// onto the next line), and its bottom. Null for anything else.
++function previewBox(right) {
++  if (right.length < 2 || !right[0].startsWith("┌") || !right[right.length - 1].startsWith("└")) return null;
++  const out = [];
++  let hidden = 0;
++  for (let i = 1; i < right.length - 1; i++) {
++    const l = right[i];
++    if (l.startsWith("│") && l.endsWith("│")) { out.push(l.slice(1, -1).replace(/^ /, "").trimEnd()); continue; }
++    if (!l.startsWith("├")) return null;
++    let mark = l;
++    while (!mark.endsWith("┤") && i + 1 < right.length - 1) mark += ` ${right[++i]}`;
++    const m = /✂.*?(\d+) lines? hidden/.exec(mark);
++    if (!mark.endsWith("┤") || !m) return null;
++    hidden += Number(m[1]);
++  }
++  const text = out.join("\n").replace(/\s+$/, "");
++  return hidden ? `${text}\n… ${hidden} more line${hidden === 1 ? "" : "s"} in the terminal` : text;
++}
++
++function previewQuestion(lines, report) {
++  const foot = lines.length - 1;
++  const footText = /^Enter to select · /.test(lines[foot - 1]?.trim() ?? "") ? `${lines[foot - 1].trim()} ${lines[foot].trim()}` : lines[foot].trim();
++  if (!/^Enter to select · .*n to add notes.* · Esc to cancel$/.test(footText)) return terminal("unreadable");
++  const row = tabRow(lines);
++  if (row < 0) return terminal("cut off");
++  const below = lines.slice(row + 1, footText === lines[foot].trim() ? foot : foot - 1);
++  while (below.length && !below[below.length - 1]) below.pop();
++  const ruleAt = below.findLastIndex((l) => isRule(l, RULE));
++  if (ruleAt < 0 || below.slice(ruleAt + 1).filter(Boolean).map((l) => l.trim()).join("|") !== "Chat about this") return terminal("unreadable");
++  const block = below.slice(0, ruleAt);
++  const first = block.findIndex((l) => /^(❯ |  )1\. /.test(l));
++  if (first < 1) return terminal("unreadable");
++  // The options on the left, the box on the right, on the same lines. A line with nothing on the left inside the box is the
++  // box's own wrapped text; after the box, the right side holds only the notes hint.
++  const left = [], right = [];
++  let inBox = false, done = false;
++  for (const line of block.slice(first)) {
++    const at = line.search(BOX);
++    const side = at > 0 && line[at - 1] === " " ? at : -1;
++    if (side >= 0 && !done) {
++      left.push(line.slice(0, side).trimEnd());
++      const r = line.slice(side).trim();
++      if (r.startsWith("┌")) inBox = true;
++      if (r.startsWith("└")) { inBox = false; done = true; }
++      right.push(r);
++    } else if (inBox && /^\s{8,}\S/.test(line)) right.push(line.trim());
++    else if (!(done && /^\s{8,}\S/.test(line))) left.push(line.trimEnd());
++  }
++  const rows = numbered(left.filter(Boolean), /^(?:(❯) |  )(\d+)\. (.*)$/);
++  if (!rows || rows.length < 2) return terminal("unreadable");
++  const shown = previewBox(right);
++  if (shown === null) return terminal("unreadable");
++  const { tabs, submit } = tabsOf(lines[row]);
++  if (!tabs.length) return terminal("unreadable");
++  const width = widthOf(lines);
++  const text = block.slice(0, first).filter(Boolean);
++  if (!text.length) return terminal("unreadable");
++  const asked = unwrap(text, width);
++  const says = reported(report);
++  if (!submit && says?.answer && !splitAnswer(says.answer, asked)) return terminal("unreadable");
++  const options = rows.map((r) => ({ key: r.key, label: r.lines[0], note: r.lines.slice(1).join(" ") || null, chosen: false }));
++  const cursor = rows.find((r) => r.cursor);
++  return card({
++    kind: "question", question: asked, options, typing: [{ key: "chat", label: "Chat about this" }],
++    // A number only moves the cursor here, to show that option's preview; Enter then picks it.
++    preview: { label: cursor.lines[0], text: shown }, pick: ["enter"],
+     tabs: submit ? tabs : null, step: submit ? tabs.findIndex((t) => !t.answered) : 0, tab: submit ? null : tabs[0].label,
+   });
+ }
+@@ -296,10 +389,40 @@
+   });
+ }
+ 
++// Local addition: plan approval (ExitPlanMode), from a saved screen (.fixtures/plan-approval.txt). Read from the bottom: the
++// line naming the plan file, the options, then Claude Code's question under a rule. The frame around the dialog indents
++// all of it, so the rows are read with the question's indent taken off. "Tell Claude what to change" takes typing: it
++// goes in `typing`, and the card answers it with the composer's text.
++const PLAN_ASK = /^Claude has written up a plan and is ready to execute\. Would you like to proceed\?$/;
++const PLAN_FOOT = /^ctrl\+g to edit in .+ · (\S.*\.md)$/;
++const PLAN_TYPE = "Tell Claude what to change";
++
++function planApproval(lines) {
++  let end = lines.length, path = null;
++  const tail = lines[end - 1].trim(), two = end > 1 ? `${lines[end - 2].trim()} ${tail}` : tail;
++  const foot = PLAN_FOOT.exec(tail) ?? (end > 1 ? PLAN_FOOT.exec(two) : null);
++  if (foot) { path = foot[1]; end -= PLAN_FOOT.test(tail) ? 1 : 2; }
++  const ask = lines.slice(0, end).findLastIndex((l) => PLAN_ASK.test(l.trim()));
++  if (ask < 1 || !isRule(lines[ask - 1].trim(), RULE)) return terminal("unreadable");
++  const indent = lines[ask].length - lines[ask].trimStart().length;
++  const below = lines.slice(ask + 1, end).filter((l) => l.trim());
++  if (!below.every((l) => l.startsWith(" ".repeat(indent)))) return terminal("unreadable");
++  const list = below.map((l) => l.slice(indent));
++  const rows = numbered(list, /^(?:(❯) |  )(\d+)\. (.*)$/);
++  if (!rows || rows.length < 2) return terminal("unreadable");
++  const typing = rows.filter((r) => r.lines[0] === PLAN_TYPE).map((r) => ({ key: r.key, label: r.lines[0], note: r.lines.slice(1).join(" ") || null }));
++  const options = rows.filter((r) => r.lines[0] !== PLAN_TYPE).map((r) => ({ key: r.key, label: r.lines[0], note: r.lines.slice(1).join(" ") || null, chosen: false }));
++  if (!options.length || typing.length > 1) return terminal("unreadable");
++  return card({ kind: "plan", question: lines[ask].trim(), options, typing, path });
++}
++
+ // `key` names the dialog: its words, with the spacing gone, so the same dialog at another width is still the same.
+ function card(fields) {
+   const { why, reason, tool, title, target, body, question: asked, options, tabs, answers } = fields;
+   const words = [fields.kind, tool, title, why, reason, target, body, asked, options.map((o) => [o.key, o.label]), tabs, answers];
++  // A multi-select card is a new card after each toggle, so the press that made it counts as landed.
++  if (fields.multi) words.push(options.map((o) => o.chosen));
++  if (fields.preview) words.push(fields.preview);
+   return { ...fields, key: squeeze(JSON.stringify(words)) };
+ }
+ 
+@@ -315,7 +438,7 @@
+   const lines = joinFoot(screenLines(text));
+   const kind = report?.kind;
+   if (!lines.length || (kind !== "permission" && kind !== "question")) return terminal("unreadable");
+-  if (report.msg === "approve plan") return terminal("plan");
++  if (report.msg === "approve plan") return kind === "permission" ? planApproval(lines) : terminal("plan");
+   const last = lines[lines.length - 1].trim();
+   if (kind === "permission") return PERMISSION_FOOT.test(last) ? permission(lines, report) : terminal("not drawn");
+   if (/^(❯ |  )2\. Cancel$/.test(lines[lines.length - 1])) return review(lines);
+@@ -330,7 +453,7 @@
+   if (status !== "blocked" || !fresh || !isCard(fresh) || fresh.key !== shown.key) return { send: null };
+   if (press === "esc") return { send: fresh.kind === "review" ? null : "esc" };
+   if (press === "left" || press === "right") return { send: fresh.tabs ? press : null };
+-  return { send: fresh.options.some((o) => o.key === press) ? press : null };
++  return { send: fresh.options.some((o) => o.key === press) || fresh.typing?.some((o) => o.key === press) ? press : null };
+ }
+ 
+ // The presses from one step of a several-question dialog to another. Submit is the step after the last question.
+@@ -376,6 +499,11 @@
  // After a press lands. A card with steps stays up, dimmed, until the next step is on the screen.
  export const pressed = (card, now) => ({ phase: "pressed", card: card.tabs ? card : null, key: card.key, at: now });
  
@@ -251,6 +604,15 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
  import { readSettings } from "./settings.js";
  import { findSession, folderOf, latest, locateTranscript, readLoop, sessionMoved, tail, wakesSession, wakesTranscript } from "./session.js";
  import { paletteKey, planEditors } from "./editors.js";
+@@ -46,7 +48,7 @@
+ // SLOT, step 7: `route`. It gets what was typed before anything is sent, and true means it was handled. A row picked in the
+ // / list comes first. Then `/model` and `/effort` go to the model control, because typed with a value they would save a
+ // default for new sessions.
+-const route = (text, cx, chat) => chat.commands.chosen(text, cx) || chat.model.route(text, cx) || chat.commands.handle(text, cx);
++const route = (text, cx, chat) => chat.cards.feedback(text, cx) || chat.commands.chosen(text, cx) || chat.model.route(text, cx) || chat.commands.handle(text, cx);
+ const FOOT_SIDE = 24, FOOT_BOTTOM = 14;
+ // The foot's height before it first reports one. It keeps the list's box the height of the thread with no panel open.
+ const FOOT_START = 110;
 @@ -200,6 +202,7 @@
      const moves = !first && this.landed && this.pinned && this.showing && reply.start === this.thread.end;
      if (!first && !this.showing) this.addUnseen(newMessages(reply.rows));

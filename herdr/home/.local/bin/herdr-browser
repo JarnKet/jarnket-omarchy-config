@@ -9,6 +9,11 @@ for b in /opt/brave-origin-bin/brave /opt/brave-bin/brave /usr/lib/brave-browser
 done
 export HERDR_BROWSER_PROFILE="$HOME/.local/share/herdr-browser/profile"
 export HERDR_BROWSER_SESSION="${HERDR_BROWSER_SESSION:-herdr}"
+# The screen's scale (Hyprland), so pages are laid out as wide as a window there and drawn sharp.
+if [ -z "$HERDR_BROWSER_SCALE" ] && command -v hyprctl >/dev/null 2>&1; then
+  HERDR_BROWSER_SCALE=$(hyprctl monitors -j 2>/dev/null | jq -r 'map(select(.focused))[0].scale // empty' 2>/dev/null)
+  export HERDR_BROWSER_SCALE
+fi
 node=/usr/bin/node
 [ -x "$node" ] || node=$(command -v node)
 exec "$node" "$HOME/.local/libexec/herdr-browser/herdr-browser.mjs" "$@"
