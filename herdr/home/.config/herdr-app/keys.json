@@ -64,18 +64,7 @@
     "cmd-r": "mod.open:recap",
     "ctrl-alt-shift-g": "mod.open:gitview-sidebar",
     "ctrl-alt-g": "mod.open:gitview-tab",
-    "cmd-shift-r": "mod.open:revive",
-    "ctrl-alt-b": {
-      "command": "terminal.open",
-      "args": {
-        "argv": [
-          "/home/shadowone/.local/bin/herdr-browser",
-          "pane"
-        ],
-        "place": "tab",
-        "name": "Browser"
-      }
-    }
+    "cmd-shift-r": "mod.open:revive"
   },
   "layout:orchi": {
     "ctrl-shift-j": "panel-buttons.swap",

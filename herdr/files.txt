@@ -7,7 +7,3 @@
 .local/bin/claude-recap-plan
 .claude/skills/opengpui/SKILL.md
 .agents/skills/opengpui/SKILL.md
-.config/herdr-app/programs.json
-.local/bin/herdr-browser
-.claude/skills/herdr-browser/SKILL.md
-.agents/skills/herdr-browser/SKILL.md

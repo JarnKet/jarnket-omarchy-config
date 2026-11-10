@@ -4,7 +4,7 @@
 # live mods. A new commit here needs a new review first.
 #
 # repo<TAB>commit<TAB>folder holding the mods<TAB>mods (space-separated)<TAB>more folders to fetch
-adamentwistle/orchi-build	db5a720ad7cccfd579e26b7ced7a1bbdcf586306	mods	claude-chat herd linear-agent orchi orch-pane pane-header panel-buttons plan-view space-agents tickets	browser
+adamentwistle/orchi-build	db5a720ad7cccfd579e26b7ced7a1bbdcf586306	mods	claude-chat herd linear-agent orchi orch-pane pane-header panel-buttons plan-view space-agents tickets
 rabeeh-ta/herdr-git-graph	2f4fe0fc22e7cc726f3c1a2a654887c96227c37b	mods	git-graph
 ChmaraX/herdr-gitview	0160d1da846fd06784eef3dca3a80f9e71a32e4f	herdr-app/mods	gitview gitview-agents gitview-ask gitview-diff gitview-keys gitview-mark gitview-sidebar gitview-tab gitview-tracing	src
 jlopezlira/herdr-kanso	d8df831f0b45e3a8e9fa7dc4270fb7cb253a0f48	markdown-panel/mods	markdown-panel

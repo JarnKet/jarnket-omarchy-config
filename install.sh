@@ -751,7 +751,6 @@ GEIST_ZIP_URL="https://github.com/vercel/geist-font/releases/download/v1.9.2/gei
 GEIST_ZIP_SHA256="15f066d58dcb99fb10014a49913009fdaf41e464cfb8851a44b44e593c95d3d8"
 FONT_TOOLS=("uharfbuzz==0.57.0" "fonttools==4.68.0")
 RECAP_SRC=""
-ORCHI_SRC=""
 
 herdr_app() {
   command -v herdr-app 2>/dev/null && return
@@ -780,7 +779,6 @@ herdr_mods() {
     fi
     [[ $repo == */herdr-gitview ]] && gitview=$dir
     [[ $repo == */herdr-recap ]] && RECAP_SRC=$dir
-    [[ $repo == */orchi-build ]] && ORCHI_SRC=$dir
     for m in $mods; do
       herdr_clean_copy "$dir/$folder/$m" "$stage/$m"
       herdr_apply_patch "$stage" "$m" || problem "Herdr: my changes to $m didn't apply"
@@ -849,31 +847,22 @@ herdr_recap() {
   fi
 }
 
-# orchi's browser pane, herdr-browser: a terminal that shows a headless Brave (Kitty graphics) for agents to drive with
-# agent-browser. Its code comes from the same reviewed commit with my changes (Brave's Agent profile), into
-# ~/.local/libexec; the command in ~/.local/bin, its skill and the + menu entry are files in herdr/files.txt.
-herdr_browser() {
-  local dest=$HOME/.local/libexec/herdr-browser stage
-  [[ -n $ORCHI_SRC && -d $ORCHI_SRC/browser ]] || return 0
-  stage=$(mktemp -d)
-  herdr_clean_copy "$ORCHI_SRC/browser" "$stage/herdr-browser"
-  if ! herdr_apply_patch "$stage" herdr-browser; then
-    rm -rf "$stage"
-    problem "Herdr: my changes to herdr-browser didn't apply"
-    return 0
-  fi
-  if [[ -d $dest ]] && diff -rq "$stage/herdr-browser" "$dest" >/dev/null 2>&1; then
-    rm -rf "$stage"
-  else
-    backup "$dest"
-    rm -rf "$dest"
-    mkdir -p "$(dirname "$dest")"
-    mv "$stage/herdr-browser" "$dest"
-    rm -rf "$stage"
-    info "~/.local/libexec/herdr-browser"
-  fi
-  if ! command -v agent-browser >/dev/null 2>&1 && [[ ! -e $HOME/.local/share/mise/shims/agent-browser ]]; then
-    manual "The Herdr Browser tab needs agent-browser: mise use -g npm:agent-browser@0.37.1"
+# The Browser tab (orchi's herdr-browser) was tried on 2026-11-10 and taken out: a terminal can only show it as
+# pictures, slow and soft. This clears what an earlier run of this step put in.
+herdr_browser_gone() {
+  local f programs=$HERDR_APP_HOME/programs.json tmp
+  for f in "$HOME/.local/libexec/herdr-browser" "$HOME/.local/bin/herdr-browser" "$HOME/.local/share/herdr-browser" \
+    "$HOME/.claude/skills/herdr-browser" "$HOME/.agents/skills/herdr-browser"; do
+    [[ -e $f ]] || continue
+    backup "$f"
+    rm -rf "$f"
+    info "removed ~/${f#"$HOME"/}"
+  done
+  if [[ -f $programs ]] && jq -e '.programs["herdr-browser"]' "$programs" >/dev/null 2>&1; then
+    backup "$programs"
+    tmp=$(mktemp)
+    jq 'del(.programs["herdr-browser"])' "$programs" >"$tmp" && install -m 644 "$tmp" "$programs"
+    rm -f "$tmp"
   fi
 }
 
@@ -1015,13 +1004,13 @@ step_herdr() {
     return 0
   fi
   if ((DRY_RUN)); then
-    info "would fetch the mods in herdr/mods.tsv at their commits, apply herdr/patches, build gitview's and herdr-recap's helpers, the Browser tab and the Lao fonts, and set up the Claude Code side"
+    info "would fetch the mods in herdr/mods.tsv at their commits, apply herdr/patches, build gitview's and herdr-recap's helpers and the Lao fonts, and set up the Claude Code side"
     install_tree "$REPO_DIR/herdr" "Herdr layout, keys and helpers"
     return 0
   fi
   herdr_mods "$app"
   herdr_recap
-  herdr_browser
+  herdr_browser_gone
   install_tree "$REPO_DIR/herdr" "Herdr layout, keys and helpers"
   herdr_settings
   herdr_fonts
