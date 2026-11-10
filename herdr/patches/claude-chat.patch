@@ -1,7 +1,7 @@
 diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
 --- a/claude-chat/cards.js
 +++ b/claude-chat/cards.js
-@@ -5,10 +5,11 @@
+@@ -5,13 +5,15 @@
  //   on.cancel(cx)       Cancel, the same as Esc
  //   on.terminal(cx)     swap to the terminal, for what needs typing
  //   on.tab(index, cx)   a step's tab, in a card with several questions
@@ -16,7 +16,29 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
  import { ease, spring } from "./motion.js";
  import { settle } from "./reveal.js";
  import { zoom } from "./thread.js";
-@@ -40,14 +41,18 @@
++import { corner } from "./corners.js";
+ 
+ const ARROW = "mods/claude-chat/arrow.svg";
+ const TICK = "mods/claude-chat/tick.svg";
+@@ -21,9 +23,9 @@
+ // Theme has no well, so the darkest fill stands in for it, as the composer's bands do.
+ const well = (t) => t.canvas;
+ 
+-const frame = (t) => v_flex().w_full().flex_none().rounded(14).overflow_hidden().bg(t.surface).border_1().border_color(t.border);
++const frame = (t) => v_flex().w_full().flex_none().rounded(corner(14)).overflow_hidden().bg(t.surface).border_1().border_color(t.border);
+ 
+-const kbd = (t, text, fill = well(t)) => div().h(20).min_w(20).px(5).flex_none().flex().items_center().justify_center().rounded(6)
++const kbd = (t, text, fill = well(t)) => div().h(20).min_w(20).px(5).flex_none().flex().items_center().justify_center().rounded(corner(6))
+   .bg(fill).text_color(t.muted).font_medium().text_size(12).child(text);
+ 
+ function head(t, mono, { tag, title, note }) {
+@@ -35,38 +37,42 @@
+ 
+ // The command or file, in a well. A long one scrolls, so all of it can be read before a press.
+ function body(id, t, mono, text) {
+-  return div().id(`${id}-body`).mx(14).mb(12).px(12).py(9).flex_none().max_h(BODY_HEIGHT).overflow_y_scroll().rounded(8)
++  return div().id(`${id}-body`).mx(14).mb(12).px(12).py(9).flex_none().max_h(BODY_HEIGHT).overflow_y_scroll().rounded(corner(8))
+     .bg(well(t)).border_1().border_color(t.border).font_family(mono).text_size(12.5).line_height("19px").text_color(t.foreground)
      .child(div().min_w(0).child(text));
  }
  
@@ -24,7 +46,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
 +// `box` (local addition): a multi-select choice, with an empty box or a tick on the right instead of the arrow.
 +function option(id, t, { key, label, note, first, chosen, busy, box = false }, on) {
 +  const mark = box && !chosen
-+    ? div().size(13).flex_none().rounded(3).border_1().border_color(t.dim)
++    ? div().size(13).flex_none().rounded(corner(3)).border_1().border_color(t.dim)
 +    : svg(chosen ? TICK : ARROW).size(12).flex_none().text_color(box ? t.foreground : t.dim);
    return h_flex().id(`${id}-${key}`).w_full().flex_none().gap(11).items_center().px(14).py(9).border_t(1).border_color(t.border)
      .when(!busy, (e) => e.cursor_pointer().hover((s) => s.bg(t.hover)).on_click((_, cx) => on.press(key, cx)))
@@ -37,7 +59,29 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
  }
  
  const foot = (t) => h_flex().w_full().flex_none().gap(8).items_center().justify_end().px(10).py(8).border_t(1).border_color(t.border).bg(well(t));
-@@ -94,11 +99,17 @@
+ 
+ function ghost(id, t, label, onClick) {
+-  return h_flex().id(id).h(26).px(10).flex_none().items_center().justify_center().rounded(13).cursor_pointer().whitespace_nowrap()
++  return h_flex().id(id).h(26).px(10).flex_none().items_center().justify_center().rounded(corner(13)).cursor_pointer().whitespace_nowrap()
+     .border_1().border_color(t.border).bg(t.surface).text_size(12.5).font_medium().text_color(t.foreground)
+     .hover((s) => s.bg(t.raised)).on_click(onClick).child(label);
+ }
+ 
+ function solid(id, t, label, onClick) {
+-  return h_flex().id(id).h(26).px(10).flex_none().items_center().justify_center().rounded(13).cursor_pointer().whitespace_nowrap()
++  return h_flex().id(id).h(26).px(10).flex_none().items_center().justify_center().rounded(corner(13)).cursor_pointer().whitespace_nowrap()
+     .bg(t.solid).text_size(12.5).font_medium().text_color(t.solid_foreground).on_click(onClick).child(label);
+ }
+ 
+ function tabs(id, t, dialog, on) {
+   const step = dialog.kind === "review" ? dialog.tabs.length : dialog.step;
+   const all = dialog.tabs.every((x) => x.answered);
+-  const cell = (key, label, index, dot, on_it, open) => h_flex().id(`${id}-tab-${key}`).h(28).flex_none().gap(6).items_center().px(10).rounded(14)
++  const cell = (key, label, index, dot, on_it, open) => h_flex().id(`${id}-tab-${key}`).h(28).flex_none().gap(6).items_center().px(10).rounded(corner(14))
+     .text_size(12.5).when(on_it, (e) => e.bg(t.raised)).text_color(on_it ? t.foreground : t.muted)
+     .when(open, (e) => e.cursor_pointer().hover((s) => (on_it ? s : s.bg(t.hover))).on_click((_, cx) => on.tab(index, cx)))
+     .when(dot !== null, (e) => e.child(div().size(6).flex_none().rounded_full().bg(dot)))
+@@ -94,11 +100,17 @@
  
  export function questionCard(id, { dialog, t, mono, busy = false }, on) {
    const several = dialog.tabs !== null;
@@ -57,7 +101,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
  }
  
  export function reviewCard(id, { dialog, t, mono, busy = false }, on) {
-@@ -114,12 +125,30 @@
+@@ -114,12 +126,30 @@
        .when(!busy, (e) => e.child(solid(`${id}-submit`, t, "Submit", (_, cx) => on.press(submit.key, cx)))));
  }
  
@@ -69,7 +113,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
 +  return frame(t)
 +    .child(head(t, mono, { tag: "Plan", title: dialog.question }))
 +    .when(Boolean(plan), (e) => e.child(div().id(`${id}-plan`).mx(14).mb(12).px(14).py(10).flex_none().max_h(PLAN_HEIGHT).overflow_y_scroll()
-+      .rounded(8).bg(well(t)).border_1().border_color(t.border).text_size(13).line_height("20px").text_color(t.foreground)
++      .rounded(corner(8)).bg(well(t)).border_1().border_color(t.border).text_size(13).line_height("20px").text_color(t.foreground)
 +      .child(TextView.markdown(`${id}-plan-text`, plan).selectable(true))))
 +    .children(dialog.options.map((o, i) => option(id, t, { ...o, first: i === 0, busy }, on)))
 +    .when(Boolean(typing), (e) => e.child(option(id, t, {
@@ -88,7 +132,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
    return null;
  }
  
-@@ -146,7 +175,10 @@
+@@ -146,7 +176,10 @@
        cancel: (cx) => this.press("esc", cx),
        terminal: (cx) => { this.owed = true; this.showTerminal(); cx.notify(); },
        tab: (index, cx) => this.step(index, cx),
@@ -99,7 +143,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
      cx.timer.every(POLL_MS, (cx) => this.poll(cx));
    }
  
-@@ -256,11 +288,12 @@
+@@ -256,11 +289,12 @@
      const steps = terminalSteps(panes(), shared("chatpane.pairs") ?? {}, this.terminal);
      if (!steps) return;
      this.owed = false;
@@ -113,7 +157,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
      const card = this.state.card;
      if (!card || this.pressing || this.state.phase !== "card" || Date.now() < this.armedAt) return false;
      this.pressing = true;
-@@ -270,6 +303,7 @@
+@@ -270,6 +304,7 @@
          const { send } = checkPress(card, seen.read, seen.status, press);
          if (send) {
            await hc(["keys", this.terminal, ...keys]).catch(() => null);
@@ -121,7 +165,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
            this.set(pressed(card, Date.now()), cx);
          } else {
            this.set(idle, cx);
-@@ -283,6 +317,35 @@
+@@ -283,6 +318,35 @@
      return true;
    }
  
@@ -157,7 +201,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
    stepNow() {
      const card = this.state.card;
      if (card?.kind === "review") return card.tabs.length;
-@@ -291,7 +354,9 @@
+@@ -291,7 +355,9 @@
  
    press(key, cx) {
      const from = this.stepNow(), card = this.state.card;
@@ -168,7 +212,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
    }
  
    step(index, cx) {
-@@ -305,7 +370,7 @@
+@@ -305,7 +371,7 @@
      cx.stop_propagation();
      if (press === "esc") { if (this.state.card?.kind !== "review") this.press("esc", cx); return; }
      if (this.state.card?.options.some((o) => o.key === press)) this.press(press, cx);
@@ -177,7 +221,7 @@ diff -ruN a/claude-chat/cards.js b/claude-chat/cards.js
    }
  
    // Draws between the thread and the foot, as wide as the foot. `room` is the pane's height.
-@@ -316,6 +381,7 @@
+@@ -316,6 +382,7 @@
      const slow = this.motion.slow;
      const dialog = card.tabs && card.kind !== "review" ? { ...card, step: this.stepNow() } : card;
      const state = { dialog, t, mono: settings().font_family ?? "JetBrains Mono", busy: this.state.phase !== "card" };
@@ -411,6 +455,95 @@ diff -ruN a/claude-chat/commands.js b/claude-chat/commands.js
          onHover: (index, cx) => { if (this.slash && this.slash.index !== index) { this.slash.index = index; this.slash.moved = true; cx.notify(); } },
        }));
      }
+diff -ruN a/claude-chat/composer.js b/claude-chat/composer.js
+--- a/claude-chat/composer.js
++++ b/claude-chat/composer.js
+@@ -13,6 +13,7 @@
+ import { findSession } from "./session.js";
+ import { KEY_CONTEXT, LIST_KEYS, SEND_ACTION, keyAction, keyBindings } from "./slash.js";
+ import { NOTES, cleanText, plainQueued, pullQueue, removeQueued, sendMessage, sendNow, serial, settleSent, stopTurn, trayRows, withPaths, withoutEnter } from "./send.js";
++import { corner } from "./corners.js";
+ 
+ const PLACEHOLDER = "Reply";
+ const MIN_ROWS = 1, MAX_ROWS = 10;
+@@ -35,12 +36,12 @@
+ // `mods/panel-buttons` logged a press whose mouse down arrived and whose click didn't. They're pressed during a turn, while
+ // the pane redraws and the tray moves.
+ function iconButton(id, label, lines, onClick, t) {
+-  return h_flex().id(id).size(26).flex_none().items_center().justify_center().rounded(13).cursor_pointer()
++  return h_flex().id(id).size(26).flex_none().items_center().justify_center().rounded(corner(13)).cursor_pointer()
+     .hover((e) => e.bg(t.hover)).tooltip(label).on_mouse_down("left", onClick).child(glyph(14, 1.4, lines, t.muted));
+ }
+ 
+ function sendNowButton(onClick, t) {
+-  return h_flex().id("composer-send-now").h(26).px(10).gap(6).flex_none().items_center().rounded(13).cursor_pointer()
++  return h_flex().id("composer-send-now").h(26).px(10).gap(6).flex_none().items_center().rounded(corner(13)).cursor_pointer()
+     .bg(t.solid).text_color(t.solid_foreground).text_size(12.5).font_medium().hover((e) => e.opacity(0.88)).on_mouse_down("left", onClick)
+     .child("Send now").child(div().text_size(11).opacity(0.7).child("⌃↵"));
+ }
+@@ -63,11 +64,11 @@
+ // A small picture of an image waiting to go, or the chip when it can't be drawn. Either has a remove button.
+ function imageChip(item, i, on, t) {
+   const remove = h_flex().id(`composer-image-remove-${i}`).absolute().top(-5).right(-5).size(18).items_center().justify_center()
+-    .rounded(9).cursor_pointer().bg(t.raised).border_1().border_color(t.border).on_mouse_down("left", (_e, cx) => on.removeImage(item, cx))
++    .rounded(corner(9)).cursor_pointer().bg(t.raised).border_1().border_color(t.border).on_mouse_down("left", (_e, cx) => on.removeImage(item, cx))
+     .child(glyph(14, 1.4, CROSS, t.foreground));
+   const body = item.preview
+-    ? image(item.preview).size(THUMB).rounded(8).overflow_hidden().border_1().border_color(t.border)
+-    : h_flex().h(26).px(8).items_center().rounded(8).bg(t.raised).text_size(12).text_color(t.foreground).child("[image]");
++    ? image(item.preview).size(THUMB).rounded(corner(8)).overflow_hidden().border_1().border_color(t.border)
++    : h_flex().h(26).px(8).items_center().rounded(corner(8)).bg(t.raised).text_size(12).text_color(t.foreground).child("[image]");
+   return div().relative().flex_none().child(body).child(remove);
+ }
+ 
+@@ -76,11 +77,11 @@
+ 
+ function sendButton(s, on, t) {
+   const stopping = s.busy && !s.canSend;
+-  const round = (id) => h_flex().id(id).absolute().top(0).left(0).size(30).items_center().justify_center().rounded(15)
++  const round = (id) => h_flex().id(id).absolute().top(0).left(0).size(30).items_center().justify_center().rounded(corner(15))
+     .bg(t.solid).text_color(t.solid_foreground).transition("opacity", transitionPolicy("quick"));
+   return div().relative().size(30).flex_none()
+     .child(round("composer-stop").opacity(stopping ? 1 : 0).when(stopping, (e) => e.cursor_pointer().tooltip("Stop the turn").on_mouse_down("left", on.stop))
+-      .child(div().size(10).rounded(2).bg(t.solid_foreground)))
++      .child(div().size(10).rounded(corner(2)).bg(t.solid_foreground)))
+     .child(round("composer-send").opacity(stopping ? 0 : s.canSend ? 1 : 0.35).when(!stopping && s.canSend, (e) => e.cursor_pointer().tooltip("Send").on_mouse_down("left", on.send))
+       .child(glyph(14, 1.7, ARROW, t.solid_foreground)));
+ }
+@@ -102,7 +103,7 @@
+ // `on`: { send, stop, key(keystroke, cx), sendNow, trayNow, edit, remove(row, cx), removeImage(item, cx), drop(paths, cx), textSize(size, cx) }.
+ export function composer(t, s, on) {
+   const above = s.tray ?? (s.rows?.length ? tray(s.rows, on, t) : null);
+-  const box = v_flex().flex_none().rounded(14).bg(t.surface).border_1().border_color(t.border)
++  const box = v_flex().flex_none().rounded(corner(14)).bg(t.surface).border_1().border_color(t.border)
+     .key_context(KEY_CONTEXT[s.keys ?? "text"]).on_action(SEND_ACTION, on.send);
+   return LIST_KEYS.reduce((e, key) => e.on_action(keyAction(key), (_e, cx) => on.key?.(key, cx)), box)
+     .on_key_down((e, cx) => {
+diff -ruN a/claude-chat/corners.js b/claude-chat/corners.js
+--- a/claude-chat/corners.js
++++ b/claude-chat/corners.js
+@@ -0,0 +1,21 @@
++// Local addition: the chat's corners follow the desktop theme. Omarchy themes set Hyprland's `decoration:rounding`;
++// one with square windows (0, as Shadow One, ThinkPad or Blueprint) gets a square chat, any other keeps the chat's own
++// radii. No Herdr imports here except `exec`, read through the argument, so `node` can load it.
++let radius = null, checkedAt = 0;
++
++// A radius as drawn: the one asked for, or 0 under a square theme. Circles (`rounded_full`) stay round.
++export const corner = (n) => (radius === 0 ? 0 : n);
++
++// Reads Hyprland's rounding at most every `everyMs`. True when it changed, so the caller redraws.
++export async function checkCorners(exec, everyMs = 30_000, now = Date.now()) {
++  if (now - checkedAt < everyMs) return false;
++  checkedAt = now;
++  let n = NaN;
++  try {
++    const out = await exec("hyprctl", ["getoption", "decoration:rounding", "-j"]);
++    n = Number(JSON.parse(out?.stdout ?? "{}").int);
++  } catch { return false; }
++  if (!Number.isFinite(n) || n === radius) return false;
++  radius = n;
++  return true;
++}
 diff -ruN a/claude-chat/dialog.js b/claude-chat/dialog.js
 --- a/claude-chat/dialog.js
 +++ b/claude-chat/dialog.js
@@ -662,7 +795,15 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
  import { readSettings } from "./settings.js";
  import { findSession, folderOf, latest, locateTranscript, readLoop, sessionMoved, tail, wakesSession, wakesTranscript } from "./session.js";
  import { paletteKey, planEditors } from "./editors.js";
-@@ -46,7 +48,7 @@
+@@ -19,6 +21,7 @@
+ import { entry, glideBox, swapCover } from "./covers.js";
+ import { ModelControl } from "./model-control.js";
+ import { testScript, testTranscript, testing } from "./test-hook.js";
++import { checkCorners, corner } from "./corners.js";
+ 
+ const HELPER = () => `${appHome()}/mods/claude-chat/tail.py`;
+ const RENDER_RETRY_MS = 1000;
+@@ -46,7 +49,7 @@
  // SLOT, step 7: `route`. It gets what was typed before anything is sent, and true means it was handled. A row picked in the
  // / list comes first. Then `/model` and `/effort` go to the model control, because typed with a value they would save a
  // default for new sessions.
@@ -671,12 +812,14 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
  const FOOT_SIDE = 24, FOOT_BOTTOM = 14;
  // The foot's height before it first reports one. It keeps the list's box the height of the thread with no panel open.
  const FOOT_START = 110;
-@@ -93,12 +95,16 @@
+@@ -93,12 +96,18 @@
        this.settleScroll(cx);
        const cover = this.motion.cover;
        this.updateShowing();
 +      // Local addition: the session's folder arrives after the first render, so the / list is warmed from here too.
 +      if (this.showing) this.commands.warm(cx);
++      // Local addition: corners follow the theme's window rounding (see corners.js), checked every 30 s.
++      cx.spawn(async (cx) => { if (await checkCorners(exec)) cx.notify(); });
        if (this.drawing || this.working || this.motion.cover !== cover) cx.notify();
      });
      cx.spawn(async (cx) => {
@@ -688,7 +831,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
          cx.notify();
        }
      });
-@@ -200,6 +206,7 @@
+@@ -200,6 +209,7 @@
      const moves = !first && this.landed && this.pinned && this.showing && reply.start === this.thread.end;
      if (!first && !this.showing) this.addUnseen(newMessages(reply.rows));
      this.thread = first ? prependReply(this.thread, reply) : appendReply(this.thread, reply);
@@ -696,7 +839,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
      const settled = this.composer.settle(reply.rows, this.thread.queue, Date.now());
      for (const [item, row] of settled) this.heights[row.id] = this.heights[item.id];
      // A row that took over from a sent message is already there.
-@@ -296,12 +303,70 @@
+@@ -296,12 +306,70 @@
      this.motion.glide = { top, on: true, name: "panel" };
    }
  
@@ -751,7 +894,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
 +    const list = this.panels();
 +    if (!list.length) return null;
 +    return h_flex().id("oui-cards").w_full().flex_wrap().gap(6).pb(8).children(list.map((panel, i) => h_flex().id(`oui-card-${i}`)
-+      .h(28).px(10).gap(7).items_center().rounded(8).bg(t.surface).border_1().border_color(t.border).text_size(12).text_color(t.foreground)
++      .h(28).px(10).gap(7).items_center().rounded(corner(8)).bg(t.surface).border_1().border_color(t.border).text_size(12).text_color(t.foreground)
 +      .cursor_pointer().hover((s) => s.bg(t.hover)).on_click(() => this.openPanel(panel.props))
 +      .child(div().flex_none().text_color(t.accent).child("◧"))
 +      .child(div().max_w(240).truncate().child(panelTitle(panel.props)))
@@ -768,7 +911,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
    }
  
    // Newest code rows get a coloured editor. Past the cap a row draws as plain text. Editor state is held by the app, so
-@@ -497,7 +562,9 @@
+@@ -497,7 +565,9 @@
        entry: (item, element) => entry(item, element, drawn), glide: (element) => glideBox(element, this.motion),
        sliding: this.motion.reaching, tail: this.motion.slide?.tail ?? 0, closing: this.motion.slide?.grow === false ? this.motion.slide.key : null,
      };
@@ -778,7 +921,7 @@ diff -ruN a/claude-chat/main.js b/claude-chat/main.js
        items: this.shown, heights: this.motion.sizes(this.heights), width: this.paneWidth, height: this.paneHeight - this.foot, pending, handle: this.handle, landed: this.landed, opts,
        onDrawing: () => { this.drawing = true; },
        onRange: (start, end, count, ms) => this.drew(start, end, count, ms),
-@@ -558,6 +625,7 @@
+@@ -558,6 +628,7 @@
      const state = this.liveState(live);
      this.updateShowing();
      this.composer.followFocus(this.cx, this.terminal, shared("chatpane.pairs") ?? {});
@@ -869,6 +1012,26 @@ diff -ruN a/claude-chat/mention.js b/claude-chat/mention.js
 +
 +// The text with the /word replaced by the picked name and a space.
 +export const applySlash = (text, at, name) => `${String(text).slice(0, at)}${name} `;
+diff -ruN a/claude-chat/model-control.js b/claude-chat/model-control.js
+--- a/claude-chat/model-control.js
++++ b/claude-chat/model-control.js
+@@ -8,6 +8,7 @@
+ import { EFFORT_LABEL, FALLBACK_MODELS, applyChoice, parseContext, parseStatus } from "./picker.js";
+ import { addChoice, afterApply, mergeCurrent, newPad, nextStep, padAt, padChoice, padClosed, padKey, routeModel, triedAfter } from "./pad.js";
+ import { gaugeView, padView } from "./pad-view.js";
++import { corner } from "./corners.js";
+ 
+ const READ_MS = 15000;
+ // How long the session can go on reading as on a dialog after the picker shuts, because the session file lags it.
+@@ -179,7 +180,7 @@
+ 
+   trigger(t, cx, opts) {
+     const l = this.label();
+-    const trigger = h_flex().id("model-trigger").h(30).px(10).gap(7).flex_none().items_center().rounded(8).cursor_pointer().text_size(13)
++    const trigger = h_flex().id("model-trigger").h(30).px(10).gap(7).flex_none().items_center().rounded(corner(8)).cursor_pointer().text_size(13)
+       .bg(this.open ? t.selected : t.surface).hover((e) => e.bg(this.open ? t.selected : t.hover))
+       .tooltip(l.waiting ? "Waiting for the turn to end" : "Model and effort, for this session")
+       .on_mouse_down("left", (_e, c) => { if (!this.outside) this.toggle(c); })
 diff -ruN a/claude-chat/openui.js b/claude-chat/openui.js
 --- a/claude-chat/openui.js
 +++ b/claude-chat/openui.js
@@ -955,6 +1118,44 @@ diff -ruN a/claude-chat/openui.js b/claude-chat/openui.js
 +  }
 +  return out;
 +}
+diff -ruN a/claude-chat/pad-view.js b/claude-chat/pad-view.js
+--- a/claude-chat/pad-view.js
++++ b/claude-chat/pad-view.js
+@@ -5,6 +5,7 @@
+ import { EFFORTS, EFFORT_LABEL } from "./picker.js";
+ import { ease, spring } from "./motion.js";
+ import { FIELD, GAUGE_TICKS, gaugeLabel, gaugeLit, gaugeTone, padPoint, padReadout, padRowLabels } from "./pad.js";
++import { corner } from "./corners.js";
+ 
+ // The pad card. `cb` has onDown(x, y), onMove(x, y), onUp(), onKey(event), and `focus`, the view's FocusHandle.
+ // x and y are pixels from the field's top left. `opts.slow` stretches the motion, for looking at frames. `drag` is whether a press is held, so a move only counts then.
+@@ -25,7 +26,7 @@
+     }
+   }
+ 
+-  const field = div().relative().w(FIELD.width + 2).h(FIELD.height + 2).flex_none().overflow_hidden().rounded(10)
++  const field = div().relative().w(FIELD.width + 2).h(FIELD.height + 2).flex_none().overflow_hidden().rounded(corner(10))
+     .bg(t.background).border_1().border_color(t.border).cursor_crosshair()
+     .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); const p = local(e); cb.onDown(p.x, p.y); })
+     .on_mouse_move((e) => { if (drag) { const p = local(e); cb.onMove(p.x, p.y); } })
+@@ -43,7 +44,7 @@
+   const xLabels = h_flex().mt(6).w(FIELD.width).children(EFFORTS.map((level, i) => h_flex().w(colW).justify_center().text_size(11.5)
+     .text_color(i === pad.col ? t.foreground : t.muted).when(i === pad.col, (e) => e.font_medium()).child(EFFORT_LABEL[level])));
+ 
+-  return v_flex().id("model-pad").w(FIELD.cardWidth).px(12).pt(12).pb(10).rounded(14).bg(t.popover).border_1().border_color(t.border).shadow_lg()
++  return v_flex().id("model-pad").w(FIELD.cardWidth).px(12).pt(12).pb(10).rounded(corner(14)).bg(t.popover).border_1().border_color(t.border).shadow_lg()
+     .track_focus(cb.focus).on_key_down((e, cx) => { cx.stop_propagation(); cb.onKey(e); }).on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+     .child(h_flex().items_baseline().justify_between().gap(12).mb(10)
+       .child(div().text_size(16).font_medium().text_color(t.foreground).child(read.model))
+@@ -57,7 +58,7 @@
+   const color = t[gaugeTone(percent)] ?? t.dim;
+   const ticks = [];
+   for (let i = 0; i < GAUGE_TICKS; i++) ticks.push(div().w(1.5).h(10).flex_none().bg(i < lit ? color : t.border));
+-  return h_flex().id("context-gauge").h(30).px(6).gap(7).items_center().rounded(8).flex_none()
++  return h_flex().id("context-gauge").h(30).px(6).gap(7).items_center().rounded(corner(8)).flex_none()
+     .hover((s) => s.bg(t.hover)).when(Boolean(tip), (e) => e.tooltip(tip))
+     .child(h_flex().gap(2).h(10).items_center().children(ticks))
+     .child(div().text_size(12.5).font_medium().text_color(t.muted).child(gaugeLabel(percent)));
 diff -ruN a/claude-chat/send.js b/claude-chat/send.js
 --- a/claude-chat/send.js
 +++ b/claude-chat/send.js
@@ -1049,6 +1250,45 @@ diff -ruN a/claude-chat/slash.js b/claude-chat/slash.js
    return entry.promise;
  }
  
+diff -ruN a/claude-chat/slash-view.js b/claude-chat/slash-view.js
+--- a/claude-chat/slash-view.js
++++ b/claude-chat/slash-view.js
+@@ -10,6 +10,7 @@
+ import { v_flex, h_flex, v_virtual_list } from "gpui-base";
+ import { settings } from "herdr";
+ import { nameParts, ROW, listHeight, contentHeight, selectedRow } from "./slash.js";
++import { corner } from "./corners.js";
+ 
+ export const MOTION = {
+   enter: { duration: 160, easing: "ease-out" },
+@@ -44,12 +45,12 @@
+   const rows = s.rows, fits = contentHeight(rows) <= ROW.max, h = listHeight(rows), sel = selectedRow(rows, s.index);
+   const body = fits
+     ? v_flex().relative().w_full().h(h)
+-      .when(Boolean(sel), (e) => e.child(div().absolute().left(6).right(6).top(sel.top).h(ROW.item).rounded(8).bg(t.raised).spring("top", MOTION.plate)))
++      .when(Boolean(sel), (e) => e.child(div().absolute().left(6).right(6).top(sel.top).h(ROW.item).rounded(corner(8)).bg(t.raised).spring("top", MOTION.plate)))
+       .children(rows.map((r) => (r.kind === "head" ? header(r, t) : commandRow(r, s, cb, t, true))))
+     : v_virtual_list("slash-list", rows.length, rows.map((r) => r.size), (i) => (rows[i].kind === "head" ? `h:${rows[i].title}` : rows[i].item.name),
+       (range) => rows.slice(range.start, range.end).map((r) => (r.kind === "head" ? header(r, t) : commandRow(r, s, cb, t, false)))).track_scroll(s.scroll).w_full().h(h)
+       .on_item_click((key, cx) => { const r = rows.find((x) => x.kind === "item" && x.item.name === key); if (r) cb.onPick(r.index, cx); });
+-  return v_flex().w_full().flex_none().rounded(14).overflow_hidden().bg(t.background).border_1().border_color(t.border)
++  return v_flex().w_full().flex_none().rounded(corner(14)).overflow_hidden().bg(t.background).border_1().border_color(t.border)
+     .relative().top(s.entered ? 0 : MOTION.rise).opacity(s.entered ? 1 : 0)
+     .transition("opacity", MOTION.enter).transition("top", MOTION.enter)
+     .child(div().w_full().h(h).flex_none().overflow_hidden().spring("height", MOTION.height).child(body));
+@@ -57,10 +58,10 @@
+ 
+ // /exit asks first, because it ends the session. It sits in the same slot as the other cards.
+ export function exitCard(t, cb) {
+-  const button = (id, label, solid, onClick) => h_flex().id(id).h(28).px(12).flex_none().items_center().justify_center().rounded(8).cursor_pointer().text_size(12.5).font_medium()
++  const button = (id, label, solid, onClick) => h_flex().id(id).h(28).px(12).flex_none().items_center().justify_center().rounded(corner(8)).cursor_pointer().text_size(12.5).font_medium()
+     .when(solid, (e) => e.bg(t.solid).text_color(t.solid_foreground)).when(!solid, (e) => e.border_1().border_color(t.border).text_color(t.foreground).hover((x) => x.bg(t.hover)))
+     .on_click((_e, cx) => onClick(cx)).child(label);
+-  return v_flex().w_full().flex_none().rounded(14).overflow_hidden().bg(t.background).border_1().border_color(t.border)
++  return v_flex().w_full().flex_none().rounded(corner(14)).overflow_hidden().bg(t.background).border_1().border_color(t.border)
+     .child(v_flex().gap(3).px(14).pt(12).pb(10)
+       .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("End this session?")))
+     .child(h_flex().gap(8).justify_end().px(10).pb(10).child(button("exit-keep", "Keep going", false, cb.onKeep)).child(button("exit-end", "End session", true, cb.onEnd)));
 diff -ruN a/claude-chat/tail.py b/claude-chat/tail.py
 --- a/claude-chat/tail.py
 +++ b/claude-chat/tail.py
@@ -1132,7 +1372,63 @@ diff -ruN a/claude-chat/tail.py b/claude-chat/tail.py
 diff -ruN a/claude-chat/thread.js b/claude-chat/thread.js
 --- a/claude-chat/thread.js
 +++ b/claude-chat/thread.js
-@@ -185,10 +185,10 @@
+@@ -38,6 +38,7 @@
+ import { LAYOUT, codeLines, editorLanguage, formatTook, listSizes, mix, workedLine } from "./rows.js";
+ import { ease } from "./motion.js";
+ import { syntaxColours } from "./editors.js";
++import { corner } from "./corners.js";
+ 
+ export { syntaxColours };
+ 
+@@ -73,7 +74,7 @@
+ const spinner = (color, size) => div().w(15).flex_none().text_center().text_size(size).text_color(color).frames(FRAMES, FRAME_MS).child(FRAMES[0]);
+ 
+ const userRow = (item, t, width) => h_flex().w_full().justify_end().when(Boolean(item.sent), (e) => e.opacity(0.6))
+-  .child(div().max_w(Math.floor(width * 0.85)).px(14).py(9).rounded(14).bg(t.solid).text_color(t.solid_foreground).text_size(14).child(item.row.text));
++  .child(div().max_w(Math.floor(width * 0.85)).px(14).py(9).rounded(corner(14)).bg(t.solid).text_color(t.solid_foreground).text_size(14).child(item.row.text));
+ 
+ // The right-hand margin the mockup keeps on prose, so long lines stay readable on a wide pane.
+ const proseRight = (width) => Math.min(56, Math.max(0, Math.round((width - 384) * 0.175)));
+@@ -98,13 +99,13 @@
+   const showing = item.open || opts.closing === item.key;
+   const result = showing ? opts.results[item.row.tool] : null;
+   const body = !showing ? null
+-    : div().mt(2).ml(23).mb(4).px(11).py(8).rounded(8).bg(well).border_1().border_color(edge).text_size(12).text_color(t.muted).font_family(CODE_FONT)
++    : div().mt(2).ml(23).mb(4).px(11).py(8).rounded(corner(8)).bg(well).border_1().border_color(edge).text_size(12).text_color(t.muted).font_family(CODE_FONT)
+       .child(result?.text || (result?.missing ? "Unreadable" : item.status === "running" ? "Running" : result ? "No output" : "…"))
+       .when(Boolean(result?.clipped), (e) => e.child(div().mt(6).text_color(t.dim).child(CLIPPED_RESULT)));
+   return v_flex().pl(4).pr(4).ml(4).bg(card).border_l(1).border_r(1).border_color(edge).overflow_hidden()
+-    .when(item.first, (e) => e.rounded_t(12).border_t(1).pt(LAYOUT.TOOL_EDGE - 1))
+-    .when(item.last, (e) => e.rounded_b(12).border_b(1).pb(LAYOUT.TOOL_EDGE - 1))
+-    .child(h_flex().w_full().h(LAYOUT.TOOL).flex_none().px(8).gap(8).items_center().rounded(8).cursor_pointer().text_size(12.5).hover((s) => s.bg(t.hover))
++    .when(item.first, (e) => e.rounded_t(corner(12)).border_t(1).pt(LAYOUT.TOOL_EDGE - 1))
++    .when(item.last, (e) => e.rounded_b(corner(12)).border_b(1).pb(LAYOUT.TOOL_EDGE - 1))
++    .child(h_flex().w_full().h(LAYOUT.TOOL).flex_none().px(8).gap(8).items_center().rounded(corner(8)).cursor_pointer().text_size(12.5).hover((s) => s.bg(t.hover))
+       .child(h_flex().size(15).flex_none().items_center().justify_center().child(toolGlyph(item, t, opts.working)))
+       .child(div().flex_none().font_medium().font_family(CODE_FONT).text_color(t.foreground).child(item.row.name))
+       .child(div().flex_1().min_w(0).truncate().font_family(CODE_FONT).text_color(t.dim).child(item.row.target))
+@@ -119,9 +120,9 @@
+   const { card, edge } = layers(t);
+   const copied = opts.copied === item.row.id;
+   const label = item.row.clipped ? `${item.row.lang || "text"} · clipped` : item.row.lang || "text";
+-  return h_flex().w_full().h(LAYOUT.CODE_HEAD).pl(14).pr(8).items_center().justify_between().rounded_t(10).bg(card).border_1().border_color(edge).cursor_pointer()
++  return h_flex().w_full().h(LAYOUT.CODE_HEAD).pl(14).pr(8).items_center().justify_between().rounded_t(corner(10)).bg(card).border_1().border_color(edge).cursor_pointer()
+     .child(div().text_size(12).text_color(t.dim).child(label))
+-    .child(h_flex().h(24).px(6).gap(6).items_center().rounded(6).text_size(12).text_color(copied ? t.foreground : t.dim).hover((s) => s.bg(t.hover))
++    .child(h_flex().h(24).px(6).gap(6).items_center().rounded(corner(6)).text_size(12).text_color(copied ? t.foreground : t.dim).hover((s) => s.bg(t.hover))
+       .when(!copied, (e) => e.child(svg("mods/claude-chat/copy.svg").size(13).flex_none()))
+       .child(copied ? (opts.copiedPart ? "Copied part" : "Copied") : "Copy"));
+ }
+@@ -129,7 +130,7 @@
+ function codeBody(item, t, opts) {
+   const { well, edge } = layers(t);
+   const editor = opts.editors.get(item.row.id);
+-  const box = v_flex().w_full().h(codeLines(item.row.code) * LAYOUT.CODE_LINE + LAYOUT.CODE_PAD).py(12).px(14).rounded_b(10).bg(well)
++  const box = v_flex().w_full().h(codeLines(item.row.code) * LAYOUT.CODE_LINE + LAYOUT.CODE_PAD).py(12).px(14).rounded_b(corner(10)).bg(well)
+     .border_l(1).border_r(1).border_b(1).border_color(edge).overflow_hidden();
+   return editor ? box.child(div().w_full().h_full().child(Editor.new(editor)))
+     : box.child(div().w_full().whitespace_nowrap().font_family(CODE_FONT).text_size(12.5).text_color(t.foreground).child(item.row.code));
+@@ -185,10 +186,10 @@
  // no panel open. `opts` holds what rows read: `results`, `editors`, `live`, `working`, `copied`, `copiedPart`, and the motion: `entry`
  // wraps a row, `glide` moves the whole list, `sliding` lets a row reach out of its slot while a tool line moves, `tail` is
  // room below the last row for that move, and `closing` names a tool line shutting.
@@ -1145,7 +1441,7 @@ diff -ruN a/claude-chat/thread.js b/claude-chat/thread.js
      const begun = Date.now();
      onDrawing();
      const out = [];
-@@ -204,7 +204,11 @@
+@@ -204,7 +205,11 @@
      .when(width > 0 && count > 0, (e) => e
        .child(div().id("thread-anchor").absolute().left(0).right(0).bottom(0).h(height + OVERSCAN).when(!landed, (b) => b.opacity(0))
          .child(opts.glide(div().id("thread-glide").relative().size_full()).child(list())))
@@ -1158,3 +1454,82 @@ diff -ruN a/claude-chat/thread.js b/claude-chat/thread.js
  }
  
  // A quiet line in the middle of the pane, for a thread with nothing to show yet.
+diff -ruN a/claude-chat/usage-view.js b/claude-chat/usage-view.js
+--- a/claude-chat/usage-view.js
++++ b/claude-chat/usage-view.js
+@@ -14,6 +14,7 @@
+ import { v_flex, h_flex } from "gpui-base";
+ import { settings } from "herdr";
+ import { blend, compact, dayLabel, duration, heatColors, landing, landingBar, RANGES, topOf, TOPS_SHOWN, keptOn } from "./usage-data.js";
++import { corner } from "./corners.js";
+ 
+ // These move to motion.js once step 4 is in. Only opacity, width, height, left and top can animate.
+ export const MOTION = {
+@@ -32,7 +33,7 @@
+ const fadeIn = (s, delay = 0) => (e) => e.opacity(s.entered ? 1 : 0).transition("opacity", { ...MOTION.fade, delay });
+ 
+ function iconButton(id, icon, label, onClick, t) {
+-  return h_flex().id(id).size(26).flex_none().items_center().justify_center().rounded(13).cursor_pointer()
++  return h_flex().id(id).size(26).flex_none().items_center().justify_center().rounded(corner(13)).cursor_pointer()
+     .text_color(t.muted).hover((x) => x.bg(t.hover).text_color(t.foreground)).accessibility_label(label)
+     .on_click((_e, cx) => onClick(cx)).child(svg(icon).size(14));
+ }
+@@ -43,11 +44,11 @@
+   const widths = items.map((i) => Math.round(i.label.length * 6.6 + 22));
+   const at = Math.max(0, items.findIndex((i) => i.id === value));
+   const left = widths.slice(0, at).reduce((a, b) => a + b, 0);
+-  return h_flex().relative().flex_none().h(30).p(3).rounded(15).bg(t.canvas)
+-    .child(div().absolute().top(3).left(3 + left).w(widths[at]).h(24).rounded(12).bg(t.raised).spring("left", MOTION.thumb).spring("width", MOTION.thumb))
++  return h_flex().relative().flex_none().h(30).p(3).rounded(corner(15)).bg(t.canvas)
++    .child(div().absolute().top(3).left(3 + left).w(widths[at]).h(24).rounded(corner(12)).bg(t.raised).spring("left", MOTION.thumb).spring("width", MOTION.thumb))
+     .child(h_flex().relative().children(items.map((item, i) => {
+       const on = item.id === value;
+-      return h_flex().id(`${id}-${item.id}`).w(widths[i]).h(24).items_center().justify_center().rounded(12).cursor_pointer().text_size(12.5)
++      return h_flex().id(`${id}-${item.id}`).w(widths[i]).h(24).items_center().justify_center().rounded(corner(12)).cursor_pointer().text_size(12.5)
+         .text_color(on ? t.foreground : t.muted).on_click((_e, cx) => onPick(item.id, cx)).child(item.label);
+     })));
+ }
+@@ -60,9 +61,9 @@
+     .child(h_flex().justify_between().gap(8).text_size(12.5).line_height("18px")
+       .child(div().min_w(0).truncate().text_color(t.muted).child(m.label))
+       .child(div().flex_none().font_semibold().text_color(t.foreground).child(`${Math.round(m.used)}%`)))
+-    .child(div().relative().h(8).mt(6).mb(5).rounded(2).bg(t.popover)
+-      .child(div().absolute().top(0).left(0).h(8).rounded(2).bg(color).opacity(0.32).w(s.entered ? `${landingBar(m)}%` : "0%").transition("width", { ...MOTION.bar, delay }))
+-      .child(div().absolute().top(0).left(0).h(8).rounded(2).bg(color).w(s.entered ? `${Math.min(100, m.used)}%` : "0%").transition("width", { ...MOTION.bar, delay })))
++    .child(div().relative().h(8).mt(6).mb(5).rounded(corner(2)).bg(t.popover)
++      .child(div().absolute().top(0).left(0).h(8).rounded(corner(2)).bg(color).opacity(0.32).w(s.entered ? `${landingBar(m)}%` : "0%").transition("width", { ...MOTION.bar, delay }))
++      .child(div().absolute().top(0).left(0).h(8).rounded(corner(2)).bg(color).w(s.entered ? `${Math.min(100, m.used)}%` : "0%").transition("width", { ...MOTION.bar, delay })))
+     .child(h_flex().justify_between().gap(8).text_size(12).text_color(t.dim)
+       .child(div().child(`↻ ${m.resetIn}`))
+       .child(div().child(`→ ${landing(m) == null ? "-" : `${landing(m)}%`}`)));
+@@ -85,8 +86,8 @@
+     .child(v_flex().flex_1().min_w(0)
+       .child(div().text_color(t.foreground).child(a.text))
+       .when(Boolean(a.note), (e) => e.child(div().text_size(12).line_height("16px").text_color(t.dim).child(a.note)))
+-      .child(div().relative().h(3).mt(4).rounded(2).bg(t.hover)
+-        .child(div().absolute().top(0).left(0).h(3).rounded(2).bg(t.accent).w(s.entered ? `${Math.min(100, a.pct)}%` : "0%").transition("width", { ...MOTION.bar, delay: 160 + i * 30 })))))
++      .child(div().relative().h(3).mt(4).rounded(corner(2)).bg(t.hover)
++        .child(div().absolute().top(0).left(0).h(3).rounded(corner(2)).bg(t.accent).w(s.entered ? `${Math.min(100, a.pct)}%` : "0%").transition("width", { ...MOTION.bar, delay: 160 + i * 30 })))))
+     .when(true, fadeIn(s, i * 22));
+ }
+ 
+@@ -96,8 +97,8 @@
+   return v_flex().gap(2).mt(9)
+     .child(div().text_size(12).line_height("18px").font_medium().text_color(t.dim).mb(1).child(top.title))
+     .children(items.map((x, i) => h_flex().gap(8).items_center().h(21).text_size(12.5)
+-      .child(div().relative().flex_1().min_w(0).h(21).rounded(4).overflow_hidden()
+-        .child(div().absolute().top(0).left(0).h(21).rounded(4).bg(t.hover).w(s.entered ? `${Math.round(x.pct / max * 100)}%` : "0%").transition("width", { ...MOTION.bar, delay: 200 + i * 18 }))
++      .child(div().relative().flex_1().min_w(0).h(21).rounded(corner(4)).overflow_hidden()
++        .child(div().absolute().top(0).left(0).h(21).rounded(corner(4)).bg(t.hover).w(s.entered ? `${Math.round(x.pct / max * 100)}%` : "0%").transition("width", { ...MOTION.bar, delay: 200 + i * 18 }))
+         .child(div().relative().px(6).h(21).flex().items_center().truncate().font_family(mono()).text_size(12).text_color(t.foreground).child(x.name)))
+       .child(div().w(34).flex_none().text_right().text_color(t.muted).child(`${x.pct}%`))));
+ }
+@@ -182,7 +183,7 @@
+ // The wrapper's height springs from 0 to the card's, and the card keeps its full height inside it, so nothing reflows
+ // while it opens. 8px under it is the gap above the composer.
+ export function usagePanel(t, s, cb) {
+-  const card = v_flex().w_full().h(s.height).flex_none().rounded(14).overflow_hidden().bg(t.background).border_1().border_color(t.border)
++  const card = v_flex().w_full().h(s.height).flex_none().rounded(corner(14)).overflow_hidden().bg(t.background).border_1().border_color(t.border)
+     .child(h_flex().h(41).flex_none().items_center().gap(8).pl(14).pr(8).border_b(1).border_color(t.border)
+       .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("Usage"))
+       .child(div().flex_1())
