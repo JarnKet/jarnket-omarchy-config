@@ -1,0 +1,65 @@
+#!/bin/bash
+# TEMPORARY diagnostics. Twice on 2026-11-10 the Omarchy shell (quickshell) froze
+# for 6-10 s right after a resume, so the lock screen only started the
+# fingerprint reader late. For 12 s after each resume this samples the shell's
+# main thread from /proc (state, CPU, major page faults, kernel wait channel)
+# and, when the thread is stuck -- busy on the CPU or waiting on a lock -- grabs
+# its stack with eu-stack (root only: ptrace_scope is 1).
+# Output: /var/log/resume-probe/<time>.txt, last 10 kept.
+# Remove it with: sudo bash <config repo>/device/thinkpad-t14s-gen-6/root/install.sh --no-probe
+
+set -u
+
+out_dir=/var/log/resume-probe
+keep=10
+duration_ms=12000
+interval=0.25
+stuck_samples=6 # 1.5 s
+
+pid=$(pgrep -xo quickshell) || exit 0
+hz=$(getconf CLK_TCK)
+mkdir -p "$out_dir"
+out=$out_dir/$(date +%Y%m%d-%H%M%S).txt
+
+# "state cpu-ticks major-faults" of the main thread.
+sample() {
+  local s st majflt ut stt
+  s=$(<"/proc/$pid/task/$pid/stat") || return 1
+  s=${s##*) }
+  # Fields 3 (state), 12 (majflt), 14 (utime), 15 (stime) of proc_pid_stat(5).
+  read -r st _ _ _ _ _ _ _ _ majflt _ ut stt _ <<<"$s"
+  echo "$st $((ut + stt)) $majflt"
+}
+
+{
+  echo "resume-probe: quickshell pid $pid, started $(date '+%F %T.%N')"
+  echo "   ms st cpu% majflt wchan"
+} >"$out"
+
+start=$(date +%s%N)
+prev_ns="" prev_cpu=0 prev_flt=0 busy=0 waiting=0 stacks=0
+while :; do
+  now=$(date +%s%N)
+  ms=$(((now - start) / 1000000))
+  ((ms <= duration_ms)) || break
+  read -r st cpu flt < <(sample) || break
+  wchan=$(cat "/proc/$pid/task/$pid/wchan" 2>/dev/null)
+  if [[ -n $prev_ns ]]; then
+    pct=$(((cpu - prev_cpu) * 100 * 1000000000 / hz / (now - prev_ns)))
+    printf '%5d %s %4d %6d %s\n' "$ms" "$st" "$pct" "$((flt - prev_flt))" "${wchan:-?}" >>"$out"
+    ((pct >= 70)) && busy=$((busy + 1)) || busy=0
+    [[ $wchan == *futex* ]] && waiting=$((waiting + 1)) || waiting=0
+    if ((stacks < 2 && (busy >= stuck_samples || waiting >= stuck_samples))); then
+      {
+        echo "--- main thread stack at $ms ms ($( ((busy >= stuck_samples)) && echo busy || echo waiting))"
+        env -u DEBUGINFOD_URLS timeout 5 eu-stack -1 -n 80 -p "$pid" 2>&1
+      } >>"$out"
+      stacks=$((stacks + 1)) busy=0 waiting=0
+    fi
+  fi
+  prev_ns=$now prev_cpu=$cpu prev_flt=$flt
+  sleep "$interval"
+done
+
+ls -1t "$out_dir"/*.txt 2>/dev/null | tail -n +$((keep + 1)) | xargs -r rm -f
+exit 0

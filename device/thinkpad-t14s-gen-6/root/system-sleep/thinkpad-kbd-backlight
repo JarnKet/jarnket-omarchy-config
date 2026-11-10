@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# ThinkPad firmware switches the keyboard backlight on at resume. Keep it off.
+
+led=/sys/class/leds/tpacpi::kbd_backlight
+state=/run/thinkpad-kbd-backlight-before-sleep
+
+[[ -e $led ]] || exit 0
+
+case $1 in
+  pre)
+    cat "$led/brightness" >"$state"
+    ;;
+  post)
+    [[ -f $state ]] || exit 0
+    level=0
+    echo "$level" >"$led/brightness"
+    # The firmware may apply its own level shortly after resume, so set it
+    # again a second later. From a timer, not a sleep here: user.slice stays
+    # frozen until every hook has returned, so a sleep delays the whole wake.
+    systemd-run --quiet --no-block --collect --on-active=1 --timer-property=AccuracySec=100ms \
+      /bin/sh -c "echo $level > '$led/brightness'" 2>/dev/null || true
+    ;;
+esac
+exit 0

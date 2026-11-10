@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Remember the channels of each Wi-Fi network the laptop joins, so the resume
+# hook can scan just those. See /usr/local/libexec/wifi-quick-reconnect.
+
+iface=${DEVICE_IFACE:-$1}
+[[ $2 == up && -n $iface && -d /sys/class/net/$iface/wireless ]] || exit 0
+exec /usr/local/libexec/wifi-quick-reconnect remember "$iface"

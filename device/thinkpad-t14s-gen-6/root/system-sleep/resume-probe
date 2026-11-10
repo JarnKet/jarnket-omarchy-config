@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# TEMPORARY: watch the Omarchy shell for the first seconds after a resume.
+# See /usr/local/libexec/resume-probe.
+
+if [[ $1 == "post" ]]; then
+  systemd-run --quiet --no-block --collect --unit="resume-probe-$$" \
+    /usr/local/libexec/resume-probe 2>/dev/null || true
+fi
+exit 0

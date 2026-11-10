@@ -1,0 +1,151 @@
+#!/bin/bash
+# Get Wi-Fi back within a few seconds of a resume, without leaving wpa_supplicant
+# (Wi-Fi Direct casting to a TV needs it).
+#
+# NetworkManager takes Wi-Fi down for every suspend, so after resume it waits for
+# a full scan before it connects. The ath12k card stays on the "world" regulatory
+# domain (the kernel can't set a country for it), where every 5 GHz channel may
+# only be scanned passively, so that scan takes ~14 s. This remembers the channels
+# of the networks the laptop joins, and after a resume cancels NetworkManager's
+# full scan and has wpa_supplicant scan only those. NetworkManager sees its
+# network in the results and connects as usual. Somewhere new, nothing matches and
+# NetworkManager's normal scanning carries on.
+#
+#   wifi-quick-reconnect remember <iface>   NetworkManager dispatcher, on "up"
+#   wifi-quick-reconnect reconnect          after resume (system-sleep hook)
+#   wifi-quick-reconnect seed               learn channels from the journal
+#   wifi-quick-reconnect status             print the remembered channels
+
+set -u
+
+state_dir=/var/lib/wifi-quick-reconnect
+freqs_file=$state_dir/freqs
+# Each passive channel costs ~0.1-0.15 s to scan, so keep the list short.
+max_freqs=6
+
+log() { logger -t wifi-quick-reconnect -- "$*"; }
+
+wifi_iface() {
+  # The P2P device is a non-netdev wdev, so "Interface" lines are real ones.
+  iw dev 2>/dev/null | awk '$1 == "Interface" {print $2; exit}'
+}
+
+# save_freqs <newest first...>: put these in front of what is remembered.
+save_freqs() {
+  mkdir -p "$state_dir"
+  { printf '%s\n' "$@"; cat "$freqs_file" 2>/dev/null; } |
+    awk '/^[0-9]+$/ && !seen[$0]++' | head -n "$max_freqs" >"$freqs_file.tmp" &&
+    mv -f "$freqs_file.tmp" "$freqs_file"
+}
+
+remember() {
+  local iface=${1:-$(wifi_iface)} link ssid cur others=()
+  [[ -n $iface ]] || return 0
+  link=$(iw dev "$iface" link 2>/dev/null) || return 0
+  cur=$(awk '$1 == "freq:" {printf "%d\n", $2; exit}' <<<"$link")
+  [[ -n $cur ]] || return 0
+  ssid=$(sed -n 's/^[[:space:]]*SSID: //p' <<<"$link" | head -n 1)
+
+  # The same network's other access points and bands, from the scan that
+  # NetworkManager ran just before connecting. At most two, so one busy
+  # office network can't push home out of the list.
+  if [[ -n $ssid ]]; then
+    mapfile -t others < <(iw dev "$iface" scan dump 2>/dev/null | awk -v want="$ssid" -v cur="$cur" '
+      /^BSS / { freq = "" }
+      $1 == "freq:" { freq = int($2) }
+      /^[[:space:]]*SSID: / {
+        s = $0; sub(/^[[:space:]]*SSID: /, "", s)
+        if (s == want && freq != "" && freq != cur && !seen[freq]++) print freq
+      }' | head -n 2)
+  fi
+  save_freqs "$cur" "${others[@]}"
+}
+
+# Channels of past connections, most recent first, from wpa_supplicant's log.
+seed() {
+  local freqs
+  mapfile -t freqs < <(journalctl --since -30d --no-pager -o cat -t wpa_supplicant \
+    -g 'Trying to authenticate with' 2>/dev/null |
+    sed -nE 's/.* freq=([0-9]+) MHz.*/\1/p' | tac | awk '!seen[$0]++' | head -n "$max_freqs")
+  ((${#freqs[@]})) && save_freqs "${freqs[@]}"
+  remember
+}
+
+reconnect() {
+  local start iface state path i out freqs=() channels=()
+  start=$(date +%s%N)
+  ms() { echo $((($(date +%s%N) - start) / 1000000)); }
+
+  mapfile -t freqs < <(grep -E '^[0-9]+$' "$freqs_file" 2>/dev/null)
+  if ((${#freqs[@]} == 0)); then
+    log "no remembered channels yet; NetworkManager scans as usual"
+    return 0
+  fi
+  iface=$(wifi_iface)
+  [[ -n $iface ]] || return 0
+
+  # NetworkManager hands the interface back to wpa_supplicant ~1 s after the
+  # resume and starts its full scan the moment the device is "disconnected".
+  for ((i = 0; i < 80; i++)); do
+    state=$(nmcli -g GENERAL.STATE device show "$iface" 2>/dev/null)
+    case $state in
+      30*) break ;;
+      100* | [4-9]0*)
+        log "already connecting ($state) at $(ms) ms"
+        return 0
+        ;;
+    esac
+    sleep 0.1
+  done
+  if [[ $state != 30* ]]; then
+    log "Wi-Fi not ready after $(ms) ms ($state); NetworkManager carries on"
+    return 0
+  fi
+
+  path=$(busctl --system call fi.w1.wpa_supplicant1 /fi/w1/wpa_supplicant1 \
+    fi.w1.wpa_supplicant1 GetInterface s "$iface" 2>/dev/null | awk '{gsub(/"/, "", $2); print $2}')
+  if [[ -z $path ]]; then
+    log "wpa_supplicant doesn't know $iface; NetworkManager carries on"
+    return 0
+  fi
+
+  for i in "${freqs[@]}"; do channels+=("$i" 20); done
+  for ((i = 0; i < 6; i++)); do
+    # A scan already running (NetworkManager's full one) makes ours be rejected.
+    iw dev "$iface" scan abort >/dev/null 2>&1
+    sleep 0.05
+    if out=$(busctl --system call fi.w1.wpa_supplicant1 "$path" fi.w1.wpa_supplicant1.Interface \
+      Scan 'a{sv}' 2 Type s active Channels 'a(uu)' "${#freqs[@]}" "${channels[@]}" 2>&1); then
+      log "scanning ${freqs[*]} MHz at $(ms) ms"
+      break
+    fi
+    sleep 0.2
+  done
+  if ((i == 6)); then
+    log "scan request kept being rejected ($out); NetworkManager carries on"
+    return 0
+  fi
+
+  # NetworkManager does the connecting; this only records how long it took.
+  for ((i = 0; i < 100; i++)); do
+    state=$(nmcli -g GENERAL.STATE device show "$iface" 2>/dev/null)
+    if [[ $state == 100* ]]; then
+      log "connected at $(ms) ms"
+      return 0
+    fi
+    sleep 0.1
+  done
+  log "not connected $(ms) ms after resume ($state); NetworkManager carries on"
+}
+
+case ${1:-} in
+  remember) remember "${2:-}" ;;
+  reconnect) reconnect ;;
+  seed) seed ;;
+  status) cat "$freqs_file" 2>/dev/null || echo "nothing remembered yet" ;;
+  *)
+    echo "usage: $0 remember <iface> | reconnect | seed | status" >&2
+    exit 2
+    ;;
+esac
+exit 0

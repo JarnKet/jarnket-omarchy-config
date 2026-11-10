@@ -290,6 +290,7 @@ install.sh         the installer
 snapshot.sh        copies my live setup back into this repo
 portable/home/     files copied into ~ on every machine
 device/<model>/    monitor layout, only for that laptop model
+  root/            T14s Gen 6 only: faster sleep/wake (sudo bash .../root/install.sh)
 personal/home/     my JARNKET screensaver text (asked for, default no)
 manifests/
   files.tsv        which files snapshot.sh and install.sh handle
@@ -310,6 +311,28 @@ herdr/
   settings.json    the fonts merged into Herdr's settings
   sources.sh       fetching the mods and making or applying the patches
 ```
+
+### Faster sleep and wake (ThinkPad T14s Gen 6)
+
+`device/thinkpad-t14s-gen-6/root/` holds system files the normal installer
+doesn't touch. Install them once with
+`sudo bash device/thinkpad-t14s-gen-6/root/install.sh` (`--uninstall` puts
+everything back):
+
+- **Wi-Fi back in a few seconds after opening the lid.** NetworkManager drops
+  Wi-Fi for every suspend and waits for a full scan before it reconnects; this
+  laptop's Wi-Fi card is stuck on the "world" regulatory domain, where every
+  5 GHz channel is scanned passively, so that took ~16 s. A NetworkManager
+  dispatcher script remembers the channels of the networks you join, and a
+  resume hook has wpa_supplicant scan only those. wpa_supplicant stays, so
+  Wi-Fi Direct casting to a TV keeps working.
+- **No fixed 1 s at every wake.** The keyboard-backlight hook re-applies its
+  level from a timer instead of sleeping while the session is still frozen, and
+  `amd-debug-tools` is removed (its hook ran Python on every suspend and resume).
+- **Closing the lid right after opening it** sleeps within 10 s, not 30 s.
+- **Temporary diagnostics:** `resume-probe` records what the shell does for 12 s
+  after each resume (in `/var/log/resume-probe/`; `--no-probe` removes it), and
+  `pm_print_times` logs each device's suspend time until the next reboot.
 
 Paths to my home folder (`/home/shadowone/...`) in the config files are
 rewritten to yours when they're installed.

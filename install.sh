@@ -479,6 +479,10 @@ step_config() {
     if confirm "This is a $MACHINE, like mine. Use my monitor layout for it too?" yes; then
       install_tree "$REPO_DIR/device/$MACHINE" "$MACHINE monitor layout"
     fi
+    # System files for faster sleep/wake. Left to you because they go in /usr and /etc.
+    if [[ -f $REPO_DIR/device/$MACHINE/root/install.sh && ! -e /usr/local/libexec/wifi-quick-reconnect ]]; then
+      info "Faster sleep/wake (Wi-Fi back in seconds): run once: sudo bash $REPO_DIR/device/$MACHINE/root/install.sh"
+    fi
   else
     info "Monitor layout: kept yours (set screens up with the Displays widget or hyprmoncfg)"
   fi

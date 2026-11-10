@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# After a resume, scan only the channels of known networks so Wi-Fi comes back
+# in a few seconds instead of waiting ~14 s for NetworkManager's full scan.
+# See /usr/local/libexec/wifi-quick-reconnect.
+
+if [[ $1 == "post" ]]; then
+  # user.slice stays frozen until every hook returns; hand the work to a unit.
+  systemd-run --quiet --no-block --collect --unit="wifi-quick-reconnect-$$" \
+    /usr/local/libexec/wifi-quick-reconnect reconnect 2>/dev/null || true
+fi
+exit 0
