@@ -350,10 +350,11 @@ out of it and turns it into EasyEffects presets. Build them once (no root):
 ```bash
 git clone https://github.com/antoinecellerier/speaker-tuning-to-easyeffects ~/.local/src/speaker-tuning-to-easyeffects
 cd ~/.local/src/speaker-tuning-to-easyeffects
-python3 tools/fetch_driver/get_lenovo_dax_xml.py && python3 dolby_to_easyeffects.py --autoload
+python3 tools/fetch_driver/get_lenovo_dax_xml.py && python3 dolby_to_easyeffects.py --enable autogain --autoload
 ```
 
-`--autoload` puts `Dolby-Balanced` on the internal speaker only (Bluetooth and
+`--enable autogain` adds Dolby's volume leveler (without it, it was still too quiet
+here). `--autoload` puts `Dolby-Balanced` on the internal speaker only (Bluetooth and
 HDMI get no effects). `hypr/autostart.lua` starts EasyEffects in the background
 at login when that preset exists. `Dolby-Detailed` and `Dolby-Warm` are in
 EasyEffects → Presets; `python3 dolby_to_easyeffects.py --uninstall` removes them.
