@@ -339,6 +339,25 @@ everything back):
   after each resume (in `/var/log/resume-probe/`; `--no-probe` removes it), and
   `pm_print_times` logs each device's suspend time until the next reboot.
 
+### Louder speakers, tuned like Windows (ThinkPad T14s Gen 6)
+
+On Windows, Dolby Atmos applies Lenovo's tuning for this laptop's speakers
+(speaker correction, EQ, compression and a +6 dB boost); Linux plays them flat,
+so they sound quiet and thin. [speaker-tuning-to-easyeffects](https://github.com/antoinecellerier/speaker-tuning-to-easyeffects)
+fetches Lenovo's audio driver for your machine type, takes the Dolby tuning
+out of it and turns it into EasyEffects presets. Build them once (no root):
+
+```bash
+git clone https://github.com/antoinecellerier/speaker-tuning-to-easyeffects ~/.local/src/speaker-tuning-to-easyeffects
+cd ~/.local/src/speaker-tuning-to-easyeffects
+python3 tools/fetch_driver/get_lenovo_dax_xml.py && python3 dolby_to_easyeffects.py --autoload
+```
+
+`--autoload` puts `Dolby-Balanced` on the internal speaker only (Bluetooth and
+HDMI get no effects). `hypr/autostart.lua` starts EasyEffects in the background
+at login when that preset exists. `Dolby-Detailed` and `Dolby-Warm` are in
+EasyEffects → Presets; `python3 dolby_to_easyeffects.py --uninstall` removes them.
+
 Paths to my home folder (`/home/shadowone/...`) in the config files are
 rewritten to yours when they're installed.
 
