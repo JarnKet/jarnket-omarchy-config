@@ -1,0 +1,8 @@
+[Unit]
+Description=Keyring guard: keep the password-less keyring loadable
+Documentation=file://%h/.local/bin/keyring-guard
+Before=gnome-keyring-daemon.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/keyring-guard

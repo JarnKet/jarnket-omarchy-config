@@ -1,0 +1,10 @@
+[Unit]
+Description=Keyring guard: re-check the keyring after every write
+Documentation=file://%h/.local/bin/keyring-guard
+
+[Path]
+PathChanged=%h/.local/share/keyrings
+Unit=keyring-guard.service
+
+[Install]
+WantedBy=default.target

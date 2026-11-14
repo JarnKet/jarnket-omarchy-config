@@ -1,0 +1,231 @@
+#!/usr/bin/python3 -I
+"""keyring-guard: keep gnome-keyring's password-less keyrings loadable.
+
+Omarchy logs in automatically, so its default keyring has no password and
+gnome-keyring keeps it as a plain-text key file. gnome-keyring writes each
+secret raw (g_key_file_set_value) but reads it back unescaped
+(g_key_file_get_string). One write after a restart is enough:
+  - a secret with "\\n" in it (escaped JSON, e.g. ProtonVPN's session) comes
+    back from disk as a real line break,
+  - the next write puts that line break raw into the file,
+  - and at the next login the whole keyring is "in an invalid or unrecognized
+    format", so you're asked for a new keyring and Brave's cookies are wiped.
+
+This runs after every write gnome-keyring makes (keyring-guard.path), and
+before the daemon starts (drop-in on gnome-keyring-daemon.service). It
+re-escapes each secret the way GLib expects, so the next load gives back
+exactly what the daemon had in memory. It remembers the hash of every file it
+wrote, so it never escapes the same file twice.
+
+  keyring-guard           fix every password-less keyring that needs it
+  keyring-guard --check   only report; exit 1 if a keyring needs fixing
+  keyring-guard --adopt FILE
+                          trust FILE as it is now (it is already escaped)
+"""
+import hashlib
+import json
+import os
+import re
+import sys
+import tempfile
+import time
+
+import gi
+
+gi.require_version("GLib", "2.0")
+from gi.repository import GLib  # noqa: E402
+
+HOME = os.path.expanduser("~")
+KEYRINGS = os.environ.get("KEYRING_GUARD_DIR") or os.path.join(
+    os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local/share"), "keyrings")
+STATE = os.environ.get("KEYRING_GUARD_STATE") or os.path.join(
+    os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local/state"),
+    "keyring-guard", "written.json")
+
+# Keys gnome-keyring writes in a plain-text keyring (gkm-secret-textual.c).
+KNOWN = {"display-name", "ctime", "mtime", "lock-on-idle", "lock-after",
+         "lock-timeout", "item-type", "secret", "binary-secret",
+         "name", "type", "value"}
+SECTION = re.compile(r"^\[[^\]\n]+\]$")
+KEYLINE = re.compile(r"^([a-z][a-z-]*)=(.*)$")
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def load_state():
+    try:
+        with open(STATE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(state):
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    tmp = STATE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(state, f, indent=1, sort_keys=True)
+    os.replace(tmp, STATE)
+
+
+def parse(text):
+    """Split a raw keyring file into lines of ("section", name), ("blank",),
+    ("kv", key, value). A raw line break inside a secret shows up as lines
+    that are none of these; they belong to the secret above them."""
+    out, current_secret = [], None
+    for line in text.split("\n"):
+        m = KEYLINE.match(line)
+        if SECTION.match(line):
+            out.append(["section", line[1:-1]]); current_secret = None
+        elif m and m.group(1) in KNOWN:
+            out.append(["kv", m.group(1), m.group(2)])
+            current_secret = out[-1] if m.group(1) == "secret" else None
+        elif line == "":
+            # A blank line may sit inside a secret; keep it attached for now
+            # and decide when we see what follows.
+            out.append(["blank"])
+        elif current_secret is not None:
+            # Glue back any blank lines that turned out to be inside the secret.
+            while out[-1] != current_secret and out[-1][0] == "blank":
+                out.pop(); current_secret[2] += "\n"
+            if out[-1] is not current_secret:
+                raise ValueError("stray line after a secret")
+            current_secret[2] += "\n" + line
+        else:
+            raise ValueError("line that is not part of any key")
+    return out
+
+
+def escape(value):
+    kf = GLib.KeyFile()
+    kf.set_string("g", "k", value)
+    return kf.get_value("g", "k")
+
+
+def rebuild(parsed, secrets):
+    lines, i = [], 0
+    for item in parsed:
+        if item[0] == "section":
+            lines.append("[" + item[1] + "]")
+        elif item[0] == "blank":
+            lines.append("")
+        elif item[1] == "secret":
+            lines.append("secret=" + escape(secrets[i])); i += 1
+        else:
+            lines.append(item[1] + "=" + item[2])
+    return "\n".join(lines)
+
+
+def verify(text, parsed, secrets):
+    """Load the new text the way gnome-keyring will and compare."""
+    kf = GLib.KeyFile()
+    kf.load_from_data(text, len(text.encode()), GLib.KeyFileFlags.NONE)
+    section, i = None, 0
+    for item in parsed:
+        if item[0] == "section":
+            section = item[1]
+        elif item[0] == "kv" and item[1] == "secret":
+            if kf.get_string(section, "secret") != secrets[i]:
+                raise ValueError(f"secret in [{section}] would not load back intact")
+            i += 1
+
+
+def write_atomic(path, data):
+    d = os.path.dirname(path)
+    fd, tmp = tempfile.mkstemp(dir=d, prefix=".keyring-guard-")
+    try:
+        os.fchmod(fd, 0o600)
+        os.write(fd, data)
+        os.fsync(fd)
+        os.close(fd)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    dfd = os.open(d, os.O_DIRECTORY)
+    os.fsync(dfd)
+    os.close(dfd)
+
+
+def fix_one(path, state, check_only, intended=None):
+    """Return True if the file needed (or got) a fix."""
+    with open(path, "rb") as f:
+        raw = f.read()
+    if not raw.startswith(b"[keyring]"):
+        return False  # encrypted keyring: binary format, not affected
+    h = sha(raw)
+    name = os.path.basename(path)
+    if state.get(name) == h:
+        return False  # we wrote this one; it is already escaped
+    text = raw.decode("utf-8")
+    parsed = parse(text)
+    secrets = [it[2] for it in parsed if it[0] == "kv" and it[1] == "secret"]
+    if intended:
+        secrets = [intended(i, s) for i, s in enumerate(secrets)]
+    new = rebuild(parsed, secrets)
+    if new == text:
+        if not check_only:
+            state[name] = h
+        return False
+    verify(new, parsed, secrets)
+    broken = sum(1 for s in secrets if "\n" in s)
+    if check_only:
+        log(f"{name}: needs fixing ({broken} secret(s) with line breaks)")
+        return True
+    # Don't overwrite a write gnome-keyring made while we were working.
+    with open(path, "rb") as f:
+        if sha(f.read()) != h:
+            log(f"{name}: changed while fixing, will retry")
+            return fix_one(path, state, check_only, intended)
+    data = new.encode("utf-8")
+    write_atomic(path, data)
+    state[name] = sha(data)
+    log(f"{name}: re-escaped {len(secrets)} secret(s), {broken} with line breaks")
+    return True
+
+
+def main(argv):
+    check_only = "--check" in argv
+    state = load_state()
+    if "--adopt" in argv:
+        path = argv[argv.index("--adopt") + 1]
+        with open(path, "rb") as f:
+            state[os.path.basename(path)] = sha(f.read())
+        save_state(state)
+        return 0
+    if not check_only:
+        time.sleep(float(os.environ.get("KEYRING_GUARD_SETTLE", "0.5")))
+    needs, failed = False, False
+    try:
+        names = sorted(os.listdir(KEYRINGS))
+    except FileNotFoundError:
+        return 0
+    for n in names:
+        if not n.endswith(".keyring") or n.startswith("."):
+            continue
+        try:
+            needs |= fix_one(os.path.join(KEYRINGS, n), state, check_only)
+        except (ValueError, UnicodeDecodeError, GLib.Error) as e:
+            log(f"{n}: left alone, could not parse it safely ({e})")
+            failed = True
+    if not check_only:
+        # Forget files that no longer exist.
+        for n in [n for n in state if n not in names]:
+            del state[n]
+        save_state(state)
+    if check_only:
+        return 1 if needs else 0
+    return 2 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

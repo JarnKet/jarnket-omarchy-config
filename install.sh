@@ -713,6 +713,21 @@ step_services() {
     fi
   fi
 
+  # Keeps the password-less keyring loadable across restarts: gnome-keyring
+  # writes secrets raw but reads them unescaped, so one "\n" in a secret
+  # (ProtonVPN's session) breaks the whole keyring at the next login.
+  if [[ -f $HOME/.config/systemd/user/keyring-guard.path ]]; then
+    systemctl --user daemon-reload >/dev/null 2>&1 || true
+    if systemctl --user is-enabled -q keyring-guard.path 2>/dev/null; then
+      ok "keyring-guard.path already on"
+    elif run systemctl --user enable --now keyring-guard.path >/dev/null 2>&1; then
+      record services-enabled keyring-guard.path
+      ok "keyring-guard.path on (re-escapes the keyring after every write)"
+    else
+      problem "couldn't start keyring-guard.path"
+    fi
+  fi
+
   # Suspends after 45 min idle, only on battery (~/.config/hypr/hypridle.conf).
   if command -v hypridle >/dev/null && [[ -f $HOME/.config/hypr/hypridle.conf ]]; then
     if systemctl --user is-enabled -q hypridle.service 2>/dev/null; then

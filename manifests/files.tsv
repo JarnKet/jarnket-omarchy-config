@@ -55,6 +55,10 @@ portable	.config/systemd/user/plugin-updates.service
 portable	.config/systemd/user/plugin-updates.timer
 portable	.config/systemd/user/memory-keeper.service
 portable	.config/systemd/user/memory-keeper.timer
+portable	.local/bin/keyring-guard
+portable	.config/systemd/user/keyring-guard.service
+portable	.config/systemd/user/keyring-guard.path
+portable	.config/systemd/user/gnome-keyring-daemon.service.d/keyring-guard.conf
 portable	.local/bin/wallpaper-slideshow
 portable	.local/share/applications/wallpaper-slideshow.desktop
 portable	.config/systemd/user/wallpaper-slideshow.service
