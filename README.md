@@ -222,7 +222,10 @@ stay installed.
 - **Internet Hotspot** shares the wired (LAN) connection over Wi-Fi on 2.4 GHz,
   like Windows' Mobile Hotspot. Its root helper and polkit rule are installed once
   with `~/.config/omarchy/plugins/io.github.imargorsi.hotspot/install.sh` (it asks
-  for sudo). While it's on, the laptop can't join another Wi-Fi network.
+  for sudo). While it's on, the laptop can't join another Wi-Fi network. My
+  [patch](extras/patches/io.github.imargorsi.hotspot-BarWidget.qml.diff) swaps its
+  Wi-Fi icon for a hotspot icon, slashed while off, so it doesn't look like the
+  network icon beside it; `install.sh` applies it.
 - **Memory Keeper** does act on its own: every 5 minutes while awake it stops Claude
   Code sessions left idle for 12 hours (sooner when memory is short; sleep doesn't
   count). Busy, waiting and on-screen sessions, and ones running something, are left

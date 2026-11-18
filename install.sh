@@ -520,6 +520,12 @@ plugin_setup() {
       manual "Log in, then run: $dir/install.sh --yes"
     fi
     ;;
+  io.github.imargorsi.hotspot)
+    # A hotspot icon (slashed while off) instead of the Wi-Fi fan, which
+    # looked like the network icon beside it. Its root helper is still yours
+    # to install (see the end of this step).
+    run git -C "$dir" apply "$REPO_DIR/extras/patches/io.github.imargorsi.hotspot-BarWidget.qml.diff"
+    ;;
   esac
 }
 

@@ -1,0 +1,17 @@
+diff --git i/BarWidget.qml w/BarWidget.qml
+index 3b63dd2..de84446 100644
+--- i/BarWidget.qml
++++ w/BarWidget.qml
+@@ -73,8 +73,10 @@ BarWidget {
+     id: button
+     anchors.fill: parent
+     bar: root.bar
+-    // nf-fa-wifi (U+F1EB). A font glyph, not an image asset.
+-    text: "\uf1eb"
++    // Hotspot glyphs, not the Wi-Fi fan, so it can't be mistaken for the
++    // network icon next to it: nf-md-access_point (U+F0003) while on,
++    // nf-md-access_point_off (U+F1511, slashed) while off.
++    text: service.running ? "\u{f0003}" : "\u{f1511}"
+     foreground: root.barIconColor
+     tooltipText: service.running
+       ? ("Hotspot on · " + service.ssid + " · " + service.clientCount + " connected")
