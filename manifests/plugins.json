@@ -121,6 +121,14 @@
       "local": false
     },
     {
+      "id": "io.github.imargorsi.hotspot",
+      "name": "Internet Hotspot",
+      "version": "1.0.3",
+      "source": "https://github.com/imargorsi/omarchy-hotspot.git",
+      "revision": "aae3c10dd0a7ffe48d555edeeb3a1258eadf02f2",
+      "local": false
+    },
+    {
       "id": "io.github.kristoferlund.webcam",
       "name": "Webcam Controls",
       "version": "0.2.0",

@@ -219,6 +219,10 @@ stay installed.
   found, then clean. Its System items (old packages, journal, snapshots) need a
   root helper, installed once with
   `sudo bash ~/.config/omarchy/plugins/shadowone.disk-keeper/root/install.sh`.
+- **Internet Hotspot** shares the wired (LAN) connection over Wi-Fi on 2.4 GHz,
+  like Windows' Mobile Hotspot. Its root helper and polkit rule are installed once
+  with `~/.config/omarchy/plugins/io.github.imargorsi.hotspot/install.sh` (it asks
+  for sudo). While it's on, the laptop can't join another Wi-Fi network.
 - **Memory Keeper** does act on its own: every 5 minutes while awake it stops Claude
   Code sessions left idle for 12 hours (sooner when memory is short; sleep doesn't
   count). Busy, waiting and on-screen sessions, and ones running something, are left
@@ -274,6 +278,7 @@ stay installed.
 | [Downloads](https://github.com/roymelgarv/omarchy-downloads) | Recent downloads in the bar |
 | [LocalSend](https://github.com/cryptobredda/omarchy-localsend) | AirDrop-style sharing with nearby devices |
 | [NetNeighbors](https://github.com/i12bp8/omarchy-netneighbours) | Every device on your Wi-Fi |
+| [Internet Hotspot](https://github.com/imargorsi/omarchy-hotspot) | Share the LAN internet over Wi-Fi: on/off, name and password, connected devices (needs its `install.sh` once) |
 | [Omarchy X-Ray](https://github.com/RandaZraik/omarchy-xray) | Trace a window, port or file to the process behind it |
 | [Panel Notes](https://github.com/rblalock/omarchy-panel-notes) | Markdown notes per app |
 | [Omarchy Beam](https://github.com/TouchWorkStation/Omarchy-Beam-) | Turn a link into a QR code |

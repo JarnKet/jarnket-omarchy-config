@@ -589,6 +589,12 @@ step_plugins() {
     info "Disk Keeper: for its System items, run once: sudo bash ~/.config/omarchy/plugins/shadowone.disk-keeper/root/install.sh"
   fi
 
+  # Internet Hotspot starts and stops the hotspot through a root helper and a
+  # polkit rule. It's left to you because it puts files in /usr.
+  if [[ -d $PLUGINS_DIR/io.github.imargorsi.hotspot && ! -e /usr/local/bin/share-internet ]]; then
+    info "Internet Hotspot: run once: ~/.config/omarchy/plugins/io.github.imargorsi.hotspot/install.sh (it asks for sudo)"
+  fi
+
   # Ask Claude answers through the Claude Code CLI and your own Claude login.
   if [[ -d $PLUGINS_DIR/shadowone.ask-claude ]] && ! command -v claude >/dev/null; then
     manual "Ask Claude (Super+A) needs Claude Code: curl -fsSL https://claude.ai/install.sh | bash, then run claude once to sign in"

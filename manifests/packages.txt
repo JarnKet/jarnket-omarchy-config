@@ -8,6 +8,7 @@ qt6-multimedia               # io.github.kristoferlund.webcam
 v4l-utils                    # io.github.kristoferlund.webcam
 efibootmgr                   # io.github.07dcolem.target-boot: reboot into another OS
 udisks2                      # wian47.removable-drives
+dnsmasq                      # io.github.imargorsi.hotspot: hands out IP addresses to hotspot devices
 python-pillow                # theme wallpapers
 python-numpy                 # theme wallpapers
 cmake                        # ilysorc.pointer-feel builds Hyprland modules

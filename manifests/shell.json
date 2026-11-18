@@ -244,6 +244,9 @@
           "id": "omarchy.network"
         },
         {
+          "id": "io.github.imargorsi.hotspot"
+        },
+        {
           "id": "shadowone.power",
           "showPercentage": true
         },
