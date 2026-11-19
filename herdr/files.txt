@@ -5,5 +5,4 @@
 .config/herdr/plugins/config/herdr-recap/config.json
 .config/herdr/plugins/config/chmarax.gitview/config.toml
 .local/bin/claude-recap-plan
-.claude/skills/opengpui/SKILL.md
 .agents/skills/opengpui/SKILL.md

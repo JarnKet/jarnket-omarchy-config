@@ -988,7 +988,7 @@ herdr_claude() {
     manual "Install Claude Code, then run: $REPO_DIR/install.sh --only herdr (revive, the to-do list and the usage line hook into it)"
     return 0
   fi
-  confirm "Set up the Claude Code side too (revive's session hooks, the to-do rule and hook, the usage status line, the OpenUI rule)?" yes || return 0
+  confirm "Set up the Claude Code side too (revive's session hooks, the to-do rule and hook, and the usage status line)?" yes || return 0
   local f
   for f in .claude/settings.json .claude/CLAUDE.md .codex/AGENTS.md .pi/agent/AGENTS.md .local/bin/todo; do
     backup "$HOME/$f"
@@ -999,11 +999,7 @@ herdr_claude() {
     problem "the usage status line didn't install"
   sh "$mods/over9k-todos/setup.sh" todo on "$mods" >/dev/null 2>&1 ||
     problem "the to-do rule and hook didn't install"
-  # When to show answers as OpenUI panels; added once, between its markers.
-  if ! grep -q 'herdr:openui -->' "$HOME/.claude/CLAUDE.md" 2>/dev/null; then
-    { [[ -s $HOME/.claude/CLAUDE.md ]] && printf '\n'; cat "$HERDR_DIR/claude-openui.md"; } >>"$HOME/.claude/CLAUDE.md"
-  fi
-  ok "Claude Code: revive's hooks, the to-do rule and hook, the usage status line, the OpenUI rule"
+  ok "Claude Code: revive's hooks, the to-do rule and hook, the usage status line"
 }
 
 step_herdr() {

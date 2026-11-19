@@ -318,7 +318,6 @@ herdr/
   mods.tsv         Herdr mods: repo and the commit I reviewed
   patches/         my changes to those mods
   mods/            mods of my own (oui-window), kept whole
-  claude-openui.md when agents show answers as OpenUI panels (added to ~/.claude/CLAUDE.md)
   home/            Herdr layout and keys, and the mods' helper files
   files.txt        which files snapshot.sh copies into home/
   settings.json    the fonts merged into Herdr's settings
