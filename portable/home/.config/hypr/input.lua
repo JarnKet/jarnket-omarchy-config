@@ -9,7 +9,10 @@ hl.config({
     -- No grp:alts_toggle: in Lao, Right Alt is AltGr (AltGr + 1..0 = ໑..໐, as on Windows).
     -- "lao" = Lao (Windows) layout from ~/.config/xkb/symbols/lao (two-character keys via ~/.config/xkb/lao.XCompose).
     kb_layout = "us,lao",
-    kb_options = "shift:both_capslock_cancel",
+    -- No shift:both_capslock_cancel: it defines Shift as [Shift, Caps_Lock], so
+    -- native Wayland apps read the Shift release as Caps Lock and JetBrains
+    -- IDEs never see a double Shift (Search Everywhere). Caps Lock key still works.
+    kb_options = "",
 
     -- Use a specific keyboard variant if needed (e.g. intl for international keyboards).
     -- kb_variant = "intl",
