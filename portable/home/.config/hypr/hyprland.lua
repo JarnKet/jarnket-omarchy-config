@@ -37,6 +37,24 @@ o.window("org\\.omarchy\\.rbw-picker", { no_screen_share = true, tag = "+floatin
 -- its own, so set it here: active, then inactive.
 o.window("herdr-app", { tag = "-default-opacity", opacity = "0.92 0.86" })
 
+-- JetBrains Toolbox (an XWayland tray popup) places itself at the very top
+-- of the screen, so the bar covers its header and settings button. It sets
+-- that position after mapping, which beats a window rule's `move`, so nudge
+-- it below the bar once it has settled.
+hl.on("window.open", function(window)
+  if not window or window.class ~= "jetbrains-toolbox" then return end
+  hl.timer(function()
+    local monitor = window.monitor
+    if not (window.mapped and monitor) then return end
+    local reserved = monitor.reserved or {}
+    local top = monitor.y + (reserved.top or 26) + 8
+    local y = window.at.y or window.at[2]
+    if y and y < top then
+      hl.dispatch(hl.dsp.window.move({ x = 0, y = top - y, relative = true, window = window }))
+    end
+  end, { type = "oneshot", timeout = 300 })
+end)
+
 -- Blur behind the see-through drop-down terminal (SUPER+`).
 hl.layer_rule({ match = { namespace = "kitty-quick-access" }, blur = true })
 

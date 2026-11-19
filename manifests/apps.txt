@@ -14,4 +14,5 @@ pnpm                            # Node package manager
 go                              # Go toolchain
 wrangler                        # Cloudflare Workers CLI
 gws                             # git workspaces helper (AUR)
+jetbrains-toolbox               # JetBrains Toolbox: installs and updates the JetBrains IDEs (AUR)
 qemu-img                        # disk image tool
